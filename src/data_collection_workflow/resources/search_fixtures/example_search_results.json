@@ -1,0 +1,24 @@
+{
+  "fixture_name": "example_search_results",
+  "fixture_version": "0.1",
+  "description": "Generic deterministic fixture search results for disabled/default config references.",
+  "queries": [
+    {
+      "match_terms": [
+        "hantavirus",
+        "cases",
+        "deaths"
+      ],
+      "results": [
+        {
+          "title": "Example public health surveillance update",
+          "url": "https://example.org/public-health/surveillance-update",
+          "snippet": "Example metadata-only search result for deterministic tests.",
+          "published_date": "2024-01-01",
+          "source": "Example Search Fixture",
+          "rank": 1
+        }
+      ]
+    }
+  ]
+}

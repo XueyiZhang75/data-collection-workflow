@@ -1,0 +1,112 @@
+{
+  "disease_input": "dengue",
+  "disease_standard_name": "Dengue",
+  "disease_category": "mosquito-borne arboviral disease",
+  "aliases": [
+    "dengue",
+    "dengue fever"
+  ],
+  "abbreviations": [
+    "DENV"
+  ],
+  "pathogen_terms": [
+    "DENV",
+    "dengue virus"
+  ],
+  "syndrome_terms": [
+    "dengue fever",
+    "severe dengue"
+  ],
+  "clinical_terms": [
+    "febrile illness",
+    "severe dengue",
+    "hemorrhagic manifestations"
+  ],
+  "transmission_terms": [
+    "mosquito-borne disease",
+    "Aedes mosquito",
+    "arbovirus"
+  ],
+  "case_count_terms": [
+    "cases",
+    "confirmed cases",
+    "probable cases"
+  ],
+  "death_terms": [
+    "deaths",
+    "fatal cases"
+  ],
+  "hospitalization_terms": [
+    "hospitalizations"
+  ],
+  "surveillance_terms": [
+    "arbovirus surveillance",
+    "dengue surveillance",
+    "mosquito-borne disease surveillance"
+  ],
+  "outbreak_terms": [
+    "outbreak",
+    "local transmission",
+    "travel-associated cases"
+  ],
+  "official_source_terms": [
+    "state arbovirus surveillance",
+    "PAHO dengue update",
+    "WHO dengue update",
+    "local health department alert"
+  ],
+  "likely_reporting_agencies": [
+    "state health department",
+    "PAHO",
+    "WHO",
+    "local health department"
+  ],
+  "preferred_source_categories": [
+    "official_public_health_agency",
+    "international_organization_report",
+    "news_and_situation_report"
+  ],
+  "validation_source_categories": [
+    "official_public_health_agency",
+    "international_organization_report"
+  ],
+  "suggested_geographic_granularity": "county_state_or_country",
+  "suggested_time_granularity": "weekly_or_epi_week",
+  "extraction_priority_fields": [
+    "cases_confirmed",
+    "cases_probable",
+    "cases_unspecified",
+    "deaths",
+    "date_reported",
+    "source_url",
+    "evidence_quote"
+  ],
+  "count_semantics_notes": [
+    "Separate locally acquired, travel-associated, probable, confirmed, and cumulative counts.",
+    "Dengue reports may use epidemiological weeks."
+  ],
+  "disambiguation_risks": [
+    "Do not mix dengue with all arbovirus counts unless dengue-specific counts are reported.",
+    "Do not treat mosquito surveillance as human case counts."
+  ],
+  "exclusion_terms": [
+    "mosquito surveillance only",
+    "arbovirus aggregate without dengue count",
+    "animal-only"
+  ],
+  "suggested_query_terms": [
+    "dengue",
+    "DENV",
+    "dengue virus",
+    "arbovirus surveillance",
+    "mosquito-borne disease"
+  ],
+  "suggested_query_templates": [
+    "\"dengue\" cases deaths \"{location}\" {time_window}",
+    "\"DENV\" \"{location}\" surveillance {time_window}",
+    "\"arbovirus surveillance\" dengue \"{location}\""
+  ],
+  "confidence": 0.95,
+  "generation_method": "curated_profile",
+  "warnings": []
+}

@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "data_collection_workflow": "./src/data_collection_workflow/studio_app.py:graph"
+  },
+  "env": ".env"
+}

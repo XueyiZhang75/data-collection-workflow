@@ -1,0 +1,73 @@
+{
+  "policy_name": "data_collection_cross_source_consistency_policy",
+  "policy_version": "0.1",
+  "description": "Deterministic policy for detecting cross-source inconsistencies within linked hantavirus events.",
+  "consistency_method": "deterministic_linked_event_consistency_checker",
+  "comparable_numeric_fields": [
+    "cases_confirmed",
+    "cases_probable",
+    "cases_suspected",
+    "cases_unspecified",
+    "deaths"
+  ],
+  "comparable_text_fields": [
+    "country",
+    "subnational_location",
+    "virus_or_syndrome",
+    "case_definition"
+  ],
+  "comparable_date_fields": [
+    "date_reported",
+    "event_start_date",
+    "event_end_date",
+    "date_anchor"
+  ],
+  "numeric_conflict_thresholds": {
+    "minor_absolute_difference": 1,
+    "minor_relative_difference": 0.05,
+    "major_relative_difference": 0.20
+  },
+  "severity_levels": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "conflict_types": [
+    "minor_numeric_difference",
+    "major_numeric_difference",
+    "numeric_mismatch",
+    "date_mismatch",
+    "location_mismatch",
+    "virus_or_syndrome_mismatch",
+    "case_definition_mismatch",
+    "missing_comparable_values"
+  ],
+  "human_review_triggers": [
+    "major_numeric_difference",
+    "numeric_mismatch",
+    "date_mismatch",
+    "location_mismatch",
+    "virus_or_syndrome_mismatch"
+  ],
+  "source_authority_priority": {
+    "official_public_health_agency": 1,
+    "international_organization_report": 2,
+    "peer_reviewed_literature": 3,
+    "structured_database": 4,
+    "news_and_situation_report": 5
+  },
+  "event_consistency_statuses": [
+    "not_checked",
+    "single_record_no_comparison",
+    "consistent",
+    "consistent_with_minor_differences",
+    "conflict_detected",
+    "needs_review"
+  ],
+  "record_conflict_statuses": [
+    "not_checked",
+    "no_conflict",
+    "has_conflict",
+    "needs_review"
+  ]
+}

@@ -1,0 +1,138 @@
+[
+  {
+    "source_id": "resource_e27a3c670df8a498",
+    "link": {
+      "anchor_context": "",
+      "anchor_present": true,
+      "aria_label": "",
+      "context": "",
+      "download": false,
+      "heading": "Data Availability",
+      "heading_context": [
+        "Unravelling the epidemiological and dispersal dynamics of the 2024-2025 chikungunya virus epidemic on Réunion island",
+        "Data Availability"
+      ],
+      "href": "http://www.linkedin.com/shareArticle?mini=true&url=https%3A//www.medrxiv.org/content/10.64898/2026.01.07.26343606v2&title=Unravelling%20the%20epidemiological%20and%20dispersal%20dynamics%20of%20the%202024-2025%20chikungunya%20virus%20epidemic%20on%20R%C3%A9union%20island&summary=&source=medRxiv",
+      "locator": {
+        "anchor_index": 79,
+        "source_line": 735,
+        "source_position": 1063
+      },
+      "navigation": false,
+      "page_topic": "Unravelling the epidemiological and dispersal dynamics of the 2024-2025 chikungunya virus epidemic on Réunion island | medRxiv",
+      "raw_href": "http://www.linkedin.com/shareArticle?mini=true&url=https%3A//www.medrxiv.org/content/10.64898/2026.01.07.26343606v2&title=Unravelling%20the%20epidemiological%20and%20dispersal%20dynamics%20of%20the%202024-2025%20chikungunya%20virus%20epidemic%20on%20R%C3%A9union%20island&summary=&source=medRxiv",
+      "rel": [
+        "nofollow"
+      ],
+      "representation_declarations": [],
+      "scope_version": 2,
+      "source_content_hash": "b7866f4c767f2c45725748b6880282640c899413bdcae28136af0de2fa327e26",
+      "source_url": "https://www.medrxiv.org/content/10.64898/2026.01.07.26343606v2",
+      "text": "",
+      "title": "Publish this post to LinkedIn",
+      "type": ""
+    },
+    "task": {
+      "disease": "chikungunya",
+      "disease_aliases": [],
+      "location": "Réunion",
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31",
+      "target_fields": [
+        "disease",
+        "country",
+        "subnational_location",
+        "locality",
+        "date_reported",
+        "cases_confirmed",
+        "cases_probable",
+        "cases_suspected",
+        "cases_unspecified",
+        "deaths",
+        "hospitalizations",
+        "source_url",
+        "source_type",
+        "evidence_quote"
+      ],
+      "source_preferences": [
+        "official_public_health_agency",
+        "international_organization_report",
+        "structured_database",
+        "peer_reviewed_literature",
+        "news_and_situation_report"
+      ],
+      "collection_mode": "direct_collection",
+      "user_request": "Collect chikungunya cases, deaths, dates, locations, source URLs, source types, and evidence quotes for Réunion from 2025-01-01 to 2025-12-31.",
+      "run_label": "chikungunya_reunion_2025_repair_scope_20260924"
+    },
+    "parent": "https://www.medrxiv.org/content/10.64898/2026.01.07.26343606v2"
+  },
+  {
+    "source_id": "resource_9a6d08a08eae7eab",
+    "link": {
+      "anchor_context": "",
+      "anchor_present": true,
+      "aria_label": "",
+      "context": "",
+      "download": false,
+      "heading": "Data Availability",
+      "heading_context": [
+        "Unravelling the epidemiological and dispersal dynamics of the 2024-2025 chikungunya virus outbreak on Réunion island",
+        "Data Availability"
+      ],
+      "href": "http://www.linkedin.com/shareArticle?mini=true&url=https%3A//www.medrxiv.org/content/10.64898/2026.01.07.26343606v1&title=Unravelling%20the%20epidemiological%20and%20dispersal%20dynamics%20of%20the%202024-2025%20chikungunya%20virus%20outbreak%20on%20R%C3%A9union%20island&summary=&source=medRxiv",
+      "locator": {
+        "anchor_index": 76,
+        "source_line": 717,
+        "source_position": 1063
+      },
+      "navigation": false,
+      "page_topic": "Unravelling the epidemiological and dispersal dynamics of the 2024-2025 chikungunya virus outbreak on Réunion island | medRxiv",
+      "raw_href": "http://www.linkedin.com/shareArticle?mini=true&url=https%3A//www.medrxiv.org/content/10.64898/2026.01.07.26343606v1&title=Unravelling%20the%20epidemiological%20and%20dispersal%20dynamics%20of%20the%202024-2025%20chikungunya%20virus%20outbreak%20on%20R%C3%A9union%20island&summary=&source=medRxiv",
+      "rel": [
+        "nofollow"
+      ],
+      "representation_declarations": [],
+      "scope_version": 2,
+      "source_content_hash": "432ee6e9712e953db3a7dad1eb809b1cfaaed41bb2875db1660e039d122e2134",
+      "source_url": "https://www.medrxiv.org/content/10.64898/2026.01.07.26343606v1",
+      "text": "",
+      "title": "Publish this post to LinkedIn",
+      "type": ""
+    },
+    "task": {
+      "disease": "chikungunya",
+      "disease_aliases": [],
+      "location": "Réunion",
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31",
+      "target_fields": [
+        "disease",
+        "country",
+        "subnational_location",
+        "locality",
+        "date_reported",
+        "cases_confirmed",
+        "cases_probable",
+        "cases_suspected",
+        "cases_unspecified",
+        "deaths",
+        "hospitalizations",
+        "source_url",
+        "source_type",
+        "evidence_quote"
+      ],
+      "source_preferences": [
+        "official_public_health_agency",
+        "international_organization_report",
+        "structured_database",
+        "peer_reviewed_literature",
+        "news_and_situation_report"
+      ],
+      "collection_mode": "direct_collection",
+      "user_request": "Collect chikungunya cases, deaths, dates, locations, source URLs, source types, and evidence quotes for Réunion from 2025-01-01 to 2025-12-31.",
+      "run_label": "chikungunya_reunion_2025_repair_scope_20260924"
+    },
+    "parent": "https://www.medrxiv.org/content/10.64898/2026.01.07.26343606v1"
+  }
+]

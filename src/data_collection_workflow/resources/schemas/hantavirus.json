@@ -1,0 +1,114 @@
+{
+  "schema_name": "hantavirus_human_case_outbreak_schema",
+  "schema_version": "0.2",
+  "description": "Schema for collecting human hantavirus case, outbreak, and surveillance records from public health sources.",
+  "record_type": "human_case_or_outbreak_record",
+  "core_fields": [
+    {
+      "name": "disease",
+      "type": "string",
+      "required": true,
+      "description": "Standard disease name. Use Hantavirus disease."
+    },
+    {
+      "name": "virus_or_syndrome",
+      "type": "string_or_null",
+      "required": false,
+      "description": "Specific virus or syndrome if stated, such as HPS, HFRS, Andes virus, Seoul virus, Sin Nombre virus, Hantaan virus, Puumala virus, or Dobrava-Belgrade virus."
+    },
+    {
+      "name": "country",
+      "type": "string_or_null",
+      "required": true,
+      "description": "Country where the human cases or outbreak occurred. Prefer WHO-standard country names when possible."
+    },
+    {
+      "name": "subnational_location",
+      "type": "string_or_null",
+      "required": false,
+      "description": "State, province, city, county, district, hospital, or other subnational location as stated in the source."
+    },
+    {
+      "name": "date_reported",
+      "type": "string_or_null",
+      "required": false,
+      "description": "Date when the data were reported or published. Keep partial dates if only month/year are available."
+    },
+    {
+      "name": "event_start_date",
+      "type": "string_or_null",
+      "required": false,
+      "description": "Start date of the outbreak or case event if explicitly stated."
+    },
+    {
+      "name": "event_end_date",
+      "type": "string_or_null",
+      "required": false,
+      "description": "End date of the outbreak or case event if explicitly stated. Do not calculate if not stated."
+    },
+    {
+      "name": "cases_confirmed",
+      "type": "non_negative_number_or_null",
+      "required": false,
+      "description": "Laboratory-confirmed human cases."
+    },
+    {
+      "name": "cases_probable",
+      "type": "non_negative_number_or_null",
+      "required": false,
+      "description": "Probable human cases, according to the source definition."
+    },
+    {
+      "name": "cases_suspected",
+      "type": "non_negative_number_or_null",
+      "required": false,
+      "description": "Suspected human cases, according to the source definition."
+    },
+    {
+      "name": "cases_unspecified",
+      "type": "non_negative_number_or_null",
+      "required": false,
+      "description": "Human cases where confirmation status is not clearly stated."
+    },
+    {
+      "name": "deaths",
+      "type": "non_negative_number_or_null",
+      "required": false,
+      "description": "Deaths attributed to the hantavirus case event or outbreak."
+    },
+    {
+      "name": "case_definition",
+      "type": "string_or_null",
+      "required": false,
+      "description": "How cases are defined in the source, such as confirmed, suspected, probable, clinical, laboratory-confirmed, HPS, or HFRS."
+    },
+    {
+      "name": "source_url",
+      "type": "string",
+      "required": true,
+      "description": "URL of the source from which the record was extracted."
+    },
+    {
+      "name": "source_type",
+      "type": "string",
+      "required": true,
+      "description": "Source type, such as official_public_health_agency, international_organization_report, peer_reviewed_literature, news_and_situation_report, or structured_database."
+    },
+    {
+      "name": "evidence_quote",
+      "type": "string",
+      "required": true,
+      "description": "Verbatim source text supporting the extracted record."
+    }
+  ],
+  "extraction_rules": [
+    "Extract only human case, outbreak, or surveillance records.",
+    "Do not extract rodent-only surveillance unless human cases are also reported.",
+    "Do not infer missing values.",
+    "Do not calculate duration, CFR, or other derived quantities unless explicitly stated in the source.",
+    "Keep confirmed, probable, suspected, and unspecified cases separate.",
+    "Use null when a field is not explicitly stated.",
+    "Every extracted record must include source_url and evidence_quote.",
+    "Preserve the source's wording for case_definition when possible."
+  ]
+}

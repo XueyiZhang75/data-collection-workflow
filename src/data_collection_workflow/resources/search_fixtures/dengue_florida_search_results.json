@@ -1,0 +1,64 @@
+{
+  "fixture_name": "dengue_florida_search_results",
+  "fixture_version": "0.1",
+  "description": "Deterministic source-search fixture for dengue / Florida / 2025.",
+  "queries": [
+    {
+      "match_terms": [
+        "dengue",
+        "denv",
+        "florida",
+        "2025"
+      ],
+      "provider_channels": [
+        "web_search",
+        "official_site_search",
+        "news_search",
+        "database_search",
+        "literature_api"
+      ],
+      "results": [
+        {
+          "title": "Florida dengue surveillance update 2025",
+          "url": "https://www.floridahealth.gov/example/dengue-surveillance-2025",
+          "snippet": "Florida dengue and DENV surveillance metadata for 2025 cases.",
+          "published_date": "2025-08-01",
+          "source": "Florida Department of Health",
+          "rank": 1
+        },
+        {
+          "title": "Duplicate Florida dengue surveillance update",
+          "url": "https://www.floridahealth.gov/example/dengue-surveillance-2025#weekly",
+          "snippet": "Duplicate URL with a fragment should be deduplicated.",
+          "published_date": "2025-08-02",
+          "source": "Florida Department of Health",
+          "rank": 2
+        },
+        {
+          "title": "Unsupported dengue source",
+          "url": "mailto:dengue@example.org",
+          "snippet": "Unsupported mailto scheme should be rejected.",
+          "published_date": "2025-08-03",
+          "source": "Fixture Search",
+          "rank": 3
+        },
+        {
+          "title": "Missing URL dengue source",
+          "url": null,
+          "snippet": "Missing URL should be rejected.",
+          "published_date": "2025-08-04",
+          "source": "Fixture Search",
+          "rank": 4
+        },
+        {
+          "title": "",
+          "url": "https://www.paho.org/example/dengue-update",
+          "snippet": "",
+          "published_date": "2025-08-05",
+          "source": "PAHO",
+          "rank": 5
+        }
+      ]
+    }
+  ]
+}

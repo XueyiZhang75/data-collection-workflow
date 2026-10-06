@@ -1,0 +1,17 @@
+{
+  "source_id": "fixture_paho_americas_alert",
+  "chunk_id": "chunk_fixture_paho_americas_alert_001",
+  "chunk_index": 1,
+  "chunk_kind": "text",
+  "contains_target_data": true,
+  "source_url": "https://www.paho.org/en/documents/fixture-hantavirus-alert",
+  "title": "Epidemiological Alert Hantavirus Pulmonary Syndrome in Americas Region - 19 December 2025",
+  "publisher": "Pan American Health Organization",
+  "actual_publisher": "Pan American Health Organization",
+  "source_type": "official_public_health_agency",
+  "source_type_final": "international_public_health_agency",
+  "source_role_final": "collection",
+  "credibility_level": "high",
+  "fetch_purpose": "collection",
+  "text": "Epidemiological Alert Hantavirus Pulmonary Syndrome in the Americas Region. In 2025 and as of epidemiological week (EW) 47, eight countries in the Americas Region have reported confirmed cases of hantavirus pulmonary syndrome (HPS), with an aggregated total of 229 cases and 59 deaths. The countries that have reported cases during 2025 include Argentina, Brazil, Bolivia, Chile, Panama, Paraguay, and Uruguay."
+}

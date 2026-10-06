@@ -1,0 +1,102 @@
+{
+  "profile_name": "dengue_review",
+  "description": "bounded live Tavily search, controlled live fetch, generic extraction, validation, anomaly detection, and human-review routing example for dengue / Florida / 2025. Requires TAVILY_API_KEY from environment; no API keys are stored here.",
+  "workflow": {
+    "graph_name": "data_collection_workflow",
+    "collection_mode": "standard",
+    "use_fixture_documents": false
+  },
+  "user_request": "Collect dengue data for Florida in 2025, validate it against available trusted sources, detect anomalies, and route uncertain results to human review.",
+  "structured_task": {
+    "disease": "dengue",
+    "location": "Florida",
+    "start_date": "2025",
+    "end_date": "2025",
+    "target_fields": [
+      "cases_unspecified",
+      "deaths",
+      "date_reported",
+      "source_url",
+      "source_type",
+      "evidence_quote"
+    ],
+    "source_preferences": [
+      "official_public_health_agency",
+      "international_organization_report"
+    ],
+    "collection_mode": "standard",
+    "user_request": "Collect dengue data for Florida in 2025, validate it against available trusted sources, detect anomalies, and route uncertain results to human review.",
+    "run_label": "dengue_review"
+  },
+  "live_web": {
+    "enabled": true,
+    "timeout_seconds": 20
+  },
+  "source_search": {
+    "enabled": true,
+    "mode": "live",
+    "provider": "tavily",
+    "max_queries": 2,
+    "max_results_per_query": 3,
+    "max_total_results": 6,
+    "timeout_seconds": 15,
+    "combine_with_seed_catalog": false,
+    "cache_enabled": true,
+    "provider_channel_allowlist": [
+      "web_search",
+      "official_site_search",
+      "news_search",
+      "literature_api",
+      "database_search"
+    ]
+  },
+  "content_fetch": {
+    "fetch_search_derived_sources": true,
+    "max_search_derived_sources": 2,
+    "max_total_sources": 2,
+    "min_credibility_score": 0.55,
+    "allowed_final_roles": [
+      "collection",
+      "collection_support",
+      "context"
+    ],
+    "allow_needs_review": false,
+    "domain_allowlist": [
+      "floridahealth.gov",
+      "epi.ufl.edu",
+      "cdc.gov",
+      "paho.org"
+    ],
+    "domain_blocklist": [],
+    "max_bytes": 1000000,
+    "parse_pdf_text": true,
+    "parse_tables": true,
+    "store_raw_text": false,
+    "user_agent": "data-collection-workflow/0.1"
+  },
+  "llm": {
+    "source_planning_enabled": false,
+    "source_critic_enabled": false,
+    "structured_extraction_enabled": false
+  },
+  "anomaly_detection": {
+    "enabled": true,
+    "max_cases_threshold": 1000000,
+    "max_deaths_threshold": 100000,
+    "spike_multiplier": 10,
+    "min_prior_records": 1
+  },
+  "human_review": {
+    "decisions_path": null,
+    "apply_decisions": false,
+    "require_reviewer_id": true
+  },
+  "source_sets": {
+    "source_id_allowlist_enabled": false,
+    "workflow_source_ids": []
+  },
+  "output": {
+    "sessionized": true,
+    "session_id": "dengue_review"
+  }
+}

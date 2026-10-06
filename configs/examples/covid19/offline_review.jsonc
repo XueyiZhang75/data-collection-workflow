@@ -1,0 +1,82 @@
+{
+  "profile_name": "covid19_offline_review",
+  "description": "Offline deterministic review application example for COVID-19 / New York / 2024.",
+  "workflow": {
+    "graph_name": "data_collection_workflow",
+    "collection_mode": "standard",
+    "use_fixture_documents": false
+  },
+  "user_request": "Collect COVID-19 data for New York in 2024, detect anomalies, and apply explicit fixture human review decisions.",
+  "structured_task": {
+    "disease": "COVID-19",
+    "location": "New York",
+    "start_date": "2024",
+    "end_date": "2024",
+    "target_fields": [
+      "cases_confirmed",
+      "deaths",
+      "hospitalizations",
+      "date_reported",
+      "source_url",
+      "source_type",
+      "evidence_quote"
+    ],
+    "source_preferences": [
+      "official_public_health_agency",
+      "structured_database"
+    ],
+    "collection_mode": "standard",
+    "user_request": "Collect COVID-19 data for New York in 2024, detect anomalies, and apply explicit fixture human review decisions.",
+    "run_label": "covid19_offline_review"
+  },
+  "live_web": {
+    "enabled": false,
+    "timeout_seconds": 30
+  },
+  "source_search": {
+    "enabled": true,
+    "mode": "fixture",
+    "provider": "fixture",
+    "fixture_path": "src/data_collection_workflow/resources/search_fixtures/covid19_new_york_search_results.json",
+    "max_queries": 3,
+    "max_results_per_query": 5,
+    "max_total_results": 15,
+    "timeout_seconds": 15,
+    "combine_with_seed_catalog": false,
+    "cache_enabled": true
+  },
+  "content_fetch": {
+    "fetch_search_derived_sources": true,
+    "max_search_derived_sources": 1,
+    "max_total_sources": 2,
+    "min_credibility_score": 0.55,
+    "allowed_final_roles": [
+      "collection",
+      "collection_support",
+      "context"
+    ],
+    "allow_needs_review": false,
+    "domain_allowlist": [
+      "health.ny.gov"
+    ],
+    "content_fixture_map_path": "src/data_collection_workflow/resources/content_fixtures/content_map.json"
+  },
+  "llm": {
+    "source_planning_enabled": false,
+    "source_critic_enabled": false,
+    "structured_extraction_enabled": false
+  },
+  "human_review": {
+    "decisions_path": "src/data_collection_workflow/resources/human_review_decision_fixtures/covid19_review_decisions.json",
+    "apply_decisions": true,
+    "require_reviewer_id": true
+  },
+  "source_sets": {
+    "source_id_allowlist_enabled": false,
+    "workflow_source_ids": []
+  },
+  "output": {
+    "sessionized": true,
+    "session_id": "covid19_offline_review"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "policy_name": "generic_public_health_structured_extraction_policy",
+  "policy_version": "0.2",
+  "description": "Deterministic structured extraction policy for converting parsed public-health evidence chunks into generic PublicHealthRecord objects using the shared ObservationRecord fields.",
+  "default_disease": "",
+  "extraction_method": "deterministic_rule_based_extractor",
+  "extractable_chunk_conditions": {
+    "requires_contains_target_data": true,
+    "allowed_fetch_purposes": [
+      "data_extraction"
+    ],
+    "allowed_chunk_kinds": [
+      "text",
+      "table"
+    ]
+  },
+  "virus_or_syndrome_terms": {
+    "HPS": [
+      "hantavirus pulmonary syndrome",
+      "HPS"
+    ],
+    "HFRS": [
+      "hemorrhagic fever with renal syndrome",
+      "haemorrhagic fever with renal syndrome",
+      "HFRS"
+    ],
+    "Andes virus": [
+      "Andes virus"
+    ],
+    "Seoul virus": [
+      "Seoul virus"
+    ],
+    "Sin Nombre virus": [
+      "Sin Nombre virus"
+    ],
+    "Hantaan virus": [
+      "Hantaan virus"
+    ],
+    "Puumala virus": [
+      "Puumala virus"
+    ],
+    "Dobrava-Belgrade virus": [
+      "Dobrava-Belgrade virus",
+      "Dobrava virus"
+    ]
+  },
+  "case_keywords": {
+    "confirmed": [
+      "confirmed case",
+      "confirmed cases",
+      "laboratory-confirmed case",
+      "laboratory-confirmed cases"
+    ],
+    "probable": [
+      "probable case",
+      "probable cases"
+    ],
+    "suspected": [
+      "suspected case",
+      "suspected cases"
+    ],
+    "unspecified": [
+      "case",
+      "cases",
+      "human case",
+      "human cases",
+      "patients"
+    ]
+  },
+  "death_keywords": [
+    "death",
+    "deaths",
+    "fatality",
+    "fatalities",
+    "died"
+  ],
+  "date_patterns": {
+    "year_range_start": 2020,
+    "year_range_end": 2026
+  },
+  "required_provenance_fields": [
+    "source_id",
+    "source_url",
+    "source_type",
+    "evidence_quote",
+    "supporting_chunk_id"
+  ],
+  "required_core_fields_for_valid_record": [
+    "disease",
+    "source_url",
+    "source_type",
+    "evidence_quote"
+  ],
+  "fields_that_trigger_human_review_if_missing": [
+    "country"
+  ],
+  "minimum_content_requirement": "At least one of cases_confirmed, cases_probable, cases_suspected, cases_unspecified, deaths, hospitalizations, date_reported, country, subnational_location, or geographic_scope should be present.",
+  "statistical_count_type_aliases": {
+    "cumulative": ["cumulative", "total", "through", "since"],
+    "annual": ["annual", "in 2020", "in 2021", "in 2022", "in 2023", "in 2024", "in 2025", "in 2026", "during 2020", "during 2021", "during 2022", "during 2023", "during 2024", "during 2025", "during 2026"],
+    "newly_reported": ["newly reported", "new cases", "additional cases"],
+    "historical_total": ["reported through", "as of december", "as of january", "as of february", "as of march", "as of april", "as of may", "as of june", "as of july", "as of august", "as of september", "as of october", "as of november", "prior to"],
+    "subset": ["subset", "among", "of which"]
+  },
+  "repair_rules": [
+    "If disease is missing, set disease to the active task disease from structured_task or disease_intelligence.",
+    "If source_url is missing but the supporting chunk has source_url, copy it from the chunk.",
+    "If source_type is missing but the supporting chunk has source_type, copy it from the chunk.",
+    "If evidence_quote is missing, use the supporting chunk text as evidence_quote.",
+    "If extraction_confidence is missing, copy confidence from the supporting evidence chunk when available.",
+    "Do not invent missing case counts, deaths, dates, or locations."
+  ]
+}

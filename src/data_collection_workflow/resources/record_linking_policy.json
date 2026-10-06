@@ -1,0 +1,56 @@
+{
+  "policy_name": "data_collection_record_linking_policy",
+  "policy_version": "0.1",
+  "description": "Deterministic policy for linking normalized hantavirus records into candidate events or surveillance reporting periods.",
+  "linking_method": "deterministic_event_key_linker",
+  "allowed_input_normalization_statuses": [
+    "normalized",
+    "normalized_with_warnings",
+    "needs_review"
+  ],
+  "event_key_fields": [
+    "disease",
+    "virus_or_syndrome",
+    "country",
+    "subnational_location",
+    "date_anchor",
+    "statistical_count_type",
+    "reporting_period",
+    "geographic_scope",
+    "geographic_scope_type"
+  ],
+  "date_anchor_preference": [
+    "event_start_date",
+    "date_reported",
+    "event_end_date",
+    "as_of_date",
+    "reporting_period"
+  ],
+  "missing_value_token": "UNKNOWN",
+  "unspecified_virus_token": "UNSPECIFIED_VIRUS_OR_SYNDROME",
+  "unspecified_subnational_token": "UNSPECIFIED_SUBNATIONAL_LOCATION",
+  "linking_statuses": [
+    "single_record_event",
+    "linked_multi_record_event",
+    "linked_multi_source_event",
+    "needs_review",
+    "not_linkable"
+  ],
+  "review_triggers": [
+    "missing_country_for_case_data",
+    "missing_date_anchor",
+    "insufficient_event_key",
+    "non_country_geography",
+    "existing_record_requires_human_review"
+  ],
+  "minimum_event_key_requirements": {
+    "requires_disease": true,
+    "requires_geography_or_date": true
+  },
+  "source_diversity_fields": [
+    "source_id",
+    "source_url",
+    "source_type",
+    "publisher"
+  ]
+}

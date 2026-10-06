@@ -1,0 +1,45 @@
+{
+  "decisions": [
+    {
+      "decision_id": "covid19_decision_correct_001",
+      "review_id": "review_covid19_correct_001",
+      "decision_type": "correct_fields",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "record",
+      "target_ids": ["rec_src_search_6dca14491140_002"],
+      "reason": "Fixture reviewer confirms the extracted case count should be kept and annotated.",
+      "notes": "Safe fixture decision for Stage 11 review application smoke.",
+      "patch": {
+        "review_status": "corrected",
+        "notes": "Reviewed in Stage 11 fixture smoke."
+      },
+      "confidence": 0.95,
+      "apply_decision": true
+    },
+    {
+      "decision_id": "covid19_decision_reject_001",
+      "review_id": "review_covid19_reject_001",
+      "decision_type": "reject_record",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "record",
+      "target_ids": ["rec_src_search_6dca14491140_001"],
+      "reason": "Fixture reviewer excludes a context-like row from the post-review dataset.",
+      "confidence": 0.9,
+      "apply_decision": true
+    },
+    {
+      "decision_id": "covid19_decision_invalid_anomaly_target",
+      "review_id": "review_covid19_invalid_anomaly_target",
+      "decision_type": "mark_anomaly_resolved",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "anomaly",
+      "target_ids": ["anom_fixture_not_present"],
+      "reason": "Deliberate rejected fixture decision to prove audit rejection behavior.",
+      "confidence": 0.5,
+      "apply_decision": true
+    }
+  ]
+}

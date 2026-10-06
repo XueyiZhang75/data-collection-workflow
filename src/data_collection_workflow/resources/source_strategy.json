@@ -1,0 +1,76 @@
+{
+  "source_categories": [
+    {
+      "source_type": "official_public_health_agency",
+      "priority": 1,
+      "description": "National or subnational public health agencies and CDC-like organizations.",
+      "example_domains": [
+        "cdc.gov",
+        "who.int",
+        "ecdc.europa.eu",
+        "canada.ca",
+        "gov.uk",
+        "health.gov.au"
+      ]
+    },
+    {
+      "source_type": "international_organization_report",
+      "priority": 2,
+      "description": "International health organizations and regional surveillance reports.",
+      "example_domains": [
+        "who.int",
+        "paho.org",
+        "ecdc.europa.eu"
+      ]
+    },
+    {
+      "source_type": "peer_reviewed_literature",
+      "priority": 3,
+      "description": "Peer-reviewed studies containing human outbreak, case series, or surveillance data.",
+      "example_databases": [
+        "PubMed",
+        "Europe PMC",
+        "OpenAlex"
+      ]
+    },
+    {
+      "source_type": "structured_database",
+      "priority": 4,
+      "description": "Structured outbreak, surveillance, or epidemiological databases.",
+      "example_sources": [
+        "line lists",
+        "surveillance datasets",
+        "open data portals"
+      ]
+    },
+    {
+      "source_type": "news_and_situation_report",
+      "priority": 5,
+      "description": "Reputable news reports, situation reports, or alerts that may contain early outbreak signals.",
+      "example_sources": [
+        "news reports",
+        "situation updates",
+        "public alerts"
+      ]
+    }
+  ],
+  "screening_criteria": {
+    "include_if_all_apply": [
+      "The source is about hantavirus disease, HPS, HFRS, or a named hantavirus.",
+      "The source concerns human cases, human outbreaks, or human surveillance summaries.",
+      "The source contains or is likely to contain at least one target data field: cases, deaths, date, location, source URL, source type, or evidence text."
+    ],
+    "exclude_if_any_apply": [
+      "The source is only about animal or rodent surveillance and does not report human cases.",
+      "The source is only a general prevention or clinical overview page without case counts or outbreak information.",
+      "The source is an animal-only laboratory experiment.",
+      "The source is unrelated to hantavirus.",
+      "The source is a duplicate of an already registered source."
+    ],
+    "uncertain_if_any_apply": [
+      "The source mentions hantavirus but the snippet does not show whether human case data are included.",
+      "The source appears to discuss background or historical outbreaks but may contain extractable records.",
+      "The source may mix animal surveillance with human cases."
+    ]
+  }
+}

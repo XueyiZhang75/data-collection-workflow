@@ -1,0 +1,86 @@
+{
+  "policy_name": "data_collection_source_screening_policy",
+  "policy_version": "0.1",
+  "description": "Deterministic source screening policy for Data Collection Workflow before LLM-based screening is implemented.",
+  "decision_labels": {
+    "screening_decisions": [
+      "include",
+      "exclude",
+      "uncertain"
+    ],
+    "source_roles": [
+      "data_source",
+      "context_source",
+      "search_endpoint",
+      "placeholder_source",
+      "irrelevant_source"
+    ],
+    "final_decisions": [
+      "include_for_content_fetch",
+      "include_for_context_fetch",
+      "defer_to_search_expansion",
+      "needs_human_review",
+      "exclude"
+    ]
+  },
+  "thresholds": {
+    "high_confidence": 0.85,
+    "medium_confidence": 0.65,
+    "low_confidence": 0.50
+  },
+  "target_data_fields": [
+    "cases",
+    "deaths",
+    "date",
+    "location",
+    "case_count",
+    "death_count",
+    "source_url",
+    "source_type",
+    "evidence_quote"
+  ],
+  "context_fields": [
+    "disease",
+    "virus_or_syndrome",
+    "case_definition",
+    "source_url",
+    "source_type",
+    "evidence_quote"
+  ],
+  "data_source_signals": [
+    "reported cases",
+    "surveillance",
+    "annual epidemiological report",
+    "case data",
+    "outbreak",
+    "cases",
+    "deaths"
+  ],
+  "context_source_signals": [
+    "about",
+    "clinical overview",
+    "fact sheet",
+    "factsheet",
+    "case definition",
+    "guidelines",
+    "prevention",
+    "diagnosis",
+    "treatment",
+    "control"
+  ],
+  "search_endpoint_publishers": [
+    "PubMed",
+    "Europe PMC",
+    "OpenAlex"
+  ],
+  "placeholder_uri_prefixes": [
+    "seed://"
+  ],
+  "human_review_triggers": [
+    "screening_and_critic_disagree",
+    "low_screening_confidence",
+    "missing_source_type",
+    "missing_url",
+    "ambiguous_source_role"
+  ]
+}

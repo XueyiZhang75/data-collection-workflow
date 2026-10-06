@@ -1,0 +1,145 @@
+{
+  "policy_name": "data_collection_record_normalization_policy",
+  "policy_version": "0.1",
+  "description": "Deterministic normalization policy for disease case, outbreak, and surveillance records.",
+  "country_aliases": {
+    "USA": "United States of America",
+    "US": "United States of America",
+    "U.S.": "United States of America",
+    "U.S.A.": "United States of America",
+    "United States": "United States of America",
+    "the United States": "United States of America",
+    "America": "United States of America",
+    "UK": "United Kingdom",
+    "United Kingdom": "United Kingdom",
+    "England": "United Kingdom",
+    "China": "China",
+    "Chile": "Chile",
+    "Argentina": "Argentina",
+    "Germany": "Germany",
+    "Sweden": "Sweden",
+    "Finland": "Finland",
+    "France": "France",
+    "Spain": "Spain",
+    "United States of America": "United States of America",
+    "Country X": "Country X",
+    "EU/EEA": "EU/EEA",
+    "EU/EEA (28 countries)": "EU/EEA",
+    "European Union": "EU/EEA",
+    "European Union/European Economic Area": "EU/EEA",
+    "EEA": "EU/EEA"
+  },
+  "region_geographic_terms": [
+    "EU/EEA",
+    "EU/EEA (28 countries)",
+    "European Union",
+    "European Union/European Economic Area",
+    "EEA",
+    "Europe",
+    "Americas",
+    "North America",
+    "South America"
+  ],
+  "subnational_country_map": {
+    "New Mexico": "United States of America",
+    "California": "United States of America",
+    "Colorado": "United States of America",
+    "Arizona": "United States of America",
+    "Texas": "United States of America"
+    ,
+    "New York": "United States of America",
+    "New York City": "United States of America",
+    "NYC": "United States of America",
+    "Florida": "United States of America"
+  },
+  "non_country_geographic_terms": [
+    "Europe",
+    "Americas",
+    "North America",
+    "South America"
+  ],
+  "virus_or_syndrome_aliases": {
+    "hantavirus pulmonary syndrome": "HPS",
+    "HPS": "HPS",
+    "hemorrhagic fever with renal syndrome": "HFRS",
+    "haemorrhagic fever with renal syndrome": "HFRS",
+    "HFRS": "HFRS",
+    "Andes virus": "Andes virus",
+    "Seoul virus": "Seoul virus",
+    "Sin Nombre virus": "Sin Nombre virus",
+    "Hantaan virus": "Hantaan virus",
+    "Puumala virus": "Puumala virus",
+    "Dobrava-Belgrade virus": "Dobrava-Belgrade virus",
+    "Dobrava virus": "Dobrava-Belgrade virus",
+    "COVID-19": "COVID-19",
+    "covid-19": "COVID-19",
+    "SARS-CoV-2": "SARS-CoV-2",
+    "sars-cov-2": "SARS-CoV-2",
+    "dengue": "Dengue",
+    "Dengue": "Dengue",
+    "DENV": "DENV",
+    "dengue virus": "dengue virus"
+  },
+  "case_definition_aliases": {
+    "laboratory-confirmed": "confirmed",
+    "laboratory confirmed": "confirmed",
+    "lab-confirmed": "confirmed",
+    "confirmed": "confirmed",
+    "probable": "probable",
+    "suspected": "suspected",
+    "unspecified": "unspecified",
+    "clinical": "clinical"
+  },
+  "allowed_source_types": [
+    "official_public_health_agency",
+    "international_organization_report",
+    "peer_reviewed_literature",
+    "structured_database",
+    "news_and_situation_report"
+  ],
+  "date_normalization": {
+    "allowed_output_formats": [
+      "YYYY",
+      "YYYY-MM",
+      "YYYY-MM-DD"
+    ],
+    "month_aliases": {
+      "january": "01",
+      "jan": "01",
+      "february": "02",
+      "feb": "02",
+      "march": "03",
+      "mar": "03",
+      "april": "04",
+      "apr": "04",
+      "may": "05",
+      "june": "06",
+      "jun": "06",
+      "july": "07",
+      "jul": "07",
+      "august": "08",
+      "aug": "08",
+      "september": "09",
+      "sep": "09",
+      "sept": "09",
+      "october": "10",
+      "oct": "10",
+      "november": "11",
+      "nov": "11",
+      "december": "12",
+      "dec": "12"
+    }
+  },
+  "normalization_statuses": [
+    "normalized",
+    "normalized_with_warnings",
+    "needs_review",
+    "rejected"
+  ],
+  "review_triggers": [
+    "missing_country_after_normalization",
+    "invalid_negative_numeric_value",
+    "unrecognized_source_type",
+    "non_country_geography_used_as_country"
+  ]
+}

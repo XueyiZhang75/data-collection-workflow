@@ -1,0 +1,60 @@
+{
+  "disease_standard_name": "Hantavirus disease",
+  "disease_family": "Hantaviridae",
+  "include_terms": [
+    "hantavirus",
+    "hantavirus disease",
+    "hantavirus infection",
+    "hantavirus pulmonary syndrome",
+    "HPS",
+    "hemorrhagic fever with renal syndrome",
+    "haemorrhagic fever with renal syndrome",
+    "HFRS"
+  ],
+  "syndrome_terms": [
+    "hantavirus pulmonary syndrome",
+    "HPS",
+    "hemorrhagic fever with renal syndrome",
+    "haemorrhagic fever with renal syndrome",
+    "HFRS"
+  ],
+  "virus_terms": [
+    "Andes virus",
+    "Seoul virus",
+    "Sin Nombre virus",
+    "Hantaan virus",
+    "Puumala virus",
+    "Dobrava-Belgrade virus"
+  ],
+  "exclude_terms": [
+    "rodent-only surveillance without human cases",
+    "animal-only experiment",
+    "laboratory-only animal experiment",
+    "general prevention page without case data",
+    "clinical overview without case counts"
+  ],
+  "target_population": "human",
+  "primary_data_objects": [
+    "human case record",
+    "outbreak event",
+    "surveillance summary"
+  ],
+  "required_record_fields": [
+    "disease",
+    "virus_or_syndrome",
+    "country",
+    "subnational_location",
+    "date_reported",
+    "event_start_date",
+    "event_end_date",
+    "cases_confirmed",
+    "cases_probable",
+    "cases_suspected",
+    "cases_unspecified",
+    "deaths",
+    "case_definition",
+    "source_url",
+    "source_type",
+    "evidence_quote"
+  ]
+}

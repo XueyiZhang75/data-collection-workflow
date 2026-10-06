@@ -1,0 +1,52 @@
+{
+  "catalog_name": "hantavirus_fixture_document_catalog",
+  "catalog_version": "0.1",
+  "description": "Synthetic local fixture documents for deterministic end-to-end testing of the hantavirus data collection workflow. These are not real public health data.",
+  "fixture_documents": [
+    {
+      "fixture_id": "fixture_cdc_reported_cases_country_x_2023",
+      "source_id": "src_cdc_reported_cases",
+      "title": "Synthetic CDC reported cases fixture for Country X, 2023",
+      "document_type": "fixture_text",
+      "clean_text": "Fixture document for workflow testing only. This is synthetic text and is not real public health data. In 2023, 12 human hantavirus cases and 2 deaths were reported in Country X during an outbreak. Surveillance authorities reported these human cases in a national situation update. The report described hantavirus disease surveillance, case notification, reported cases, deaths, date, location, and source evidence for the event. The text is intentionally written to contain extractable case count, death count, date, location, outbreak, and surveillance signals for deterministic testing.",
+      "tables": [],
+      "notes": "Synthetic data-source fixture. Expected to produce one record with cases=12, deaths=2, country=Country X, date=2023."
+    },
+    {
+      "fixture_id": "fixture_ecdc_surveillance_country_x_2023_minor_difference",
+      "source_id": "src_ecdc_surveillance_updates",
+      "title": "Synthetic ECDC surveillance fixture for Country X, 2023",
+      "document_type": "fixture_text",
+      "clean_text": "Fixture document for workflow testing only. This is synthetic text and is not real public health data. In 2023, 13 human hantavirus cases and 2 deaths were reported in Country X during an outbreak. The surveillance update described reported cases, deaths, country-level location, notification date, and outbreak monitoring. This fixture intentionally differs slightly from another source by reporting 13 cases instead of 12, creating a minor numeric difference when compared against another linked event record.",
+      "tables": [],
+      "notes": "Synthetic data-source fixture. Expected to produce one record with cases=13, deaths=2, country=Country X, date=2023."
+    },
+    {
+      "fixture_id": "fixture_ecdc_annual_report_country_x_2023_major_difference",
+      "source_id": "src_ecdc_annual_report_2023",
+      "title": "Synthetic ECDC annual report fixture for Country X, 2023",
+      "document_type": "fixture_text",
+      "clean_text": "Fixture document for workflow testing only. This is synthetic text and is not real public health data. In 2023, 30 human hantavirus cases and 2 deaths were reported in Country X during an outbreak. The annual epidemiological report summarized surveillance findings, reported cases, deaths, date, country, and evidence for the same synthetic linked event. This fixture intentionally reports 30 cases so the cross-source consistency checker detects a major numeric difference requiring human review.",
+      "tables": [],
+      "notes": "Synthetic data-source fixture. Expected to produce one record with cases=30, deaths=2, country=Country X, date=2023, causing a high-severity conflict."
+    },
+    {
+      "fixture_id": "fixture_paho_guidelines_country_x_2023_collection",
+      "source_id": "src_paho_hantavirus_americas_guidelines",
+      "title": "Synthetic PAHO collection fixture for Country X, 2023",
+      "document_type": "fixture_text",
+      "clean_text": "Fixture document for workflow testing only. This is synthetic text and is not real public health data. In 2023, 12 human hantavirus cases and 2 deaths were reported in Country X during an outbreak. The regional surveillance summary described reported cases, deaths, date, country, outbreak monitoring, source URL, and evidence for the same synthetic event used by the held-out validation fixtures. This non-held-out PAHO fixture is intentionally aligned with one validation source so masked collection can produce collection-side evidence without using reserved CDC, ECDC, or WHO source IDs.",
+      "tables": [],
+      "notes": "Synthetic non-held-out data-source fixture. Expected to produce one collection record with cases=12, deaths=2, country=Country X, date=2023."
+    },
+    {
+      "fixture_id": "fixture_who_context_hantavirus",
+      "source_id": "src_who_hantavirus_fact_sheet",
+      "title": "Synthetic WHO context fixture for hantavirus",
+      "document_type": "fixture_text",
+      "clean_text": "Fixture document for workflow testing only. This is synthetic text and is not real public health data. Hantavirus disease can include hantavirus pulmonary syndrome and hemorrhagic fever with renal syndrome. This context document describes symptoms, transmission, diagnosis, prevention, and clinical background. It does not provide a specific human case count, death count, outbreak count, or country-level surveillance record for extraction.",
+      "tables": [],
+      "notes": "Synthetic context fixture. Expected to create context evidence chunks but no structured data record because fetch_purpose is context_grounding."
+    }
+  ]
+}

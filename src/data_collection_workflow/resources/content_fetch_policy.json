@@ -1,0 +1,39 @@
+{
+  "policy_name": "data_collection_content_fetch_policy",
+  "policy_version": "0.1",
+  "description": "Policy for selecting and fetching source documents in Data Collection Workflow.",
+  "fetchable_final_decisions": [
+    "include_for_content_fetch",
+    "include_for_context_fetch"
+  ],
+  "deferred_final_decisions": [
+    "defer_to_search_expansion",
+    "needs_human_review",
+    "exclude"
+  ],
+  "fetch_purpose_by_decision": {
+    "include_for_content_fetch": "data_extraction",
+    "include_for_context_fetch": "context_grounding"
+  },
+  "allowed_url_schemes": [
+    "http",
+    "https"
+  ],
+  "blocked_url_schemes": [
+    "seed"
+  ],
+  "search_endpoint_publishers": [
+    "PubMed",
+    "Europe PMC",
+    "OpenAlex"
+  ],
+  "request": {
+    "timeout_seconds": 15,
+    "max_response_bytes": 5000000,
+    "user_agent": "DataCollectionWorkflow/0.1 academic research prototype"
+  },
+  "document_quality": {
+    "min_clean_text_chars_for_usable": 300,
+    "min_clean_text_chars_for_partial": 80
+  }
+}

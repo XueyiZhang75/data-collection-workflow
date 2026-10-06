@@ -1,0 +1,42 @@
+{
+  "policy_name": "data_collection_source_role_policy",
+  "policy_version": "0.1",
+  "description": "Policy for assigning source roles for standard and masked-validation collection modes.",
+  "default_collection_mode": "standard",
+  "supported_collection_modes": [
+    "standard",
+    "masked_validation",
+    "direct_collection"
+  ],
+  "enabled_env_var": "COLLECTION_MODE",
+  "domain_masking_enabled": false,
+  "validation_reserved_source_ids": [
+    "src_cdc_reported_cases",
+    "src_ecdc_surveillance_updates",
+    "src_ecdc_annual_report_2023",
+    "src_who_hantavirus_fact_sheet"
+  ],
+  "validation_reserved_domains": [
+    "cdc.gov",
+    "ecdc.europa.eu",
+    "who.int"
+  ],
+  "collection_blocking_behavior": {
+    "preserve_in_registry": true,
+    "set_ready_for_content_fetch": false,
+    "final_screening_decision": "reserved_for_validation",
+    "status": "reserved_for_validation",
+    "routing_flags": [
+      "validation_reserved",
+      "blocked_from_collection"
+    ]
+  },
+  "validation_phase_behavior": {
+    "allow_separate_validation_fetch": true,
+    "do_not_mix_validation_records_into_collection_dataset": true
+  },
+  "reporting_behavior": {
+    "include_reserved_sources_in_source_registry": true,
+    "include_masking_compliance_status_in_evaluation": true
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "disease_input": "COVID-19",
+  "disease_standard_name": "COVID-19",
+  "disease_category": "respiratory infectious disease",
+  "aliases": [
+    "COVID-19",
+    "coronavirus disease 2019",
+    "COVID"
+  ],
+  "abbreviations": [],
+  "pathogen_terms": [
+    "SARS-CoV-2"
+  ],
+  "syndrome_terms": [
+    "COVID-19"
+  ],
+  "clinical_terms": [
+    "respiratory illness",
+    "hospitalization",
+    "severe disease"
+  ],
+  "transmission_terms": [
+    "respiratory virus",
+    "community transmission"
+  ],
+  "case_count_terms": [
+    "cases",
+    "confirmed cases",
+    "positive tests"
+  ],
+  "death_terms": [
+    "deaths",
+    "mortality"
+  ],
+  "hospitalization_terms": [
+    "hospitalizations",
+    "ICU admissions"
+  ],
+  "surveillance_terms": [
+    "respiratory virus surveillance",
+    "COVID-19 surveillance",
+    "wastewater surveillance"
+  ],
+  "outbreak_terms": [
+    "outbreak",
+    "surge",
+    "wave"
+  ],
+  "official_source_terms": [
+    "state COVID dashboard",
+    "CDC respiratory virus data",
+    "hospitalization dataset"
+  ],
+  "likely_reporting_agencies": [
+    "state health department",
+    "CDC",
+    "local health department"
+  ],
+  "preferred_source_categories": [
+    "official_public_health_agency",
+    "structured_database",
+    "international_organization_report"
+  ],
+  "validation_source_categories": [
+    "structured_database",
+    "official_public_health_agency"
+  ],
+  "suggested_geographic_granularity": "state_or_county",
+  "suggested_time_granularity": "weekly_or_monthly",
+  "extraction_priority_fields": [
+    "cases_confirmed",
+    "deaths",
+    "date_reported",
+    "hospitalizations",
+    "source_url",
+    "evidence_quote"
+  ],
+  "count_semantics_notes": [
+    "Separate cases, deaths, hospitalizations, test positivity, and wastewater signals.",
+    "Dashboard reporting periods may be weekly, monthly, or cumulative."
+  ],
+  "disambiguation_risks": [
+    "Do not mix COVID-19-only counts with all respiratory virus counts.",
+    "Do not mix test positivity with case counts."
+  ],
+  "exclusion_terms": [
+    "generic respiratory virus without COVID-19 data",
+    "influenza-only"
+  ],
+  "suggested_query_terms": [
+    "COVID-19",
+    "SARS-CoV-2",
+    "respiratory virus surveillance",
+    "state COVID dashboard",
+    "hospitalizations deaths cases"
+  ],
+  "suggested_query_templates": [
+    "\"COVID-19\" cases deaths \"{location}\" {time_window}",
+    "\"SARS-CoV-2\" surveillance \"{location}\" {time_window}",
+    "\"state COVID dashboard\" \"{location}\""
+  ],
+  "confidence": 0.95,
+  "generation_method": "curated_profile",
+  "warnings": []
+}

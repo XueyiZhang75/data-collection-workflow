@@ -1,0 +1,1122 @@
+{
+  "task": {
+    "disease": "chikungunya",
+    "disease_aliases": [],
+    "location": "Réunion",
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "target_fields": [
+      "disease",
+      "country",
+      "subnational_location",
+      "locality",
+      "date_reported",
+      "cases_confirmed",
+      "cases_probable",
+      "cases_suspected",
+      "cases_unspecified",
+      "deaths",
+      "hospitalizations",
+      "source_url",
+      "source_type",
+      "evidence_quote"
+    ],
+    "source_preferences": [
+      "official_public_health_agency",
+      "international_organization_report",
+      "structured_database",
+      "peer_reviewed_literature",
+      "news_and_situation_report"
+    ],
+    "collection_mode": "direct_collection",
+    "user_request": "Collect chikungunya cases, deaths, dates, locations, source URLs, source types, and evidence quotes for Réunion from 2025-01-01 to 2025-12-31.",
+    "run_label": "chikungunya_reunion_2025_repair_scope_20260924"
+  },
+  "rows": [
+    {
+      "source_id": "resource_1a703f5e02026c48",
+      "url": "https://www.chp.gov.hk/files/misc/cf2009_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2009_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2009_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2009 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2009 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2009 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2009 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 93,
+          "source_line": 1252,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_98f1e0cfacbb2c9d",
+      "url": "https://www.chp.gov.hk/files/misc/cf2009_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2009_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2009_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2009 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2009 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2009 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2009 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 95,
+          "source_line": 1301,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_b31d1457631ec2fc",
+      "url": "https://www.chp.gov.hk/files/misc/cf2010_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2010_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2010_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2010 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2010 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2010 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2010 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 97,
+          "source_line": 1350,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_2875a30ca7916f0b",
+      "url": "https://www.chp.gov.hk/files/misc/cf2010_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2010_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2010_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2010 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2010 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2010 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2010 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 99,
+          "source_line": 1399,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_8c47d8f045ffef2a",
+      "url": "https://www.chp.gov.hk/files/misc/cf2011_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2011_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2011_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2011 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2011 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2011 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2011 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 101,
+          "source_line": 1448,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_243bf1dae427fa7a",
+      "url": "https://www.chp.gov.hk/files/misc/cf2011_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2011_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2011_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2011 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2011 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2011 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2011 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 103,
+          "source_line": 1497,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_e72ce8dbb46531af",
+      "url": "https://www.chp.gov.hk/files/misc/cf2012_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2012_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2012_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2012 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2012 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2012 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2012 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 105,
+          "source_line": 1546,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_684c03a2535107e7",
+      "url": "https://www.chp.gov.hk/files/misc/cf2012_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2012_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2012_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2012 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2012 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2012 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2012 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 107,
+          "source_line": 1595,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_af697a0da2fe19ae",
+      "url": "https://www.chp.gov.hk/files/misc/cf2013_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2013_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2013_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2013 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2013 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2013 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2013 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 109,
+          "source_line": 1644,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_d2f295372482c3fc",
+      "url": "https://www.chp.gov.hk/files/misc/cf2013_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2013_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2013_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2013 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2013 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2013 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2013 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 111,
+          "source_line": 1693,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_eecba40c0ceaac30",
+      "url": "https://www.chp.gov.hk/files/misc/cf2014_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2014_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2014_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2014 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2014 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2014 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2014 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 113,
+          "source_line": 1742,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_196bb97813ae150f",
+      "url": "https://www.chp.gov.hk/files/misc/cf2014_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2014_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2014_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2014 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2014 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2014 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2014 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 115,
+          "source_line": 1791,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_0aabdaf5d00e8066",
+      "url": "https://www.chp.gov.hk/files/misc/cf2015_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2015_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2015_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2015 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2015 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2015 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2015 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 117,
+          "source_line": 1840,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_ed7b981e91b2ba57",
+      "url": "https://www.chp.gov.hk/files/misc/cf2015_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2015_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2015_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2015 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2015 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2015 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2015 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 119,
+          "source_line": 1889,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_18672555a1d55563",
+      "url": "https://www.chp.gov.hk/files/misc/cf2016_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2016_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2016_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2016 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2016 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2016 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2016 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 121,
+          "source_line": 1938,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_0d98a815c979cdbe",
+      "url": "https://www.chp.gov.hk/files/misc/cf2016_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2016_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2016_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2016 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2016 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2016 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2016 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 123,
+          "source_line": 1987,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_169eb23980e7d683",
+      "url": "https://www.chp.gov.hk/files/misc/cf2017_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2017_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2017_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2017 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2017 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2017 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2017 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 125,
+          "source_line": 2036,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_394983524f4c2fe5",
+      "url": "https://www.chp.gov.hk/files/misc/cf2017_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2017_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2017_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2017 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2017 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2017 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2017 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 127,
+          "source_line": 2085,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_667b81fcf1d1796f",
+      "url": "https://www.chp.gov.hk/files/misc/cf2018_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2018_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2018_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2018 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2018 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2018 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2018 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 129,
+          "source_line": 2134,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_eb65001117e9eb77",
+      "url": "https://www.chp.gov.hk/files/misc/cf2018_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2018_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2018_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2018 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2018 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2018 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2018 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 131,
+          "source_line": 2183,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_6baa4e4d72e21b3d",
+      "url": "https://www.chp.gov.hk/files/misc/cf2019_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2019_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2019_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2019 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2019 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2019 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2019 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 133,
+          "source_line": 2232,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_0984561c8f3c6300",
+      "url": "https://www.chp.gov.hk/files/misc/cf2019_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2019_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2019_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2019 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2019 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2019 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2019 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 135,
+          "source_line": 2281,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_81dd03e4db1b7602",
+      "url": "https://www.chp.gov.hk/files/misc/cf2020_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2020_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2020_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2020 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2020 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2020 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2020 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 137,
+          "source_line": 2330,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_77ee9b023d43ed02",
+      "url": "https://www.chp.gov.hk/files/misc/cf2020_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2020_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2020_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2020 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2020 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2020 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2020 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 139,
+          "source_line": 2379,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_f610a2149fc06dfe",
+      "url": "https://www.chp.gov.hk/files/misc/cf2021_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2021_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2021_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2021 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2021 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2021 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2021 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 141,
+          "source_line": 2428,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_6155ecce87f8a417",
+      "url": "https://www.chp.gov.hk/files/misc/cf2021_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2021_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2021_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2021 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2021 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2021 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2021 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 143,
+          "source_line": 2477,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_c62e5def243e63b1",
+      "url": "https://www.chp.gov.hk/files/misc/cf2022_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2022_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2022_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2022 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2022 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2022 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2022 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 145,
+          "source_line": 2526,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_9fe8800c068acedb",
+      "url": "https://www.chp.gov.hk/files/misc/cf2022_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2022_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2022_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2022 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2022 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2022 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2022 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 147,
+          "source_line": 2575,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_462064ebd3f240e1",
+      "url": "https://www.chp.gov.hk/files/misc/cf2023_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2023_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2023_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2023 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2023 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2023 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2023 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 149,
+          "source_line": 2624,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_0aa5ec2fea29972c",
+      "url": "https://www.chp.gov.hk/files/misc/cf2023_tc.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2023_tc.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2023_tc.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2023 (Traditional Chinese) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2023 (Traditional Chinese) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2023 (Traditional Chinese)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2023 (Traditional Chinese)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 151,
+          "source_line": 2673,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    },
+    {
+      "source_id": "resource_135789d36be283ac",
+      "url": "https://www.chp.gov.hk/files/misc/cf2024_en.csv",
+      "provenance": {
+        "href": "https://www.chp.gov.hk/files/misc/cf2024_en.csv",
+        "raw_href": "https://www.chp.gov.hk/files/misc/cf2024_en.csv",
+        "text": "Download",
+        "title": "",
+        "aria_label": "",
+        "rel": [],
+        "context": "Select Item Statistics on Chikungunya fever, 2024 (English) CSV Details Download",
+        "anchor_context": "Select Item Statistics on Chikungunya fever, 2024 (English) CSV Details Download",
+        "heading": "Statistics on Chikungunya fever, 2024 (English)",
+        "heading_context": [
+          "Statistics on Chikungunya fever",
+          "Data Resource s",
+          "Statistics on Chikungunya fever, 2024 (English)"
+        ],
+        "page_topic": "Statistics on Chikungunya fever | DATA.GOV.HK",
+        "scope_version": 2,
+        "representation_declarations": [],
+        "anchor_present": true,
+        "type": "",
+        "download": false,
+        "navigation": false,
+        "source_url": "https://data.gov.hk/en-data/dataset/hk-dh-chpsebcdde-chikungunya-fever-cases",
+        "source_content_hash": "45c6dcb24a4d115c55181455374e4134de2aeeab7d4f7e6b4ebb059e2fbcdcd9",
+        "locator": {
+          "anchor_index": 153,
+          "source_line": 2722,
+          "source_position": 12
+        }
+      },
+      "parent_source_id": "resource_eca45b5f25a124d2"
+    }
+  ]
+}

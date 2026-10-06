@@ -1,0 +1,32 @@
+{
+  "decisions": [
+    {
+      "decision_id": "dengue_decision_non_countable_001",
+      "review_id": "review_dengue_non_countable_001",
+      "decision_type": "mark_non_countable",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "record",
+      "target_ids": ["rec_src_search_2f25694b3ca0_001"],
+      "reason": "Fixture reviewer marks the context-like dengue row non-countable.",
+      "confidence": 0.9,
+      "apply_decision": true
+    },
+    {
+      "decision_id": "dengue_decision_correct_001",
+      "review_id": "review_dengue_correct_001",
+      "decision_type": "correct_fields",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "record",
+      "target_ids": ["rec_src_search_2f25694b3ca0_002"],
+      "reason": "Fixture reviewer confirms dengue case count and adds audit note.",
+      "patch": {
+        "review_status": "corrected",
+        "notes": "Reviewed in Stage 11 dengue fixture smoke."
+      },
+      "confidence": 0.95,
+      "apply_decision": true
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-collection-workflow"
+version = "0.1.0"
+description = "LangGraph-based data collection workflow with configurable disease profiles, source search, validation, review, and export UX."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Data Collection Workflow Project" }]
+dependencies = [
+    "langgraph",
+    "langchain",
+    "langchain-openai",
+    "langchain-anthropic",
+    "pydantic>=2",
+    "python-dotenv",
+    "requests",
+    "beautifulsoup4",
+    "Babel>=2.14",
+    "pypdf",
+    "pypdfium2",
+    "playwright",
+    "pillow",
+    "langgraph-checkpoint-sqlite",
+    "pandas",
+    "pytest",
+    "rich",
+]
+
+[project.optional-dependencies]
+dev = [
+    "langgraph-cli[inmem]",
+]
+visualization = [
+    "streamlit",
+    "plotly",
+    "nbformat",
+    "nbconvert",
+    "ipywidgets",
+    "numpy",
+    "matplotlib",
+    "seaborn",
+    "pillow",
+]
+langflow-demo = [
+    "langflow",
+    "fastapi",
+    "uvicorn",
+]
+langflow-deep-demo = [
+    "langflow",
+    "fastapi",
+    "uvicorn",
+    "langgraph-cli[inmem]",
+    "langsmith",
+]
+
+[project.scripts]
+data-collection-workflow = "data_collection_workflow.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"data_collection_workflow" = ["resources/*.json", "resources/**/*.json", "resources/**/*.csv", "resources/**/*.html"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]

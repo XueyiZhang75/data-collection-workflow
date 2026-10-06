@@ -1,0 +1,65 @@
+{
+  "decisions": [
+    {
+      "decision_id": "stage11_mixed_record_correct",
+      "review_id": "review_stage11_mixed_record_correct",
+      "decision_type": "correct_fields",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "record",
+      "target_ids": ["rec_001"],
+      "reason": "Correct a fixture record field.",
+      "patch": {
+        "cases_unspecified": 101,
+        "notes": "Corrected by Stage 11 mixed fixture."
+      },
+      "confidence": 0.95,
+      "apply_decision": true
+    },
+    {
+      "decision_id": "stage11_mixed_validation_override",
+      "review_id": "review_stage11_mixed_validation_override",
+      "decision_type": "override_validation_status",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "validation_result",
+      "target_ids": ["val_result_001"],
+      "reason": "Override a fixture validation status.",
+      "patch": {
+        "validation_status": "validated"
+      },
+      "confidence": 0.9,
+      "apply_decision": true
+    },
+    {
+      "decision_id": "stage11_mixed_source_override",
+      "review_id": "review_stage11_mixed_source_override",
+      "decision_type": "override_source_role",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "source",
+      "target_ids": ["src_rec_001"],
+      "reason": "Override a fixture source role.",
+      "patch": {
+        "source_role_final": "collection_support"
+      },
+      "confidence": 0.9,
+      "apply_decision": true
+    },
+    {
+      "decision_id": "stage11_mixed_invalid_patch",
+      "review_id": "review_stage11_mixed_invalid_patch",
+      "decision_type": "correct_fields",
+      "reviewer_id": "reviewer_test_public_health_001",
+      "decided_at": "2026-06-01T00:00:00Z",
+      "target_type": "record",
+      "target_ids": ["rec_001"],
+      "reason": "Deliberately invalid patch for rejection audit.",
+      "patch": {
+        "record_id": "rec_forbidden"
+      },
+      "confidence": 0.2,
+      "apply_decision": true
+    }
+  ]
+}

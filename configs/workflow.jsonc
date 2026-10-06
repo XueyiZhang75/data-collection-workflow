@@ -1,0 +1,292 @@
+{
+  // Runtime profile name. Used for display and logs; it does not select workflow behavior.
+  "profile_name": "data_collection",
+  "pipeline_mode": "standard",
+
+  // Profile description. Explains the purpose of this configuration.
+  "description": "Task and runtime settings for source discovery, document acquisition, extraction, validation, review, and export.",
+
+  "workflow": {
+    // LangGraph graph name. The main graph is data_collection_workflow.
+    "graph_name": "data_collection_workflow",
+
+    // Collection mode. standard collects without a predefined validation split.
+    "collection_mode": "standard",
+
+    // Optional seed sources for this task. Supply an overlay for the intended disease and region.
+    "seed_source_overlay_path": null,
+
+    // Optional policy assigning collection, context_only, or validation_reserved source roles.
+    "source_role_policy_overlay_path": null,
+
+    // Use local fixture documents for offline tests. Set false for live document acquisition.
+    "use_fixture_documents": false
+  },
+
+  // Optional supplementary instructions. This text does not define task scope.
+  "user_request": "",
+
+  // Required for execution: disease, location, start_date, and end_date as strings.
+  // An empty template can be previewed, but cannot start a workflow run.
+  // Optional target_fields, source_preferences, and run_label may be added here.
+  "structured_task": {},
+
+  "studio": {
+    // Studio port. null uses the LangGraph default; set a port to use a fixed local URL.
+    "port": null,
+
+    // Disable automatic reload during a run. Set false to reload when editing code.
+    "no_reload": true
+  },
+
+  "live_web": {
+    // Enable live webpage acquisition. Disable for fixture-based runs.
+    "enabled": true,
+
+    // HTTP timeout in seconds. Increase for slower websites.
+    "timeout_seconds": 30
+  },
+
+  "source_search": {
+    // Controlled source discovery search. Default product run uses live Tavily search.
+    "enabled": true,
+
+    // Allowed values: disabled, fixture, live.
+    // disabled = no provider call; fixture = local JSON results; live = real provider metadata search.
+    "mode": "live",
+
+    // Live search provider: tavily.
+    // API keys are read only from environment variables, never from this file.
+    "provider": "tavily",
+
+    // Local fixture path used only when mode = fixture.
+    "fixture_path": "src/data_collection_workflow/resources/search_fixtures/example_search_results.json",
+
+    // Search query and result limits.
+    "max_queries": 8,
+    "max_results_per_query": 8,
+    "max_total_results": 64,
+    "timeout_seconds": 15,
+
+    // true = search candidates are combined with the existing seed catalog.
+    // false = only search-derived candidates are returned when search is enabled.
+    "combine_with_seed_catalog": false,
+
+    // Reserved cache setting; this search adapter does not implement a cache.
+    "cache_enabled": true,
+
+    // Planned query provider_channel values allowed to execute.
+    // manual_user_url is excluded because raw URLs are not search-provider results.
+    "provider_channel_allowlist": [
+      "web_search",
+      "official_site_search",
+      "news_search",
+      "literature_api",
+      "database_search"
+    ],
+
+    "iterative": {
+      "enabled": true,
+      "max_iterations": 3,
+      "max_queries_per_iteration": 4,
+      "max_total_queries": 20,
+      "max_total_results": 120,
+      "require_llm": true,
+      "allow_deterministic_fallback": false,
+      "stop_when_llm_says_sufficient": true,
+      "require_observation_after_each_iteration": true
+    }
+  },
+
+  "content_fetch": {
+    // Search-derived URLs are fetchable by default in real product runs.
+    "fetch_search_derived_sources": true,
+    "max_search_derived_sources": 18,
+    "max_total_sources": 18,
+    "min_credibility_score": 0.55,
+    "allowed_final_roles": [
+      "collection",
+      "validation",
+      "collection_support",
+      "context"
+    ],
+    "allow_needs_review": true,
+    "domain_allowlist": [],
+    "domain_blocklist": [],
+    "max_bytes": 5000000,
+    "parse_pdf_text": true,
+    "parse_tables": true,
+    "store_raw_text": false,
+    "user_agent": "data-collection-workflow/0.1",
+    "content_fixture_map_path": null,
+    "external_fetch": {
+      "enabled": true,
+      "provider_order": [
+        "tavily_extract",
+        "native_requests"
+      ],
+      "tavily_extract": {
+        "format": "markdown",
+        "extract_depth": "advanced",
+        "timeout_seconds": 45,
+        "chunks_per_source": 5
+      },
+      "adaptive_budget": {
+        "max_candidate_urls": 120,
+        "max_fetch_urls": 18,
+        "min_usable_documents": 12,
+        "min_collection_sources": 6,
+        "min_validation_sources": 3,
+        "max_iterations": 3,
+        "stop_when_llm_says_sufficient": true
+      }
+    }
+  },
+
+  "llm": {
+    // Select anthropic or openai here, through LLM_PROVIDER, or with --provider.
+    // Leave blank to read the environment; the fallback provider is anthropic.
+    // Supply your own corresponding API key in the environment or project .env.
+    "provider": "",
+
+    // Set your model ID here, through LLM_MODEL, or with --model. No model is preselected.
+    // A model must be selected before LLM stages can run.
+    "model": "",
+
+    // Use a model to help plan sources and queries; otherwise use deterministic planning.
+    "source_planning_enabled": true,
+
+    // Use a model to assess source risks and review needs; otherwise use policy rules.
+    "source_critic_enabled": true,
+
+    // Extract structured records with a model; otherwise use rule-based extraction.
+    "structured_extraction_enabled": true,
+
+    // Legacy extraction chunk limit. See docs/configuration.md for current scheduler limits.
+    "max_chunks": 30,
+
+    // Maximum output tokens per model call. Larger responses may require a higher limit.
+    "max_tokens": 4096,
+
+    // Allow rule-based extraction after a model failure. Disable to surface the failure.
+    "fallback_to_rule_based": false,
+
+    "source_critic": {
+      // Maximum sources assessed by the model critic; affects coverage, cost, and time.
+      "max_sources": 6,
+
+      // Allow the model critic to block acquisition. When false, deterministic policies control blocking.
+      "review_blocks_fetch": false
+    },
+
+    "source_credibility": {
+      // Optional LLM source credibility advisory. false = deterministic scoring only; true = send source metadata plus deterministic scores to the configured LLM.
+      // The deterministic credibility rubric also runs when model scoring is disabled.
+      "enabled": false,
+
+      // Max sources sent to the optional LLM credibility reviewer. Lower values reduce cost; deterministic scoring still covers every source.
+      "max_sources": 6,
+
+      // Optional source_id allowlist for LLM credibility advisory. Empty list = allow any source up to max_sources; deterministic scoring ignores this limit.
+      "source_id_allowlist": []
+    },
+
+    "source_identity": {
+      // LLM-first source triage / publisher identity / source-role classification.
+      // true = use the configured LLM to classify source role, publisher, credibility basis, and fetch/extraction use.
+      "enabled": true,
+
+      // Max source candidates sent to the source identity LLM before fetch.
+      "max_sources": 30,
+
+      // true = run another identity pass after Tavily Extract/native fetch provides real page text.
+      "post_fetch": true,
+
+      // true = formal product runs must stop if source identity LLM is unavailable.
+      "require_llm": true,
+
+      // false = do not silently fall back to deterministic source identity in formal product runs.
+      "allow_deterministic_fallback": false
+    },
+
+    "must_fetch_min_chunks_per_source": 6,
+    "official_extraction_max_chunks": 30
+  },
+
+  "disease_intelligence": {
+    // LLM-first disease/task understanding. true = call the configured LLM to infer aliases, definitions, exclusions, source strategy, and query terms.
+    "llm_enabled": true,
+
+    // force_llm. true means formal product runs try LLM disease intelligence before curated profiles.
+    "force_llm": true,
+
+    // fallback_to_curated. true = transient LLM failures use curated/generic disease intelligence so downstream collection can continue.
+    "fallback_to_curated": true
+  },
+
+  "validation": {
+    // Default validation mode. live_cross_source uses validation sources found in the same live run.
+    "mode": "live_cross_source",
+    "held_out_records_path": null,
+    "prefer_authoritative_sources": true,
+    "min_independent_validation_sources": 1,
+
+    // Diagnostic override only. true should be used only for explicit compatibility tests.
+    "allow_incompatible_validation_records": false
+  },
+
+  "human_review": {
+    // Human review routing switch. false = do not stop the graph at the human_review node;
+    // review flags are retained as audit metadata, and needs_review sources may still be fetched.
+    "enabled": false,
+
+    // Optional decision file. Used only when human_review.enabled is true.
+    "decisions_path": null,
+    "apply_decisions": false,
+    "require_reviewer_id": true
+  },
+
+  "source_sets": {
+    "source_id_allowlist_enabled": false,
+    // Profile-level source policy, not a post-fetch result.
+    // Optional source allowlist and validation holdout policy for this task.
+    // Discovery, screening, and critique populate the source registry.
+    // The registry records each source role, fetch decision, and critique.
+
+    // Collection sources may be acquired, chunked, and used for structured extraction.
+    "collection_source_ids": [],
+
+    // Context-only sources provide background and are excluded from structured extraction.
+    "context_source_ids": [],
+
+    // Validation-reserved sources are held out of collection for validation comparisons.
+    "validation_reserved_source_ids": [],
+
+    // Source IDs permitted for this run. Keep overlays and policies consistent with this list.
+    "workflow_source_ids": [],
+
+    // Sources visible to the model critic. Must be a subset of the workflow source IDs.
+    "llm_source_critic_source_ids": []
+  },
+
+  "output": {
+    // Output root for artifacts. Sessionized runs use a separate session directory.
+    "run_output_root": "outputs",
+
+    // Create a separate directory for each session; otherwise write directly to the configured output directory.
+    "sessionized": true,
+
+    // Optional fixed session ID. null generates a UTC timestamp; set an ID for a named session.
+    "session_id": null,
+
+    // Build the HTML workflow console after execution. JSON, CSV, and Markdown outputs are written independently.
+    "auto_build_console": true,
+
+    // Stable console root used by standalone console builder/latest alias.
+    "console_output_root": "outputs/workflow_console",
+
+    // Also write latest aliases under outputs/workflow_runs/latest_* and outputs/workflow_console/.
+    // Write convenient aliases for the most recent result while preserving session directories.
+    "write_latest_alias": true
+  }
+}

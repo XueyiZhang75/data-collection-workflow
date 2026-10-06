@@ -1,0 +1,17 @@
+{
+  "source_id": "fixture_who_don_mv_hondius",
+  "chunk_id": "chunk_fixture_who_don_mv_hondius_001",
+  "chunk_index": 1,
+  "chunk_kind": "text",
+  "contains_target_data": true,
+  "source_url": "https://www.who.int/emergencies/disease-outbreak-news/item/fixture-don",
+  "title": "Hantavirus cluster linked to cruise ship travel, Multi-country",
+  "publisher": "World Health Organization",
+  "actual_publisher": "World Health Organization",
+  "source_type": "official_public_health_agency",
+  "source_type_final": "international_public_health_agency",
+  "source_role_final": "collection",
+  "credibility_level": "high",
+  "fetch_purpose": "collection",
+  "text": "Hantavirus cluster linked to cruise ship travel, Multi-country. A total of eight cases, including three deaths, have been reported. Six cases have been laboratory-confirmed as hantavirus infections, with all identified as Andes virus (ANDV). As of 8 May 2026, four patients are currently hospitalised. The cases are linked to cruise ship travel on the MV Hondius. Travel period: 29 December 2025 to 10 May 2026."
+}

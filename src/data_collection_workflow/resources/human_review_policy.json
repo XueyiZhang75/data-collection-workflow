@@ -1,0 +1,65 @@
+{
+  "policy_name": "data_collection_human_review_policy",
+  "policy_version": "0.1",
+  "description": "Deterministic policy for packaging and recording human review items in Data Collection Workflow.",
+  "review_item_types": [
+    "source_screening",
+    "record_schema_validation",
+    "record_normalization",
+    "record_linking",
+    "cross_source_conflict"
+  ],
+  "allowed_decisions": [
+    "accept",
+    "reject",
+    "modify",
+    "needs_more_evidence",
+    "defer",
+    "no_action"
+  ],
+  "review_statuses": [
+    "pending",
+    "reviewed",
+    "requires_follow_up",
+    "deferred",
+    "invalid_decision"
+  ],
+  "priority_by_item_type": {
+    "cross_source_conflict": 1,
+    "record_schema_validation": 2,
+    "record_normalization": 3,
+    "record_linking": 3,
+    "source_screening": 4
+  },
+  "decision_to_status": {
+    "accept": "reviewed",
+    "reject": "reviewed",
+    "modify": "reviewed",
+    "needs_more_evidence": "requires_follow_up",
+    "defer": "deferred",
+    "no_action": "pending"
+  },
+  "packet_sections_by_item_type": {
+    "source_screening": [
+      "source_registry_entry"
+    ],
+    "record_schema_validation": [
+      "raw_record",
+      "validated_record"
+    ],
+    "record_normalization": [
+      "validated_record",
+      "normalized_record"
+    ],
+    "record_linking": [
+      "linked_event",
+      "related_records"
+    ],
+    "cross_source_conflict": [
+      "conflict",
+      "linked_event",
+      "related_records"
+    ]
+  },
+  "synthetic_fixture_warning": "Some review items may originate from synthetic fixture documents. Fixture data are not real public health data."
+}

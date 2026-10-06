@@ -1,0 +1,64 @@
+{
+  "fixture_name": "covid19_new_york_search_results",
+  "fixture_version": "0.1",
+  "description": "Deterministic source-search fixture for COVID-19 / New York / 2024.",
+  "queries": [
+    {
+      "match_terms": [
+        "covid-19",
+        "sars-cov-2",
+        "new york",
+        "2024"
+      ],
+      "provider_channels": [
+        "web_search",
+        "official_site_search",
+        "news_search",
+        "database_search",
+        "literature_api"
+      ],
+      "results": [
+        {
+          "title": "New York COVID-19 surveillance update 2024",
+          "url": "https://health.ny.gov/example/covid-19-surveillance-2024",
+          "snippet": "New York reported COVID-19 cases, deaths, and surveillance indicators in 2024.",
+          "published_date": "2024-06-01",
+          "source": "New York State Department of Health",
+          "rank": 1
+        },
+        {
+          "title": "Duplicate New York COVID-19 surveillance update",
+          "url": "https://health.ny.gov/example/covid-19-surveillance-2024#weekly",
+          "snippet": "Duplicate URL with a fragment should be deduplicated.",
+          "published_date": "2024-06-02",
+          "source": "New York State Department of Health",
+          "rank": 2
+        },
+        {
+          "title": "Unsupported scheme COVID-19 source",
+          "url": "ftp://health.ny.gov/example/covid-19-surveillance-2024",
+          "snippet": "Unsupported URL scheme should be rejected.",
+          "published_date": "2024-06-03",
+          "source": "Fixture Search",
+          "rank": 3
+        },
+        {
+          "title": "Missing URL COVID-19 source",
+          "url": "",
+          "snippet": "Missing URL should be rejected.",
+          "published_date": "2024-06-04",
+          "source": "Fixture Search",
+          "rank": 4
+        },
+        {
+          "title": "",
+          "url": "https://www.cdc.gov/example/covid-data",
+          "snippet": "",
+          "published_date": "2024-06-05",
+          "source": "CDC",
+          "rank": 5
+        }
+      ]
+    }
+  ]
+}

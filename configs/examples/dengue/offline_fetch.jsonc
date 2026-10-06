@@ -1,0 +1,88 @@
+{
+  "profile_name": "dengue_offline_fetch",
+  "description": "Offline deterministic fixture-search plus fixture-content example for dengue / Florida / 2025.",
+  "workflow": {
+    "graph_name": "data_collection_workflow",
+    "collection_mode": "standard",
+    "use_fixture_documents": false
+  },
+  "user_request": "Collect dengue data for Florida in 2025.",
+  "structured_task": {
+    "disease": "dengue",
+    "location": "Florida",
+    "start_date": "2025",
+    "end_date": "2025",
+    "target_fields": [
+      "cases_unspecified",
+      "deaths",
+      "source_url",
+      "source_type",
+      "evidence_quote"
+    ],
+    "source_preferences": [
+      "official_public_health_agency",
+      "international_organization_report"
+    ],
+    "collection_mode": "standard",
+    "user_request": "Collect dengue data for Florida in 2025.",
+    "run_label": "dengue_offline_fetch"
+  },
+  "live_web": {
+    "enabled": false,
+    "timeout_seconds": 30
+  },
+  "source_search": {
+    "enabled": true,
+    "mode": "fixture",
+    "provider": "fixture",
+    "fixture_path": "src/data_collection_workflow/resources/search_fixtures/dengue_florida_search_results.json",
+    "max_queries": 3,
+    "max_results_per_query": 5,
+    "max_total_results": 15,
+    "timeout_seconds": 15,
+    "combine_with_seed_catalog": false,
+    "cache_enabled": true,
+    "provider_channel_allowlist": [
+      "web_search",
+      "official_site_search",
+      "news_search",
+      "literature_api",
+      "database_search"
+    ]
+  },
+  "content_fetch": {
+    "fetch_search_derived_sources": true,
+    "max_search_derived_sources": 1,
+    "max_total_sources": 2,
+    "min_credibility_score": 0.55,
+    "allowed_final_roles": [
+      "collection",
+      "collection_support",
+      "context"
+    ],
+    "allow_needs_review": false,
+    "domain_allowlist": [
+      "floridahealth.gov"
+    ],
+    "domain_blocklist": [],
+    "max_bytes": 1000000,
+    "parse_pdf_text": true,
+    "parse_tables": true,
+    "store_raw_text": false,
+    "user_agent": "data-collection-workflow/0.1",
+    "content_fixture_map_path": "src/data_collection_workflow/resources/content_fixtures/content_map.json"
+  },
+  "llm": {
+    "source_planning_enabled": false,
+    "source_critic_enabled": false,
+    "structured_extraction_enabled": false
+  },
+  "source_sets": {
+    "source_id_allowlist_enabled": false,
+    "workflow_source_ids": []
+  },
+  "output": {
+    "sessionized": true,
+    "session_id": "dengue_offline_fetch"
+  }
+}

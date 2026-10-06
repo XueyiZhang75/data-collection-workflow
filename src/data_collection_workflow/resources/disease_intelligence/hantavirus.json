@@ -1,0 +1,183 @@
+{
+  "disease_input": "hantavirus",
+  "disease_standard_name": "Hantavirus disease",
+  "disease_category": "zoonotic viral disease",
+  "aliases": [
+    "hantavirus",
+    "hantavirus disease",
+    "hantavirus pulmonary syndrome",
+    "HPS",
+    "Andes virus",
+    "ANDV",
+    "orthohantavirus",
+    "hemorrhagic fever with renal syndrome",
+    "HFRS",
+    "肾综合征出血热",
+    "流行性出血热",
+    "汉坦病毒"
+  ],
+  "abbreviations": [
+    "HPS",
+    "HFRS"
+  ],
+  "pathogen_terms": [
+    "Sin Nombre virus",
+    "orthohantavirus",
+    "Andes virus",
+    "ANDV",
+    "Seoul virus",
+    "Hantaan virus",
+    "HFRS",
+    "肾综合征出血热"
+  ],
+  "syndrome_terms": [
+    "hantavirus pulmonary syndrome",
+    "hemorrhagic fever with renal syndrome",
+    "HFRS",
+    "肾综合征出血热",
+    "流行性出血热"
+  ],
+  "clinical_terms": [
+    "pulmonary syndrome",
+    "febrile illness",
+    "renal syndrome"
+  ],
+  "transmission_terms": [
+    "rodent exposure",
+    "zoonotic disease",
+    "deer mouse exposure"
+  ],
+  "case_count_terms": [
+    "cases",
+    "confirmed cases",
+    "human cases"
+  ],
+  "death_terms": [
+    "deaths",
+    "fatal cases"
+  ],
+  "hospitalization_terms": [
+    "hospitalized"
+  ],
+  "surveillance_terms": [
+    "hantavirus surveillance",
+    "zoonotic disease surveillance",
+    "法定传染病",
+    "传染病疫情",
+    "疫情通报",
+    "传染病报告",
+    "疾病监测",
+    "surveillance",
+    "notifiable infectious diseases"
+  ],
+  "outbreak_terms": [
+    "outbreak",
+    "case report",
+    "public health alert",
+    "cruise ship",
+    "vessel-associated outbreak",
+    "multi-country cluster",
+    "travel-associated hantavirus",
+    "Andes virus outbreak"
+  ],
+  "official_source_terms": [
+    "state health department",
+    "CDC hantavirus",
+    "CDC HAN hantavirus",
+    "CDC outbreak notice hantavirus",
+    "WHO Disease Outbreak News hantavirus",
+    "PAHO hantavirus regional update",
+    "ECDC hantavirus surveillance",
+    "public health alert",
+    "上海市卫生健康委员会",
+    "上海市疾病预防控制中心",
+    "中国疾病预防控制中心",
+    "国家卫生健康委员会"
+  ],
+  "likely_reporting_agencies": [
+    "state health department",
+    "CDC",
+    "county health department",
+    "Shanghai Municipal Health Commission",
+    "上海市卫生健康委员会",
+    "Shanghai CDC",
+    "上海市疾病预防控制中心",
+    "China CDC",
+    "中国疾病预防控制中心",
+    "National Health Commission",
+    "国家卫生健康委员会"
+  ],
+  "preferred_source_categories": [
+    "official_public_health_agency",
+    "international_organization_report",
+    "peer_reviewed_literature"
+  ],
+  "validation_source_categories": [
+    "official_public_health_agency",
+    "structured_database"
+  ],
+  "suggested_geographic_granularity": "county_or_state",
+  "suggested_time_granularity": "case_report_date_or_year",
+  "extraction_priority_fields": [
+    "cases_confirmed",
+    "deaths",
+    "date_reported",
+    "subnational_location",
+    "source_url",
+    "evidence_quote"
+  ],
+  "count_semantics_notes": [
+    "Separate individual case reports from annual or cumulative surveillance summaries.",
+    "HPS and HFRS may represent different clinical syndromes."
+  ],
+  "disambiguation_risks": [
+    "Do not mix rodent-only surveillance with human case counts.",
+    "Do not treat prevention-only pages as case data.",
+    "Hantavirus/HFRS in China may be reported in Chinese official notifiable infectious disease tables.",
+    "English web search may return irrelevant global, news, or COVID results.",
+    "Shanghai local official sources should be prioritized over general news or finance pages."
+  ],
+  "exclusion_terms": [
+    "rodent-only surveillance",
+    "animal-only experiment",
+    "prevention page without case data"
+  ],
+  "suggested_query_terms": [
+    "hantavirus",
+    "HPS",
+    "hantavirus pulmonary syndrome",
+    "Andes virus",
+    "ANDV",
+    "orthohantavirus",
+    "hemorrhagic fever with renal syndrome",
+    "HFRS",
+    "肾综合征出血热",
+    "流行性出血热",
+    "汉坦病毒",
+    "Sin Nombre virus",
+    "rodent exposure"
+  ],
+  "suggested_query_templates": [
+    "\"hantavirus\" cases deaths \"{location}\" {time_window}",
+    "\"hantavirus pulmonary syndrome\" \"{location}\" {time_window}",
+    "\"hemorrhagic fever with renal syndrome\" \"{location}\" {time_window}",
+    "肾综合征出血热 \"{location}\" {time_window}",
+    "汉坦病毒 \"{location}\" {time_window}",
+    "\"Sin Nombre virus\" human cases \"{location}\""
+  ],
+  "source_discovery_query_templates": [
+    "\"hantavirus\" \"WHO Disease Outbreak News\" {time_window}",
+    "\"hantavirus\" \"CDC HAN\" {time_window}",
+    "\"hantavirus\" \"PAHO\" regional update {time_window}",
+    "\"hantavirus\" \"ECDC\" surveillance {time_window}",
+    "\"Andes virus\" outbreak {time_window}",
+    "\"ANDV\" hantavirus outbreak {time_window}",
+    "\"orthohantavirus\" surveillance {time_window}",
+    "\"hantavirus\" \"vessel-associated outbreak\" {time_window}",
+    "\"travel-associated hantavirus\" {time_window}",
+    "\"hantavirus\" \"cruise ship\" outbreak {time_window}"
+  ],
+  "confidence": 0.95,
+  "generation_method": "curated_profile",
+  "warnings": []
+}

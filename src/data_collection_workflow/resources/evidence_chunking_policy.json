@@ -1,0 +1,105 @@
+{
+  "policy_name": "data_collection_evidence_chunking_policy",
+  "policy_version": "0.1",
+  "description": "Policy for splitting fetched documents into evidence chunks and flagging likely hantavirus data presence.",
+  "chunkable_quality_statuses": [
+    "usable",
+    "partial"
+  ],
+  "excluded_quality_statuses": [
+    "offline_stub_pending_live_fetch",
+    "parse_deferred",
+    "unusable"
+  ],
+  "max_chunk_chars": 1800,
+  "chunk_overlap_chars": 200,
+  "min_chunk_chars": 80,
+  "table_chunking": {
+    "enabled": true,
+    "max_rows_per_chunk": 20
+  },
+  "target_data_signals": {
+    "case_count": [
+      "case",
+      "cases",
+      "confirmed case",
+      "confirmed cases",
+      "reported case",
+      "reported cases",
+      "human case",
+      "human cases",
+      "patients"
+    ],
+    "death_count": [
+      "death",
+      "deaths",
+      "fatality",
+      "fatalities",
+      "died"
+    ],
+    "outbreak": [
+      "outbreak",
+      "cluster",
+      "epidemic",
+      "reported outbreak"
+    ],
+    "surveillance": [
+      "surveillance",
+      "annual epidemiological report",
+      "reported cases",
+      "case notification",
+      "notification rate"
+    ],
+    "date": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+      "2026",
+      "reported in",
+      "as of"
+    ],
+    "location": [
+      "country",
+      "state",
+      "province",
+      "region",
+      "county",
+      "district",
+      "city"
+    ]
+  },
+  "context_signals": {
+    "disease_definition": [
+      "hantavirus",
+      "hantavirus disease",
+      "hantavirus pulmonary syndrome",
+      "hemorrhagic fever with renal syndrome",
+      "haemorrhagic fever with renal syndrome",
+      "HPS",
+      "HFRS"
+    ],
+    "case_definition": [
+      "case definition",
+      "confirmed",
+      "probable",
+      "suspected",
+      "laboratory-confirmed",
+      "reporting"
+    ],
+    "clinical_or_background": [
+      "symptoms",
+      "clinical",
+      "prevention",
+      "diagnosis",
+      "treatment",
+      "transmission"
+    ]
+  },
+  "presence_thresholds": {
+    "strong_data_signal_count": 3,
+    "moderate_data_signal_count": 2
+  }
+}
