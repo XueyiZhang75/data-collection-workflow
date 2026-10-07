@@ -62,16 +62,20 @@ def html_resource_links(soup, *, source_url, content_hash):
     if base:
         base_url = resolve_href(base.get('href'), base, {'base_index': 0}, source_url) or source_url
     declarations = {}
-    next_pages = []
+    adjacent_links = []
     for declaration_index, node in enumerate(soup.find_all(['meta', 'link'])):
         kind = None
-        if node.name == 'link' and 'next' in {value.lower() for value in node.get('rel') or []}:
+        relations = list(node.get('rel') or [])
+        if node.name == 'link' and {'prev', 'next'} & {value.lower() for value in relations}:
             destination = resolve_href(node.get('href'), node, {'metadata_index': declaration_index}, base_url)
             if destination:
                 heading = soup.find('h1')
-                next_pages.append({
+                title = str(node.get('title') or '')
+                adjacent_links.append({
                     'href': destination, 'raw_href': str(node.get('href') or ''),
-                    'text': 'Next page', 'rel': ['next'], 'navigation': True,
+                    'text': title or ('Next page' if 'next' in {value.lower() for value in relations} else 'Previous page'),
+                    'title': title, 'type': str(node.get('type') or ''),
+                    'rel': relations, 'navigation': True,
                     'heading_context': [heading.get_text(' ', strip=True)] if heading else [],
                     'page_topic': soup.title.get_text(' ', strip=True) if soup.title else '',
                     'scope_version': 2, 'anchor_present': False,
@@ -148,7 +152,7 @@ def html_resource_links(soup, *, source_url, content_hash):
             'locator': {'metadata_index': first['tag_index'], 'source_line': first['source_line'],
                         'source_position': first['source_position']},
         })
-    return result + next_pages
+    return result + adjacent_links
 
 
 _PRODUCT = re.compile(r'\b(?:data(?:set)?s?|dashboards?|download|table|counts?|surveillance|reports?|archives?|historical|history|series|bulletin|rapport|donnees|donn\u00e9es|telecharger|t\u00e9l\u00e9charger|boletin|boletim|informe|datos|relat\u00f3rio)\b', re.I)
@@ -168,19 +172,31 @@ _FORMAT = re.compile(r'\.(csv|tsv|json|xlsx?|pdf)(?:$|[?&])|\b(?:format|type)=(c
 _PAGE_KEYS = {'page', 'paged', 'page_number', 'pagenumber', 'pageindex', 'offset'}
 _PAGE_PATH = re.compile(r'/page/\d+/?$', re.I)
 _REPORT_SERIES = re.compile(r'\b(?:reports?|archives?|surveillance|bulletins?|series)\b', re.I)
+_REPORT_VERSION_PRODUCT = re.compile(
+    r'\b(?:reports?|bulletins?|(?:epidemiological|surveillance|situation)\s+(?:summar(?:y|ies)|updates?))\b', re.I)
+_REPORT_VERSION_ATTRIBUTION = re.compile(
+    r'\b(?:previous|next|preceding|earlier|subsequent)\s+(?:(?:epidemiological|surveillance|situation)\s+)?'
+    r'(?:reports?|summar(?:y|ies)|bulletins?|updates?)\b', re.I)
+
+
+def _preserves_series_filters(parent_url, target_url):
+    """Observed report edges may change paths, never origins or nonpage filters."""
+    parent, target = urlsplit(parent_url), urlsplit(target_url)
+    if (parent.scheme.lower(), parent.netloc.lower()) != (target.scheme.lower(), target.netloc.lower()):
+        return False
+    filters = lambda query: sorted((key, value) for key, value in parse_qsl(query, keep_blank_values=True)
+                                   if key.lower() not in _PAGE_KEYS)
+    return filters(parent.query) == filters(target.query)
 
 
 def _same_report_series(parent_url, next_url):
     """Require a real pagination change while retaining origin and filters."""
     parent, target = urlsplit(parent_url), urlsplit(next_url)
-    if (parent.scheme.lower(), parent.netloc.lower()) != (target.scheme.lower(), target.netloc.lower()):
+    if not _preserves_series_filters(parent_url, next_url):
         return False
     if _PAGE_PATH.sub('', parent.path).rstrip('/') != _PAGE_PATH.sub('', target.path).rstrip('/'):
         return False
     old, new = parse_qsl(parent.query, keep_blank_values=True), parse_qsl(target.query, keep_blank_values=True)
-    filters = lambda values: sorted((key, value) for key, value in values if key.lower() not in _PAGE_KEYS)
-    if filters(old) != filters(new):
-        return False
     paging = [(key, value) for key, value in new if key.lower() in _PAGE_KEYS]
     if any(not re.fullmatch(r'[0-9]+', value) for _, value in paging):
         return False
@@ -231,6 +247,7 @@ def task_resource_candidates(document, entry, state, *, diagnostics=None):
     """Admit scoped products or target articles; page/host identity is not a link claim."""
     from .disease_relevance import build_disease_relevance_context, _find_terms
     from .geography import explicit_country_matches
+    from .source_assertions import _DATE
     task = state.get('structured_task') or state.get('collection_spec') or {}
     disease_context = build_disease_relevance_context(state)
     aliases = [*disease_context['target_disease_identity_terms'], *(task.get('disease_aliases') or [])]
@@ -324,22 +341,55 @@ def task_resource_candidates(document, entry, state, *, diagnostics=None):
             continue
         rel = link.get('rel') or []
         rel = rel.split() if isinstance(rel, str) else rel
+        relations = {value.lower() for value in rel}
         next_link = 'next' in {value.lower() for value in rel} or any(
             re.fullmatch(r'next(?:\s+page)?', label.strip(' \t\r\n»›→>'), re.I)
             for label in explicit_labels)
-        if next_link and not kind:
+        if next_link and not kind and _same_report_series(parent_url, url):
             # Scope comes from this fetched page, never from the search title.
             topic = next((value for value in reversed(headings) if matches(value) or contradicts(value)),
                          str(link.get('page_topic') or ''))
-            if (not matches(topic) or contradicts(topic) or contradicts(own) or contradicts(local)
-                    or not _REPORT_SERIES.search(topic)
-                    or not _same_report_series(parent_url, url)):
+            if (matches(topic) and not contradicts(topic) and not contradicts(own) and not contradicts(local)
+                    and _REPORT_SERIES.search(topic)):
+                selected[url] = {
+                    'url': url, 'score': 10, 'resource_type': 'html', 'is_pagination': True,
+                    'link_text': str(link.get('text') or 'Next page'), 'same_domain': True,
+                    'provenance': dict(link), 'selection_reasons': ['same_report_series_pagination'],
+                }
                 continue
-            selected[url] = {
-                'url': url, 'score': 10, 'resource_type': 'html', 'is_pagination': True,
-                'link_text': str(link.get('text') or 'Next page'), 'same_domain': True,
-                'provenance': dict(link), 'selection_reasons': ['same_report_series_pagination'],
-            }
+        labels = ' '.join(explicit_labels)
+        # A row can also contain author and dataset anchors. The attribution
+        # belongs only to an explicitly named report, date, or access label;
+        # other links retain the ordinary resource-admission path below.
+        reference_label = any(label and (_REPORT_VERSION_PRODUCT.search(label)
+                              or _DEICTIC.fullmatch(label) or _DATE.fullmatch(label))
+                              for label in explicit_labels)
+        attributed_version = bool(reference_label and _REPORT_VERSION_ATTRIBUTION.search(local))
+        version_relation = bool({'prev', 'next'} & relations or attributed_version or any(
+            re.match(r'^(?:prev(?:ious)?|next)\b', label.strip(' \t\r\n«‹←<»›→>'), re.I)
+            for label in explicit_labels))
+        if version_relation:
+            # A direction alone is site navigation. A named report destination
+            # or this anchor's own attribution sentence must bind the edge.
+            # Only fetched headings/body supply inherited task scope.
+            topic = next((value for value in reversed(headings) if matches(value) or contradicts(value)),
+                         str(link.get('page_topic') or ''))
+            report_context = ((matches(topic) and _REPORT_VERSION_PRODUCT.search(topic))
+                              or (matches(local) and _REPORT_VERSION_PRODUCT.search(local))
+                              or (matches(labels) and _REPORT_VERSION_PRODUCT.search(labels)))
+            if (not report_context or not (_REPORT_VERSION_PRODUCT.search(labels) or attributed_version)
+                    or contradicts(own) or contradicts(local) or contradicts(topic)
+                    or _EDITORIAL_FILE.search(labels + ' ' + local + ' ' + topic)
+                    or not _preserves_series_filters(parent_url, url)):
+                continue
+            if not selected.get(url, {}).get('is_pagination'):
+                selected[url] = {
+                    'url': url, 'score': 10, 'resource_type': kind or 'html', 'is_report_version': True,
+                    'link_text': str(link.get('text') or ''), 'same_domain': True,
+                    'provenance': dict(link), 'selection_reasons': ['explicit_report_series_version'],
+                }
+            continue
+        if next_link:
             continue
         # Editorial files are not observations. A relevant related article is
         # still a candidate; its own scope is assessed independently below.
@@ -405,7 +455,8 @@ def task_resource_candidates(document, entry, state, *, diagnostics=None):
                      'provenance': dict(link), 'selection_reasons': [
                          'explicit_resource_format' if kind else 'linked_report_or_archive', reason]}
         previous = selected.get(url)
-        if previous is None or (not previous.get('is_pagination') and candidate['score'] > previous['score']):
+        if previous is None or (not previous.get('is_pagination') and not previous.get('is_report_version')
+                                and candidate['score'] > previous['score']):
             selected[url] = candidate
     return sorted(selected.values(), key=lambda row: -row['score'])
 

@@ -4042,7 +4042,7 @@ def content_fetch_and_parse(state: DataCollectionState) -> dict:
             document.metadata['resource_discovery_issues'] = resource_issues
         for candidate in candidates:
             terminal = candidate["resource_type"] != "html"
-            depth = parent_depth if candidate.get("is_pagination") else parent_depth + 1
+            depth = parent_depth if (candidate.get("is_pagination") or candidate.get("is_report_version")) else parent_depth + 1
             depth_limited = depth > 3 or (depth > 2 and not terminal)
             url = candidate["url"]
             entry = existing_by_url.get(url)
