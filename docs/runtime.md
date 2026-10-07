@@ -27,4 +27,6 @@ The paths above are placeholders. On Windows, use a full executable path such as
 
 Optional settings include `chromium_executable`, `playwright_browsers_path`, and `chromium_mode`. Equivalent acquisition settings can be supplied under `universal.acquisition` in a task configuration. The `.runtime/` directory is ignored by Git.
 
+The local OCR readiness check renders a synthetic scanned page and needs a TrueType font. It tries `arial.ttf` on Windows and `DejaVuSans.ttf` on other systems. If readiness fails with `cannot open resource`, install the corresponding font or add `"preflight_font": "/path/to/your/font.ttf"` to `.runtime/acquisition-paths.json`, using a real font file on your machine.
+
 Browser and OCR tests use local synthetic pages and PDFs. A passing local readiness check does not check remote website access or a provider account's available credit.

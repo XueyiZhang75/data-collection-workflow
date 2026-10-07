@@ -1,10 +1,10 @@
 # Configuration
 
-Use `scripts/collect.py` for interactive task entry, or edit `configs/workflow.jsonc` and run `scripts/run_workflow.py --config <path>`. JSONC permits comments; use valid JSON syntax without trailing commas. Configuration values merge with built-in defaults, so explicitly set optional switches that matter to your task.
+Use `scripts/collect.py` for interactive task entry, or copy `configs/workflow.jsonc` into the Git-ignored `configs/local/` directory, edit the copy, and run `scripts/run_workflow.py --config <path>`. JSONC permits comments; use valid JSON syntax without trailing commas. Configuration values merge with built-in defaults, so explicitly set optional switches that matter to your task.
 
 ## Task and modes
 
-Fill in `structured_task.disease`, `location`, `start_date`, and `end_date`. The target fields and source preferences are configurable. `user_request` can add context to these explicit fields; it does not replace them. Missing task fields stop collection before provider calls. The blank template does not select a case study for you.
+Fill in `structured_task.disease`, `location`, `start_date`, and `end_date`. Also provide a nonempty `structured_task.target_fields` list when using `validate-config`; the README contains a complete task example. Target fields and source preferences are configurable. `user_request` can add context to these explicit fields; it does not replace them. Missing task fields stop collection before provider calls. The blank template does not select a case study for you.
 
 `pipeline_mode` selects execution behavior:
 
@@ -61,7 +61,7 @@ Review the generated configuration, then use `validate-config` and `collect` wit
 
 ## Recovery and review
 
-Resume a session with the same code, resources, task, and configuration. Sessions created by the interactive entry have a saved generated configuration. For configured runs, retain the original configuration file.
+Resume a session with the same code, resources, task, and configuration. Sessions created by the interactive entry have a saved generated configuration. For configured runs, retain the original configuration file. Set `output.session_id` before the first run; `--resume-session` verifies that ID but does not choose the output directory. If the original run used a `--session-id` override instead, repeat the same override together with `--resume-session`.
 
 `--budget-amendment <file>` supplies an amendment with an identifier, reason, and increased cumulative operation limits. `--provider-resume <file>` supplies the provider, stopped-event identifier, and reason after an account limitation is resolved. Resume does not reset past usage or automatically clear provider stops.
 

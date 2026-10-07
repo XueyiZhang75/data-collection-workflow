@@ -1,9 +1,7 @@
-"""Current-session bound data-resource periods must survive queue construction."""
+"""Bound data-resource periods must survive queue construction."""
 import copy
 import inspect
-import json
 import socket
-from pathlib import Path
 import pytest
 from data_collection_workflow.resource_discovery import task_resource_candidates, resource_source_entry
 from data_collection_workflow.acquisition_scheduling import acquisition_priority
@@ -36,16 +34,32 @@ def child(link,state=None):
     return entry
 
 
-@pytest.mark.parametrize('index',range(31))
-def test_actual_annual_statistics_row_period_survives_entry_creation(index):
-    fixture=json.loads(Path(__file__).with_name('actual_resource_period_links.json').read_text('utf-8'))
-    entry=child(fixture['rows'][index]['provenance'],{'structured_task':fixture['task']})
+@pytest.mark.parametrize('year,language,code',[
+    (year,language,code)
+    for year in range(2009,2025)
+    for language,code in [('English','en'),('Traditional Chinese','tc')]
+    if year<2024 or code=='en'
+])
+def test_annual_statistics_row_period_survives_entry_creation(year,language,code):
+    state=task(location='Example Region')
+    heading=f'Statistics on Example fever, {year} ({language})'
+    context=f'Select Item {heading} CSV Details Download'
+    entry=child({
+        'href':f'https://repository.example/files/statistics_{year}_{code}.csv',
+        'heading':heading,
+        'heading_context':['Statistics on Example fever','Data Resources',heading],
+        'context':context,
+        'anchor_context':context,
+        'page_topic':'Statistics on Example fever | Example Data Catalog',
+        'anchor_present':True,
+        'navigation':False,
+    },state)
     assert entry['date_fit']=='mismatch'
     assert entry['target_verification_status']=='temporal_mismatch'
-    assert 'Statistics on Chikungunya fever,' in entry['snippet']
+    assert 'Statistics on Example fever,' in entry['snippet']
     assert entry['source_role_final']!='excluded'
     assert not entry.get('blocked_from_fetch')
-    assert acquisition_priority(entry,state={'structured_task':fixture['task']})<0
+    assert acquisition_priority(entry,state=state)<0
 
 
 @pytest.mark.parametrize('disease,location',[('Measles','Canada'),('Dengue','Brazil'),('Example fever','Example Region')])

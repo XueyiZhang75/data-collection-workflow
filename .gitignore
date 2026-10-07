@@ -6,6 +6,12 @@ venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+test-results/
+playwright-report/
 .mypy_cache/
 .ruff_cache/
 *.egg-info/
@@ -13,6 +19,9 @@ build/
 dist/
 outputs/
 .runtime/
+.universal/
+/sessions/
+configs/local/
 .langgraph_api/
 *.log
 .DS_Store

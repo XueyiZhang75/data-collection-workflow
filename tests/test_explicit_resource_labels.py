@@ -1,8 +1,7 @@
 """Isolated evaluation regressions for explicitly labelled resource icons."""
 import copy
-import json
 import socket
-from pathlib import Path
+from urllib.parse import urlencode
 import pytest
 from data_collection_workflow.resource_discovery import task_resource_candidates
 
@@ -10,7 +9,7 @@ from data_collection_workflow.resource_discovery import task_resource_candidates
 def no_network(monkeypatch):
     monkeypatch.setenv('PIPELINE_MODE', 'evidence')
     def forbidden(*args, **kwargs):
-        raise AssertionError('No network in saved-link regression')
+        raise AssertionError('No network in resource-label regression')
     monkeypatch.setattr(socket.socket, 'connect', forbidden)
 
 
@@ -30,15 +29,34 @@ def select(link, disease='Example fever', location='Example Region'):
     return result
 
 
-@pytest.mark.parametrize('index',[0,1])
-def test_actual_empty_share_icons_cannot_borrow_data_heading(index):
-    fixture=json.loads(Path(__file__).with_name('actual_share_purpose_links.json').read_text('utf-8'))[index]
-    original=copy.deepcopy(fixture['link'])
-    state={'structured_task':fixture['task']}
-    doc={'source_id':'parent','url':fixture['parent'],'content_readable':True,
-         'metadata':{'outbound_links':[fixture['link']]}}
+@pytest.mark.parametrize('version,event',[(2,'epidemic'),(1,'outbreak')])
+def test_empty_share_icons_cannot_borrow_data_heading(version,event):
+    parent=f'https://report.example/article/v{version}'
+    title=f'The 2024-2025 Example fever {event} in Example Region'
+    share_query=urlencode({'mini':'true','url':parent,'title':title,'summary':'','source':'Example Reports'})
+    link={
+        'href':f'https://www.linkedin.com/shareArticle?{share_query}',
+        'text':'',
+        'title':'Publish this post to LinkedIn',
+        'aria_label':'',
+        'heading':'Data Availability',
+        'heading_context':[title,'Data Availability'],
+        'anchor_context':'',
+        'context':'',
+        'anchor_present':True,
+        'download':False,
+        'navigation':False,
+        'rel':['nofollow'],
+        'scope_version':2,
+        'locator':{'anchor_index':7,'source_line':20},
+    }
+    original=copy.deepcopy(link)
+    state={'structured_task':{'disease':'Example fever','location':'Example Region',
+                             'start_date':'2025-01-01','end_date':'2025-12-31'}}
+    doc={'source_id':'parent','url':parent,'content_readable':True,
+         'metadata':{'outbound_links':[link]}}
     assert task_resource_candidates(doc,{},state)==[]
-    assert fixture['link']==original
+    assert link==original
 
 
 @pytest.mark.parametrize('disease,location',[('Measles','Canada'),('Dengue','Brazil'),('Example fever','Example Region')])
