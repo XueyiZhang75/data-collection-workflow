@@ -124,11 +124,12 @@ def test_refinement_cannot_retag_initial_national_history_and_displace_its_month
         monkeypatch, state, retag_initial_national=True)
     _assert_existing_search_contract(calls, state, summary, details)
     # The duplicate changes only the initial national query's family metadata.
-    # The first continuation must retain the four month leads of the control.
-    month_families = Counter(
+    # The bounded official gap probe occupies its existing family slot; the
+    # other families retain month leads despite the forged historical retag.
+    temporal_families = Counter(
         discovery._query_source_class(query) for query in calls[4:8]
-        if "may 2025" in query["query"].lower())
-    assert month_families == Counter({family: 1 for family in EXPECTED_FAMILIES})
+        if "may 2025" in query["query"].lower() or query.get("temporal_probe"))
+    assert temporal_families == Counter({family: 1 for family in EXPECTED_FAMILIES})
 
 
 def test_annual_history_and_download_directions_get_existing_budget_slots(monkeypatch):
@@ -139,7 +140,7 @@ def test_annual_history_and_download_directions_get_existing_budget_slots(monkey
                for query in calls)
     assert any("download" in query["query"].lower() or "spreadsheet" in query["query"].lower()
                for query in calls)
-    assert not any(query.get("time_terms") for query in calls)
+    assert any(query.get("time_terms") for query in calls)
 
 
 def test_selector_keeps_stable_ties_and_existing_eligibility_constraints():

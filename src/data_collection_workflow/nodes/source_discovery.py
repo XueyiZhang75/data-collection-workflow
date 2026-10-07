@@ -852,6 +852,7 @@ def _search_execution_record(
         "result_count": int(result_count or 0),
         "skipped_reason": skipped_reason,
         "error": error,
+        **({"temporal_probe": dict(query["temporal_probe"])} if query.get("temporal_probe") else {}),
     }
 
 
@@ -3958,6 +3959,7 @@ def _normalize_iterative_query(
         "query_source": query_source,
         "iteration_index": iteration_index,
         "iterative_query_id": query_id,
+        **({"temporal_probe": dict(query["temporal_probe"])} if query.get("temporal_probe") else {}),
     }
 
 
@@ -4174,11 +4176,17 @@ def _execute_iterative_query_batch(
             },
         )
         try:
+            from ..session_runtime import get_runtime
+            call_options = {}
+            if query.get("temporal_probe") and get_runtime() is not None:
+                call_options["operation_metadata"] = {
+                    "temporal_probe": dict(query["temporal_probe"]), "query": query["query"],
+                    "provider_channel": query.get("provider_channel") or "web_search"}
             provider_output = external_call('search', {'query': _search_request_identity(query), 'provider': settings.provider, 'max_results': settings.max_results_per_query}, lambda: provider.search(
                 query,
                 max_results=settings.max_results_per_query,
                 timeout_seconds=settings.timeout_seconds,
-            ))
+            ), **call_options)
             response = _response_from_provider_output(
                 provider_output,
                 provider=settings.provider,
@@ -4656,9 +4664,9 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
         end = date.fromisoformat(str(task.get("end_date") or ""))
     except ValueError:
         return queries
-    first_month = start.year * 12 + start.month - 1
-    last_month = end.year * 12 + end.month - 1
-    if end < start or not 0 <= last_month - first_month <= 2:
+    from ..temporal_search_queries import representative_months
+    selected_months = representative_months(start, end)
+    if not selected_months:
         return queries
 
     # English month terms are retrieval leads, not publication-date filters.
@@ -4668,24 +4676,27 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
     expanded = []
     for source_type, channel, intents in families:
         broad = [row for row in queries if row["source_type"] == source_type]
+        temporal = []
         for index, row in enumerate(broad):
-            month = first_month + index
-            if month <= last_month:
-                expanded.append({
+            if index < len(selected_months):
+                month = selected_months[index]
+                temporal.append({
                     **row,
                     "query": (f'"{disease}" "{location}" {months[month % 12]} {month // 12} '
                               f'{intents[0]}'),
                     "query_rationale": "Task-derived month lead; observation dates are not publication limits.",
                     "time_terms": [start.isoformat(), end.isoformat()],
                 })
-            # Interleave month leads with broad queries within each existing
-            # family. The selector and all search budgets remain unchanged.
-            expanded.append(row)
+        # One month opportunity precedes archive/data intents. Remaining month
+        # leads must not displace those existing directions in a short budget.
+        expanded.extend([*temporal[:1], *broad, *temporal[1:]])
     return expanded
 
 
 def _discovery_query_direction(query: dict) -> str:
     """A retrieval intention for scheduling, never a source coverage judgment."""
+    if query.get("temporal_probe"):
+        return "temporal_probe"
     text = str(query.get("query") or "").casefold()
     months = "january february march april may june july august september october november december".split()
     month = re.search(r"\b(" + "|".join(months) + r")\s+([0-9]{4})\b", text)
@@ -4711,6 +4722,9 @@ def _remaining_discovery_queries(
     directions = (attempted_directions or Counter()).copy()
     for item in pool:
         query = dict(item)
+        # Only locally nominated probes may carry this accounting marker;
+        # planner/refinement/catalog metadata cannot spend its allowance.
+        query.pop("temporal_probe", None)
         query.setdefault("provider_channel", "web_search")
         key = _discovery_query_key(query)
         if (key in seen or _is_invalid_query(query)
@@ -4983,6 +4997,16 @@ def _execute_iterative_source_search(
                 stop_reason = "search_disabled" if not settings.search_enabled else "provider_unavailable"
                 break
             query_pool = [*(decision.get("next_query_batch") or []), *query_pool]
+            from ..temporal_search_queries import temporal_search_queries
+            from ..session_runtime import get_runtime
+            runtime = get_runtime()
+            probes = temporal_search_queries(
+                state, candidates=[candidate.model_dump() for candidate in search_candidates],
+                query_records=query_records, channels=settings.provider_channel_allowlist,
+                operation_history=runtime.ledger.operation_audit() if runtime else ())
+            probe = next((query for query in probes
+                          if _discovery_query_key(query) not in attempted_queries
+                          and assess_query_task_fit(query, state)["accepted"]), None)
             available_families = {
                 _query_source_class(query) for query in query_pool
                 if (str(query.get("provider_channel") or "web_search") in settings.provider_channel_allowlist
@@ -4993,13 +5017,23 @@ def _execute_iterative_source_search(
                                     len(available_families)))
             breadth_explored = (totals["selected_query_count"] >= breadth_floor
                                 and available_families <= set(attempted_families))
-            if stagnant_batches >= 2 and breadth_explored:
+            ordinary_stalled = stagnant_batches >= 2 and breadth_explored
+            if ordinary_stalled and probe is None:
                 stop_decision = "stop_no_promising_sources"
                 stop_reason = "no_new_sources_in_consecutive_batches"
                 break
-            next_batch = _remaining_discovery_queries(
-                query_pool, state, settings, attempted_queries, attempted_families,
-                attempted_directions)
+            selection_counts = attempted_families.copy()
+            selection_directions = attempted_directions.copy()
+            selection_attempted = set(attempted_queries)
+            if probe:
+                family = _query_source_class(probe)
+                selection_counts[family] += 1
+                selection_directions[(family, _discovery_query_direction(probe))] += 1
+                selection_attempted.add(_discovery_query_key(probe))
+            next_batch = [*([probe] if probe else []), *_remaining_discovery_queries(
+                query_pool, state, replace(settings, iterative_max_queries_per_iteration=(0 if ordinary_stalled else max(
+                    0, settings.iterative_max_queries_per_iteration - bool(probe)))),
+                selection_attempted, selection_counts, selection_directions)]
             if not next_batch:
                 stop_decision = "stop_no_promising_sources"
                 stop_reason = "no_untried_task_grounded_queries"

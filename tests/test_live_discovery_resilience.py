@@ -130,17 +130,31 @@ def test_short_windows_add_grounded_month_leads_without_removing_broad_queries(
 
 
 @pytest.mark.parametrize('start,end', [
-    ('2025-01-01', '2025-12-31'), ('2025-01-01', '2026-01-01'),
-    ('2025-01-01', '2025-06-30'), ('', '2025-05-31'),
+    ('', '2025-05-31'),
     ('2025-02-30', '2025-03-31'), ('2025-05-31', '2025-05-01'),
 ])
-def test_long_or_invalid_windows_keep_broad_fallbacks_only(start, end):
+def test_invalid_windows_keep_broad_fallbacks_only(start, end):
     mod = importlib.import_module('data_collection_workflow.nodes.source_discovery')
     state = _state()
     state['structured_task'].update(start_date=start, end_date=end)
     queries = mod._discovery_breadth_queries(state)
     assert len(queries) == 12
     assert not any(row.get('time_terms') for row in queries)
+
+
+@pytest.mark.parametrize('start,end', [
+    ('2025-01-01', '2025-12-31'), ('2025-01-01', '2026-01-01'),
+    ('2025-01-01', '2025-06-30'),
+])
+def test_long_windows_offer_bounded_temporal_and_existing_broad_leads(start, end):
+    from data_collection_workflow.query_policy import assess_query_task_fit
+    mod = importlib.import_module('data_collection_workflow.nodes.source_discovery')
+    state = _state()
+    state['structured_task'].update(start_date=start, end_date=end)
+    queries = mod._discovery_breadth_queries(state)
+    assert len([row for row in queries if not row.get('time_terms')]) == 12
+    assert len([row for row in queries if row.get('time_terms')]) == 12
+    assert all(assess_query_task_fit(row, state)['accepted'] for row in queries)
 
 
 @pytest.mark.parametrize('initial', ['valid', 'error'])
@@ -197,7 +211,9 @@ def test_explicit_small_caps_are_hard_limits(monkeypatch, total, iterations,
 
 def test_genuinely_empty_providers_stop_after_bounded_diverse_attempts(monkeypatch):
     calls, (_, _, summary, _) = _run(monkeypatch, empty=True, iterations=20, total=80)
-    assert len(calls) == 8
+    # Two ordinary batches plus only the remaining bounded gap probes.
+    assert len(calls) == 11
+    assert sum(bool(row.get('temporal_probe')) for row in calls) == 4
     assert len({row['query'] for row in calls}) == len(calls)
     assert summary['stop_decision'] == 'stop_no_promising_sources'
     assert summary['stop_reason'] == 'no_new_sources_in_consecutive_batches'
@@ -205,7 +221,9 @@ def test_genuinely_empty_providers_stop_after_bounded_diverse_attempts(monkeypat
 
 def test_duplicate_only_batches_exhaust_novelty(monkeypatch):
     calls, (_, _, summary, _) = _run(monkeypatch, duplicate=True, iterations=20, total=80)
-    assert len(calls) == 12  # One productive batch followed by two without a new URL.
+    # Once ordinary novelty stalls, only the two remaining gap probes execute.
+    assert len(calls) == 14
+    assert sum(bool(row.get('temporal_probe')) for row in calls) == 4
     assert summary['stop_reason'] == 'no_new_sources_in_consecutive_batches'
 
 
