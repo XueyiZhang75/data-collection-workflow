@@ -1,8 +1,7 @@
 """Record linking, cross-source consistency, and quality-gate routing.
 
-Step 9 makes `record_linking` functional. `cross_source_consistency_check`
-remains a placeholder that preserves any existing conflicts list. The
-quality-gate router still ends Step 1's default route to "finalize".
+Links related observations, compares source claims, evaluates compatible
+validation evidence, and routes unresolved findings for human review.
 """
 
 from __future__ import annotations
@@ -1305,11 +1304,6 @@ def record_linking(state: DataCollectionState) -> dict:
         "duplicate_detection_summary": duplicate_detection_summary,
         "collection_trace": trace,
     }
-
-
-# ---------------------------------------------------------------------------
-# Placeholders (untouched by Step 9 beyond preserving incoming state)
-# ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------

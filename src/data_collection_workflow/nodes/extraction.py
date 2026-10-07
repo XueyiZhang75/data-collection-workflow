@@ -1,12 +1,7 @@
 """Structured extraction and schema validation / repair.
 
-Step 7 implemented the deterministic rule-based extractor; Step 14 adds an
-optional LLM-based extractor that runs only when `ENABLE_LLM_EXTRACTION`
-is true. Default behavior remains deterministic and offline-safe.
-
-Important: tests monkeypatch `llm_clients.extract_chunk_with_llm` via the
-module attribute. Therefore this file imports the module — not the function —
-so the patched reference is observed at call time.
+Provides deterministic extraction and optional LLM extraction controlled by
+ENABLE_LLM_EXTRACTION, with task-specific evidence and schema checks.
 """
 
 from __future__ import annotations
@@ -3567,12 +3562,6 @@ def _canonicalize_statistical_count_type(
     if canonical != stripped:
         return canonical, ["canonicalized_statistical_count_type"]
     return canonical, []
-
-
-def _standardize_disease(
-    value: str | None,
-) -> tuple[str, list[str]]:
-    return _standardize_disease_for_context(value, None)
 
 
 def _standardize_disease_for_context(

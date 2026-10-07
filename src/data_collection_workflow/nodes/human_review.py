@@ -1,13 +1,8 @@
-"""Human review packet construction and decision intake (Step 12).
+"""Human review packet construction and explicit decision application.
 
-Builds structured review packets for items already in `human_review_queue`,
-attaches relevant context (source registry entries, records, linked events,
-conflicts), and optionally records pre-supplied human decisions from
-`state["human_review_decisions"]`.
-
-This step does NOT build a UI, does NOT modify records or conflicts, and does
-NOT resolve conflicts. It only structures items, attaches context, and
-records decisions plus audit metadata.
+Builds review packets with source, record, event, and conflict context, records
+supplied decisions, and applies eligible structured decisions to post-review
+views while preserving the original normalized records.
 """
 
 from __future__ import annotations

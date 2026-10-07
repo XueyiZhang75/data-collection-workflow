@@ -1,5 +1,7 @@
 # Data Collection Workflow
 
+[![Figure 1. Public-health data collection approaches and the agentic workflow architecture.](docs/assets/figure-1.png)](docs/assets/figure-1.pdf)
+
 Collect public-health information for a disease, location, and date range. The workflow discovers sources, retrieves documents, extracts structured observations, checks their supporting evidence, and exports data with source references.
 
 The collection process is: **define the task → discover sources → retrieve documents → extract and check evidence → export data and reports**.
@@ -167,12 +169,12 @@ Answer the disease, location, start/end dates, and session-name prompts. Press E
 
 For the named example, open `outputs/sessions/my_first_collection/`. For an automatically named run, use the session path printed in the terminal. Its saved input configuration is under `outputs/generated_configs/`.
 
-Start with `task_result.md` and `result_manifest.json`, then inspect the data files:
+Start with **`task_result.md`** for the task answer, **`final_report.md`** for collection status and limitations, and **`collection/final_dataset.csv`** for the qualified data. Use `result_manifest.json` when you need the detailed machine-readable status.
 
 | Path inside the session | What to read it for |
 | --- | --- |
 | `task_result.md` | Answers supported by the qualified evidence for your task |
-| `final_report.md` | Collection summary, source coverage, and limitations |
+| `final_report.md` | Brief run summary: counts, coverage status, budgets, and limitations |
 | `result_manifest.json` | Data availability, coverage, budget usage, and stopping reason |
 | `collection/final_dataset.csv` | Qualified case and aggregate observations |
 | `collection/final_case_dataset.csv` | Qualified individual-case observations |
@@ -181,7 +183,11 @@ Start with `task_result.md` and `result_manifest.json`, then inspect the data fi
 | `collection/context_records.csv` | Background or contextual observations |
 | `collection/source_processing_status.csv` | Which sources were retrieved, processed, or contributed evidence |
 
-JSON counterparts are also written. A run that stops during setup may not have these final files; use its terminal error and saved session status to diagnose the problem.
+The task report and data tables also have JSON versions. Other files in `collection/` include compatibility views and review exports; they are not separate independent datasets. In evidence mode, `workflow_run_report.md` and `workflow_interpretive_report.md` repeat the run summary.
+
+The task report lists up to 30 qualified observations with source references; use the CSV files for the full data. The workflow does not automatically produce a final PDF report or an epidemic-curve figure. Its HTML console displays collection status, while the optional dashboard exposes execution details.
+
+A run that stops during setup may not have these final files; use its terminal error and saved session status to diagnose the problem.
 
 You can inspect the session and pending review items from the terminal:
 
@@ -194,11 +200,13 @@ An observation row is not necessarily one patient. A completed execution can hav
 
 Generated reports and interface labels use English. Quotations, original source names, and localized search terms retain their source language.
 
-To export the completed package to another local directory:
+To export the collection data, run summary, manifest, and console to another local directory:
 
 ```bash
 data-collection-workflow export --session-dir outputs/sessions/my_first_collection --output-dir outputs/exports/my_first_collection --format both
 ```
+
+The export includes the collection data, a run summary, and its manifest, but does not copy `task_result.md` or `task_result.json`. Copy those task-answer files separately when sharing a complete result package.
 
 ## Step 7. Run a larger task or resume an interrupted session
 

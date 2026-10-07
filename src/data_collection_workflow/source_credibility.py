@@ -207,37 +207,6 @@ def _year_terms(spec: dict) -> list[str]:
     return years
 
 
-def _disease_terms(spec: dict, disease_intelligence: dict) -> list[str]:
-    values: list[str] = []
-    for value in (
-        spec.get("disease"),
-        disease_intelligence.get("disease_standard_name"),
-        disease_intelligence.get("disease_input"),
-    ):
-        if value:
-            values.append(str(value))
-    for key in (
-        "aliases",
-        "abbreviations",
-        "pathogen_terms",
-        "syndrome_terms",
-        "surveillance_terms",
-        "suggested_query_terms",
-        "case_count_terms",
-        "death_terms",
-    ):
-        values.extend(str(item) for item in disease_intelligence.get(key) or [])
-    result: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        cleaned = str(value).strip()
-        key = cleaned.lower()
-        if cleaned and key not in seen:
-            seen.add(key)
-            result.append(cleaned)
-    return result
-
-
 def _authority_score(entry: dict) -> tuple[float, list[str]]:
     text = _text(entry, include_query=False)
     domain = _domain(entry)

@@ -11,7 +11,6 @@ import socket
 import subprocess
 import sys
 from copy import deepcopy
-from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -81,11 +80,6 @@ LLM_KEY_BY_PROVIDER = {
 def _slug(value: str) -> str:
     cleaned = re.sub(r"[^A-Za-z0-9]+", "_", value.strip().lower()).strip("_")
     return cleaned or "workflow_run"
-
-
-def _session_id(disease: str, location: str, start_date: str, end_date: str) -> str:
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_utc")
-    return f"{_slug(disease)}_{_slug(location)}_{_slug(start_date)}_{_slug(end_date)}_{stamp}"
 
 
 def _normalize_session_id(value: str, default: str) -> str:

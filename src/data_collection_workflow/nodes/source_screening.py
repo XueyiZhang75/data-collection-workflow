@@ -1,8 +1,7 @@
-"""Source screening, critic review, and source-level routing (Step 4).
+"""Source screening, critic review, and source-level routing.
 
-Deterministic rule-based implementation. No LLM, no network. Later steps can
-replace the rule-based logic with structured-output LLM agents without
-changing node names or graph topology.
+Applies deterministic source checks and optional LLM source-identity and critic
+assessments, then assigns collection, validation, context, or review routes.
 """
 
 from __future__ import annotations
@@ -1965,16 +1964,6 @@ def _append_note(existing: str | None, note: str) -> str:
     return f"{existing} {note}"
 
 
-def _entry_text_for_credibility(entry: dict) -> str:
-    parts = [
-        str(entry.get("publisher") or ""),
-        str(entry.get("source_type") or ""),
-        str(entry.get("title") or ""),
-        str(entry.get("canonical_url") or entry.get("url") or ""),
-    ]
-    return " ".join(parts).lower()
-
-
 def _apply_validation_reserved_override(
     entry: dict,
     role_policy: dict,
@@ -2289,7 +2278,7 @@ def source_screening(state: DataCollectionState) -> dict:
 
 
 def source_critic_and_uncertainty_routing(state: DataCollectionState) -> dict:
-    """Deterministic source critic + final routing (rule-based, no LLM)."""
+    """Apply source identity, optional LLM critique, and final routing."""
 
     policy = SourceScreeningPolicy(**load_source_screening_policy())
     role_policy = load_source_role_policy()
