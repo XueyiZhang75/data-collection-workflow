@@ -293,6 +293,10 @@ def assess_collection_gaps(state):
             gaps.append(RecoveryGap("frontier_pending", job["source_id"], "persisted acquisition target remains pending"))
     for conflict in state.get('conflicts') or []:
         gaps.append(RecoveryGap('conflict',str(conflict.get('conflict_id')),'requires independent supporting evidence'))
+    temporal = _temporal_recovery_query(state)
+    if temporal:
+        gaps.append(RecoveryGap('report_timeline_gap', temporal['temporal_probe']['probe_id'],
+                                'bounded date-gap retrieval opportunity; not missing observation coverage'))
     return gaps
 
 
@@ -396,12 +400,12 @@ def plan_recovery(gaps,*,state,budget):
            'candidate_fields_missing':('repair_fields',1),'unprocessed_span':('extract',2),
            'extraction_failed':('extract',2),'fetch_failed':('fetch',3),
            'frontier_pending':('fetch',3),'source_assessment_pending':('assess_source',3),'source_missing':('search',4),
-           'conflict':('search',4),'acquisition_incomplete':('fetch',3)}
+           'conflict':('search',4),'report_timeline_gap':('search',4),'acquisition_incomplete':('fetch',3)}
     history=state.get('recovery_action_history') or []
     actions=[]; budget_blocked=False; budget_deferred_gaps=[]
     jobs=_frontier_jobs()
     for gap in sorted(gaps,key=lambda g:(0 if g.kind=='acquisition_incomplete' and g.budget_kind=='ocr' else kinds.get(g.kind,('',9))[1],
-                                      0 if g.kind=='extraction_failed' else 1,g.target_id)):
+                                      0 if g.kind in {'extraction_failed','report_timeline_gap'} else 1,g.target_id)):
         if gap.kind not in kinds:
             continue
         kind=kinds[gap.kind][0]; target=gap.target_id; strategy='native'; query=None
@@ -445,6 +449,8 @@ def plan_recovery(gaps,*,state,budget):
                 continue
             strategy='source_identity_v1'; source_version=_pending_source_version(source,state)
         elif kind=='search':
+            if gap.kind=='report_timeline_gap' and any((a.query or {}).get('temporal_probe') for a in actions):
+                continue
             blockers=_new_source_search_blockers(remaining) if _adaptive(budget) else []
             if blockers:
                 budget_blocked=True
@@ -508,7 +514,9 @@ def plan_recovery(gaps,*,state,budget):
         actions.append(RecoveryAction(kind,target,action_id,'supported fields or independent evidence',
             document_hash=gap.document_hash if kind=='reparse' else None,strategy=strategy,
             query=query,search_direction=query.get('search_direction') if query else None,
-            search_scope=_search_scope(state) if query else None,budget_revision=revision,source_version=source_version))
+            search_scope=(fingerprint([_search_scope(state),query['temporal_probe']['probe_id']])
+                          if query and query.get('temporal_probe') else _search_scope(state) if query else None),
+            budget_revision=revision,source_version=source_version))
     if len(actions)>8:
         representatives={}
         for action in actions:
@@ -703,6 +711,8 @@ def recovery_control(state):
     if requirements is None:
         requirements=(state.get('source_coverage_audit') or {}).get('requirements') or []
     coverage=qualified_coverage(requirements,state.get('qualified_records') or [])
+    from .report_timeline import build_report_timeline_inventory
+    coverage['reporting_timeline']=build_report_timeline_inventory(state)
     state={**state,'source_coverage_audit':coverage}
     round_number=int(state.get('recovery_round') or 0)
     runtime=get_runtime()
@@ -718,19 +728,36 @@ def recovery_control(state):
         gaps.append(RecoveryGap('source_missing','corroboration','continue independent source discovery'))
     plan=plan_recovery(gaps,state=state,budget=runtime.ledger if runtime else {'remaining':{}})
     work=[action for action in plan.actions if action.kind!='search']
+    novel_temporal=any((action.query or {}).get('temporal_probe') for action in plan.actions)
     if adaptive:
-        if not work and plan.stop_reason not in {'budget_exhausted','provider_account_limit'} and _search_stalled(state) and not (runtime and runtime.budget_continuation and any(job['status']=='pending' for job in _frontier_jobs())):
+        if not work and not novel_temporal and plan.stop_reason not in {'budget_exhausted','provider_account_limit'} and _search_stalled(state) and not (runtime and runtime.budget_continuation and any(job['status']=='pending' for job in _frontier_jobs())):
             plan=RecoveryPlan(stop_reason='no_progress')
     elif plan.stop_reason!='provider_account_limit':
         maximum=min(2,int(limits.get('recovery_rounds',2)))
         if round_number>=maximum:
             plan=RecoveryPlan(stop_reason='round_limit')
-        elif round_number and not work and not (set(gain)-set(state.get('recovery_previous_gain') or [])):
+        elif round_number and not work and not novel_temporal and not (set(gain)-set(state.get('recovery_previous_gain') or [])):
             plan=RecoveryPlan(stop_reason='no_progress')
     return {**groups,'source_coverage_audit':coverage,'recovery_gaps':[asdict(g) for g in gaps], 'recovery_plan':asdict(plan), 'recovery_previous_gain':gain,'recovery_search_streak_start':streak_start,'recovery_stop_reason':plan.stop_reason,'run_budget_ledger':runtime.ledger.snapshot() if runtime else {}}
 
 
+def _temporal_recovery_query(state):
+    from .nodes.source_discovery import _source_search_settings_from_env
+    from .query_policy import assess_query_task_fit
+    from .temporal_search_queries import temporal_search_queries
+    settings = _source_search_settings_from_env()
+    if not settings.search_enabled:
+        return None
+    runtime = get_runtime()
+    return next((query for query in temporal_search_queries(state, channels=settings.provider_channel_allowlist,
+                 operation_history=runtime.ledger.operation_audit() if runtime else ())
+                 if assess_query_task_fit(query,state)['accepted']), None)
+
+
 def _recovery_query(state,target_id):
+    if str(target_id).startswith('temporal_'):
+        query = _temporal_recovery_query(state)
+        return query if query and query['temporal_probe']['probe_id']==target_id else None
     from .query_policy import generic_retry_specs, _retry_domain
     task=dict(state.get('structured_task') or {})
     requirement=next((r for r in (state.get('source_coverage_audit') or {}).get('requirements') or [] if str(r.get('requirement_id'))==target_id),{})
@@ -754,6 +781,8 @@ def _recovery_query(state,target_id):
             specs.append({'query':f'"{disease}" "{location}" research study outbreak cases {period}',
                           'source_type':'academic_or_peer_reviewed_source','provider_channel':'web_search',
                           'role_hint':'collection_support','official_domain_hint':None})
+    from .temporal_search_queries import attempted_query_keys, query_key
+    used_keys=attempted_query_keys(state,retry_failed=True)
     used=set(); failures={}
     for row in state.get('recovery_action_history') or []:
         if row.get('kind')!='search':
@@ -765,7 +794,7 @@ def _recovery_query(state,target_id):
             failures[query]=failures.get(query,0)+1
     used.update(query for query,attempts in failures.items() if attempts>=2)
     for spec in specs:
-        if spec['query'] in used:
+        if spec['query'] in used or query_key(spec) in used_keys:
             continue
         text=spec['query']
         direction=('research' if 'study' in text else 'dataset' if 'data table' in text else
@@ -1040,10 +1069,15 @@ def execute_recovery(plan,*,context,artifacts,budget):
                             query.update(query_id='recovery_'+action.action_id[:12],execution_status='planned_not_executed')
                             settings=discovery._source_search_settings_from_env()
                             totals={'selected_query_count':0,'executed_query_count':0,'raw_result_count':0,'deduped_result_count':0,'provider_error_count':0}
-                            found,*_=discovery._execute_iterative_query_batch(query_batch=[query],provider=discovery._provider_for_settings(settings),settings=settings,seen_canonical_urls={_url(s.get('canonical_url') or s.get('url')) for s in working.get('source_registry') or []},totals=totals,task=working.get('structured_task') or {},evidence_state=working,max_queries_override=1)
+                            found,_,query_records,*_=discovery._execute_iterative_query_batch(query_batch=[query],provider=discovery._provider_for_settings(settings),settings=settings,seen_canonical_urls={_url(s.get('canonical_url') or s.get('url')) for s in working.get('source_registry') or []},totals=totals,task=working.get('structured_task') or {},evidence_state=working,max_queries_override=1)
                             search_details={'query':query['query'],'search_direction':query.get('search_direction'),
+                                            'provider_channel':query.get('provider_channel'),
+                                            'search_dispatched':any(row.get('selected_for_execution') and row.get('error')!='provider_unavailable' for row in query_records),
+                                            **({'temporal_probe':query['temporal_probe']} if query.get('temporal_probe') else {}),
                                             'new_independent_source_ids':[],'search_executed':totals['executed_query_count']>0}
-                            if not totals['executed_query_count']:
+                            if totals.get('search_budget_exhausted') or totals.get('search_result_budget_exhausted'):
+                                status='budget_exhausted'; error='shared_search_budget_exhausted'
+                            elif not totals['executed_query_count']:
                                 status='skipped'; error='search_not_executed'
                             elif totals['provider_error_count']:
                                 status='failed'; error='search_provider_failed'

@@ -50,7 +50,7 @@ def _source(url, number=1):
                 credibility_score=0.88, credibility_level='high', requires_human_review=False)
 
 
-def _node(monkeypatch, tmp_path, pages, *, sources=None, budget=8, limit=8, total_limit=None, direct=False):
+def _node(monkeypatch, tmp_path, pages, *, sources=None, budget=8, limit=8, total_limit=None, direct=False, adaptive=False):
     from data_collection_workflow.nodes.content_processing import content_fetch_and_parse
     import requests
     _env(monkeypatch, limit)
@@ -86,6 +86,9 @@ def _node(monkeypatch, tmp_path, pages, *, sources=None, budget=8, limit=8, tota
         'pipeline_mode': 'evidence',
         'universal': {'budget_limits': {'fetch_ordinary': budget, 'fetch': budget}},
     })
+    if adaptive:
+        from test_acquisition_transport import _adaptive_runtime
+        runtime = _adaptive_runtime(tmp_path / 'adaptive_session', targets=budget, requests=budget)
     with runtime.activate():
         result = content_fetch_and_parse(state)
     return result, visits, runtime.ledger.snapshot()
@@ -164,9 +167,183 @@ def test_resource_depth_limit_stops_at_second_linked_html_page(monkeypatch, tmp_
         'https://example.invalid/archive/2025': ('text/html', b'<h1>Example fever report archive 2025</h1><a href="/reports/table">Annual report table</a>'),
         'https://example.invalid/reports/table': ('text/html', b'<h1>Example fever report 2025</h1><a href="/third-report">Report archive</a>'),
     }
-    result, visits, _ = _node(monkeypatch, tmp_path, pages)
+    result, visits, budget = _node(monkeypatch, tmp_path, pages)
     assert visits == list(pages)
-    assert not any(source['url'].endswith('/third-report') for source in result['source_registry'])
+    child = next(source for source in result['source_registry'] if source['url'].endswith('/third-report'))
+    assert child['resource_link_depth'] == 3
+    assert child['blocked_from_fetch'] is True
+    assert child['blocked_from_fetch_reason'] == 'resource_depth_limit'
+    assert child['ready_for_content_fetch'] is False
+    assert child['processing_status'] == 'deferred'
+    assert child['processing_reason'] == 'resource_depth_limit'
+    assert child['acquisition_status'] == 'not_started'
+    assert child['resource_link_provenance']['source_url'] == 'https://example.invalid/reports/table'
+    assert child['resource_link_provenance']['source_content_hash']
+    assert budget['used'] == {'fetch': 3, 'fetch_ordinary': 3}
+    manifest = next(row for row in result['fetch_manifest'] if row['source_id'] == child['source_id'])
+    assert manifest['selected_for_fetch'] is False
+    assert manifest['skip_reason'] == 'resource_depth_limit'
+    summary = result['content_fetch_summary']
+    assert summary['resource_link_selected_count'] == 2
+    assert summary['resource_link_deferred_count'] == 1
+    deferred = next(row for row in summary['resource_link_discovery'] if row['child_source_id'] == child['source_id'])
+    assert deferred['selected_for_fetch'] is False
+    assert deferred['deferred_reason'] == 'resource_depth_limit'
+
+
+@pytest.mark.parametrize('limit', [0, 1, 2])
+def test_deferred_resource_metadata_obeys_existing_positive_expansion_cap(monkeypatch, tmp_path, limit):
+    parent = _source('https://example.invalid/archive')
+    parent['resource_link_depth'] = 3
+    pages = {parent['url']: ('text/html', b'<h1>Example fever surveillance Canada 2025</h1>'
+             b'<a href="/report-a">Report A</a><a href="/report-b">Report B</a>'
+             b'<a href="/report-c">Report C</a>')}
+    result, visits, budget = _node(monkeypatch, tmp_path, pages, sources=[parent], limit=limit)
+    assert visits == [parent['url']]
+    children = [row for row in result['source_registry'] if row.get('parent_source_id')]
+    assert len(children) == limit
+    assert all(row['resource_link_depth'] == 4 and row['blocked_from_fetch']
+               and row['acquisition_status'] == 'not_started' for row in children)
+    assert budget['used'] == {'fetch': 1, 'fetch_ordinary': 1}
+    summary = result['content_fetch_summary']
+    assert summary['resource_link_selected_count'] == 0
+    assert summary['resource_link_deferred_count'] == limit
+
+
+@pytest.mark.parametrize('limit,expected_pages', [(2, 3), (8, 5)])
+def test_same_series_pagination_keeps_depth_and_existing_limits(monkeypatch, tmp_path, limit, expected_pages):
+    urls = [f'https://example.invalid/reports?page={page}' for page in range(1, 6)]
+    pages = {url: ('text/html', ('<h1>Example fever surveillance Canada 2025</h1>'
+             f'<a rel="next" href="{urls[(index + 1) % len(urls)]}">Next report</a>').encode())
+             for index, url in enumerate(urls)}
+    parent = _source(urls[0])
+    parent['resource_link_depth'] = 2
+    result, visits, budget = _node(monkeypatch, tmp_path, pages, sources=[parent], limit=limit)
+    assert visits == urls[:expected_pages]
+    assert len(result['source_registry']) == expected_pages
+    assert all(row['resource_link_depth'] == 2 for row in result['source_registry'])
+    assert budget['used'] == {'fetch': expected_pages, 'fetch_ordinary': expected_pages}
+    summary = result['content_fetch_summary']
+    assert summary['resource_link_selected_count'] == expected_pages - 1
+    assert summary['resource_link_deferred_count'] == 0
+
+
+def test_depth_limited_link_keeps_existing_source_exclusion(monkeypatch, tmp_path):
+    parent = _source('https://example.invalid/index')
+    parent['resource_link_depth'] = 2
+    excluded = _source('https://example.invalid/report', 2)
+    excluded.update(source_role_final='excluded', final_screening_decision='exclude',
+                    blocked_from_fetch=True, blocked_from_fetch_reason='explicit_exclusion',
+                    ready_for_content_fetch=False)
+    pages = {parent['url']: ('text/html', b'<h1>Example fever surveillance Canada 2025</h1>'
+             b'<a href="/report">Annual report</a>')}
+    result, visits, _ = _node(monkeypatch, tmp_path, pages, sources=[parent, excluded])
+    assert visits == [parent['url']]
+    retained = next(row for row in result['source_registry'] if row['source_id'] == excluded['source_id'])
+    assert retained['blocked_from_fetch'] is True
+    assert retained['blocked_from_fetch_reason'] == 'explicit_exclusion'
+    assert retained['ready_for_content_fetch'] is False
+    assert len(result['source_registry']) == 2
+
+
+@pytest.mark.parametrize('metadata_cap', [0, 1, 2])
+def test_adaptive_deferred_metadata_uses_existing_total_limit_across_parents(monkeypatch, tmp_path, metadata_cap):
+    parents = [_source(f'https://example.invalid/index-{number}', number) for number in (1, 2)]
+    for parent in parents:
+        parent['resource_link_depth'] = 3
+    pages = {parent['url']: ('text/html', ('<h1>Example fever surveillance Canada 2025</h1>'
+             + ''.join(f'<a href="/report-{number}-{suffix}">Report {suffix}</a>' for suffix in 'abc')).encode())
+             for number, parent in enumerate(parents, 1)}
+    result, visits, budget = _node(monkeypatch, tmp_path, pages, sources=parents,
+                                  total_limit=metadata_cap, adaptive=True)
+    assert visits == [parent['url'] for parent in parents]
+    children = [row for row in result['source_registry'] if row.get('parent_source_id')]
+    assert len(children) == metadata_cap
+    assert all(row['blocked_from_fetch'] and row['acquisition_status'] == 'not_started' for row in children)
+    summary = result['content_fetch_summary']
+    assert summary['resource_link_limit'] is None
+    assert summary['resource_link_deferred_limit'] == metadata_cap
+    assert summary['resource_link_deferred_limit_reached'] is True
+    assert summary['resource_link_selected_count'] == 0
+    assert summary['resource_link_deferred_count'] == metadata_cap
+    assert budget['used']['source_targets'] == budget['used']['http_requests'] == 2
+
+
+def test_adaptive_deferred_cap_does_not_limit_ordinary_resource_queue(monkeypatch, tmp_path):
+    root = 'https://example.invalid/index'
+    pages = {root: ('text/html', b'<h1>Example fever surveillance Canada 2025</h1>'
+             b'<a href="/a.csv">Download case counts CSV</a>'
+             b'<a href="/b.csv">Download case counts CSV</a>'
+             b'<a href="/c.csv">Download case counts CSV</a>')}
+    for suffix in 'abc':
+        pages[f'https://example.invalid/{suffix}.csv'] = ('text/csv', b'year,cases\n2025,12\n')
+    result, visits, budget = _node(monkeypatch, tmp_path, pages, total_limit=1, adaptive=True)
+    assert visits == list(pages)
+    assert result['content_fetch_summary']['resource_link_selected_count'] == 3
+    assert result['content_fetch_summary']['resource_link_deferred_count'] == 0
+    assert budget['used']['source_targets'] == budget['used']['http_requests'] == 4
+
+
+@pytest.mark.parametrize('limit', [1, 8])
+@pytest.mark.parametrize('adaptive', [False, True])
+def test_shallower_link_promotes_depth_deferred_child_once_with_both_provenances(monkeypatch, tmp_path, limit, adaptive):
+    deep = _source('https://example.invalid/deep-index', 1)
+    deep['resource_link_depth'] = 2
+    shallow = _source('https://example.invalid/shallow-index', 2)
+    report = 'https://example.invalid/report'
+    index = b'<h1>Example fever Canada 2025 surveillance</h1><a href="/report">Annual report</a>'
+    pages = {deep['url']: ('text/html', index), shallow['url']: ('text/html', index),
+             report: ('text/plain', b'Example fever in Canada in 2025: 12 reported cases.')}
+    result, visits, budget = _node(monkeypatch, tmp_path, pages, sources=[deep, shallow],
+                                  limit=limit, adaptive=adaptive)
+    assert visits == [deep['url'], shallow['url'], report]
+    children = [row for row in result['source_registry'] if row.get('url') == report]
+    assert len(children) == 1
+    child = children[0]
+    assert child['resource_link_depth'] == 1
+    assert child['parent_source_id'] == shallow['source_id']
+    assert child['blocked_from_fetch'] is False
+    assert child.get('acquisition_status') != 'not_started'
+    history = child['resource_link_provenance_history']
+    assert [row['parent_source_id'] for row in history] == [deep['source_id'], shallow['source_id']]
+    assert [row['resource_link_depth'] for row in history] == [3, 1]
+    assert [row['link_provenance']['source_url'] for row in history] == [deep['url'], shallow['url']]
+    assert all(row['link_provenance']['source_content_hash'] for row in history)
+    summary = result['content_fetch_summary']
+    assert summary['resource_link_selected_count'] == 1
+    assert summary['resource_link_deferred_count'] == 0
+    assert len(summary['resource_link_discovery']) == 1
+    manifest = [row for row in result['fetch_manifest'] if row['source_id'] == child['source_id']]
+    assert len(manifest) == 1 and manifest[0]['selected_for_fetch'] is True
+    assert manifest[0]['skip_reason'] is None
+    if adaptive:
+        assert budget['used']['source_targets'] == budget['used']['http_requests'] == 3
+    else:
+        assert budget['used'] == {'fetch': 3, 'fetch_ordinary': 3}
+
+
+@pytest.mark.parametrize('exclusion', [
+    {'blocked_from_fetch_reason': 'explicit_exclusion'},
+    {'source_excluded_by_human_review': True},
+    {'source_role_final': 'excluded', 'final_screening_decision': 'exclude'},
+    {'requires_human_review': True},
+])
+def test_shallow_link_does_not_promote_depth_candidate_with_independent_exclusion(monkeypatch, tmp_path, exclusion):
+    parent = _source('https://example.invalid/shallow-index')
+    excluded = _source('https://example.invalid/report', 2)
+    excluded.update(discovery_method='task_resource_link', resource_link_depth=3,
+                    blocked_from_fetch=True, blocked_from_fetch_reason='resource_depth_limit',
+                    ready_for_content_fetch=False, processing_status='deferred',
+                    processing_reason='resource_depth_limit', acquisition_status='not_started')
+    excluded.update(exclusion)
+    pages = {parent['url']: ('text/html', b'<h1>Example fever Canada 2025 surveillance</h1>'
+             b'<a href="/report">Annual report</a>')}
+    result, visits, _ = _node(monkeypatch, tmp_path, pages, sources=[parent, excluded])
+    assert visits == [parent['url']]
+    retained = next(row for row in result['source_registry'] if row['source_id'] == excluded['source_id'])
+    assert retained['blocked_from_fetch'] is True
+    assert retained['resource_link_depth'] == 3
+    assert len(result['source_registry']) == 2
 
 
 def test_explicit_download_on_task_section_can_follow_unverified_data_host(monkeypatch, tmp_path):

@@ -6,6 +6,12 @@ The collection process is: **define the task → discover sources → retrieve d
 
 This repository contains the application, configuration templates, documentation, optional interfaces, and software tests. Sessions, downloaded documents, logs, generated reports, and research results are created locally when you run it. They belong under `outputs/`, which Git ignores. Files in `tests/` are test code and fixed test inputs, not saved test-run reports or completed collection sessions.
 
+## Source discovery in evidence mode
+
+For a task spanning a date range, the workflow uses representative months and bounded date-gap queries, balances search opportunities across official reports, databases, literature, and media, and follows explicitly linked report pages and previous/next versions. A separate report-date timeline helps identify further retrieval opportunities without treating gaps as missing reports or zero cases.
+
+Live evidence discovery also looks up historical page-version metadata in the Internet Archive CDX index within the shared budget. These index records are discovery candidates, not downloaded historical page bodies or qualified observations. Set `universal.historical_discovery.enabled` to `false` in a task configuration to disable those lookups. See [Configuration](docs/configuration.md#historical-source-versions) for limits and provenance rules.
+
 ## Step 1. Download the project and install Python dependencies
 
 Install **Git** and **Python 3.11 or newer** first. On Windows, use a short ASCII checkout path such as `C:/Projects/data-collection-workflow`; some packaging and OCR tools have trouble with long or non-ASCII paths.

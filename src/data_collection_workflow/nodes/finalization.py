@@ -4113,6 +4113,8 @@ def final_data_package_builder(state: DataCollectionState) -> dict:
     qualified_state["normalized_records"] = result["qualified_records"]
     package_result = _build_final_data_package(qualified_state)
     coverage = qualified_coverage(state.get("source_coverage_requirements") or [], result["qualified_records"])
+    from ..report_timeline import build_report_timeline_inventory
+    coverage["reporting_timeline"] = build_report_timeline_inventory(qualified_state)
     additions = {**result, "pipeline_mode":"evidence",
                  "source_coverage_audit":coverage,
                  "final_case_dataset":result["qualified_case_records"],

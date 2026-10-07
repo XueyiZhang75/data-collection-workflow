@@ -620,6 +620,9 @@ class SourceIdentitySummary(BaseModel):
 
 
 class SourceCandidate(BaseModel):
+    historical_snapshot: dict = Field(default_factory=dict)
+    blocked_from_fetch: bool = False
+    blocked_from_fetch_reason: str | None = None
     source_id: str
     title: str | None = None
     url: str
@@ -683,6 +686,7 @@ class SourceCandidate(BaseModel):
 
 
 class SourceRegistryEntry(BaseModel):
+    historical_snapshot: dict = Field(default_factory=dict)
     recovery_discovery: dict = Field(default_factory=dict)
     processing_status: str | None = None
     processing_reason: str | None = None

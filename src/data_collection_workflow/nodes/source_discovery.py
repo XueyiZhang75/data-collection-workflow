@@ -15,6 +15,7 @@ import re
 from urllib.parse import urlsplit, urlunsplit
 
 from ..session_runtime import external_call, BudgetExceeded
+from ..historical_source_discovery import discover_historical_versions
 
 
 def _search_request_identity(query):
@@ -86,6 +87,7 @@ _HIGH_TRUST_SOURCE_CLASSES = {
     "structured_database",
     "peer_reviewed_literature",
 }
+_EXPLORATION_SOURCE_CLASSES = _HIGH_TRUST_SOURCE_CLASSES | {"news_or_supporting_media"}
 _OFFICIAL_QUERY_SOURCE_TYPES = {
     "official_public_health_agency",
     "government_report",
@@ -257,6 +259,9 @@ class SourceSearchSettings:
     authority_gap_official_page_family_retry_max_queries: int = 3
     authority_gap_retry_result_budget: int = 32
     authority_gap_retry_max_iterations: int = 1
+    # Internal allocation survives repeated adaptive settings resolution.
+    _reserved_search_queries: int = field(default=0, repr=False)
+    _reserved_search_results: int = field(default=0, repr=False)
 
     @property
     def fixture_search_enabled(self) -> bool:
@@ -287,8 +292,8 @@ def _effective_discovery_settings(settings: SourceSearchSettings) -> SourceSearc
     if not is_adaptive_budget(runtime.config):
         return settings
     limits = runtime.ledger.limits
-    queries = max(0, int(limits.get("search", settings.iterative_max_total_queries)))
-    results = max(0, int(limits.get("search_results", settings.iterative_max_total_results)))
+    queries = max(0, int(limits.get("search", settings.iterative_max_total_queries)) - settings._reserved_search_queries)
+    results = max(0, int(limits.get("search_results", settings.iterative_max_total_results)) - settings._reserved_search_results)
     return replace(settings, max_queries=queries, max_total_results=results,
                    iterative_max_total_queries=queries, iterative_max_total_results=results,
                    iterative_max_iterations=queries)
@@ -320,6 +325,10 @@ def canonicalize_url(url: str) -> str:
     scheme = parts.scheme.lower()
     netloc = parts.netloc.lower()
     path = parts.path or ""
+    # A replay path embeds an original URL. Its slashes and trailing slash
+    # belong to that original resource and must not be normalized away.
+    if netloc == "web.archive.org" and re.match(r"^/web/\d{14}/https?://", path, re.I):
+        return urlunsplit((scheme, netloc, path, parts.query, ""))
     if scheme in {"http", "https"}:
         path = re.sub(r"/{2,}", "/", path)
     if path.endswith("/") and len(path) > 1:
@@ -745,6 +754,10 @@ def _select_source_search_queries(
                 prefer_known_domain=True,
             )
 
+        if universal_queries_enabled():
+            add_from_bucket("news_or_supporting_media", 1,
+                            "source_class_floor:news_or_supporting_media")
+
         targets = {
             "international_official": 4,
             "national_or_local_official": 3,
@@ -769,7 +782,8 @@ def _select_source_search_queries(
                 },
             )
 
-        news_selected = 0
+        news_selected = sum(item.get("selection_bucket") == "news_or_supporting_media"
+                            for item in selected.values())
         for _, _, key, bucket in eligible:
             if len(selected) >= max_queries:
                 break
@@ -844,6 +858,7 @@ def _search_execution_record(
         "result_count": int(result_count or 0),
         "skipped_reason": skipped_reason,
         "error": error,
+        **({"temporal_probe": dict(query["temporal_probe"])} if query.get("temporal_probe") else {}),
     }
 
 
@@ -2621,6 +2636,10 @@ def _execute_one_shot_source_search(
     settings: SourceSearchSettings,
 ) -> tuple[list[SourceCandidate], list[dict], dict]:
     planned_queries = _planned_queries(state)
+    if universal_queries_enabled():
+        existing = {_discovery_query_key(query) for query in planned_queries}
+        planned_queries.extend(query for query in _media_discovery_queries(state)
+                               if _discovery_query_key(query) not in existing)
     task = state.get("structured_task") or {}
     selection_plan = _select_source_search_queries(planned_queries, state, settings)
     query_records: list[dict] = []
@@ -3950,6 +3969,7 @@ def _normalize_iterative_query(
         "query_source": query_source,
         "iteration_index": iteration_index,
         "iterative_query_id": query_id,
+        **({"temporal_probe": dict(query["temporal_probe"])} if query.get("temporal_probe") else {}),
     }
 
 
@@ -4051,6 +4071,16 @@ def _execute_iterative_query_batch(
         if max_total_queries_override is not None
         else settings.iterative_max_total_queries
     )
+    # Supplementary authority retries share the ordinary-search allocation.
+    # Their legacy overrides cannot consume capacity reserved for indexes.
+    if settings._reserved_search_queries:
+        ordinary_queries = (settings.iterative_max_total_queries if settings.iterative_enabled
+                            else settings.max_queries)
+        max_total_queries = min(max_total_queries, ordinary_queries)
+    if settings._reserved_search_results:
+        ordinary_results = (min(settings.max_total_results, settings.iterative_max_total_results)
+                            if settings.iterative_enabled else settings.max_total_results)
+        max_total_results = min(max_total_results, ordinary_results)
 
     for query_index, query in enumerate(query_batch):
         if totals.get("search_budget_exhausted") or totals.get("search_result_budget_exhausted"):
@@ -4156,11 +4186,17 @@ def _execute_iterative_query_batch(
             },
         )
         try:
+            from ..session_runtime import get_runtime
+            call_options = {}
+            if query.get("temporal_probe") and get_runtime() is not None:
+                call_options["operation_metadata"] = {
+                    "temporal_probe": dict(query["temporal_probe"]), "query": query["query"],
+                    "provider_channel": query.get("provider_channel") or "web_search"}
             provider_output = external_call('search', {'query': _search_request_identity(query), 'provider': settings.provider, 'max_results': settings.max_results_per_query}, lambda: provider.search(
                 query,
                 max_results=settings.max_results_per_query,
                 timeout_seconds=settings.timeout_seconds,
-            ))
+            ), **call_options)
             response = _response_from_provider_output(
                 provider_output,
                 provider=settings.provider,
@@ -4596,6 +4632,22 @@ def _discovery_query_key(query: dict) -> tuple[str, str]:
             str(query.get("provider_channel") or "web_search"))
 
 
+def _media_discovery_queries(state: DataCollectionState) -> list[dict]:
+    """One generic reporting lead; source identity and evidence remain unverified."""
+    task = _task_context(state)
+    disease = str(task.get("disease") or "").strip()
+    if not disease:
+        return []
+    location = str(task.get("location") or "").strip()
+    years = " ".join(dict.fromkeys(str(task.get(key) or "")[:4]
+                                   for key in ("start_date", "end_date"))).strip()
+    return [{"query": f'"{disease}" "{location}" {years} news reports reported cases deaths',
+             "source_type": "news_and_situation_report", "provider_channel": "news_search",
+             "role_hint": "collection_support", "expected_fields": task.get("target_fields") or [],
+             "query_rationale": "Task-grounded media reporting retrieval opportunity.",
+             "query_source": "deterministic_discovery_fallback", "disease_terms_used": [disease]}]
+
+
 def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
     """Task-derived fallbacks cover retrieval families, without inventing URLs."""
     task = _task_context(state)
@@ -4624,7 +4676,7 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
             "case report hospitalization study",
             "population incidence mortality study supplementary tables"]),
     ]
-    return [
+    queries = [
         {"query": f"{anchor} {terms}", "source_type": source_type,
          "provider_channel": channel, "role_hint": "collection_support",
          "expected_fields": task.get("target_fields") or [],
@@ -4633,17 +4685,73 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
          "disease_terms_used": [disease]}
         for source_type, channel, intents in families for terms in intents
     ]
+    try:
+        start = date.fromisoformat(str(task.get("start_date") or ""))
+        end = date.fromisoformat(str(task.get("end_date") or ""))
+    except ValueError:
+        return [*queries, *_media_discovery_queries(state)]
+    from ..temporal_search_queries import representative_months
+    selected_months = representative_months(start, end)
+    if not selected_months:
+        return [*queries, *_media_discovery_queries(state)]
+
+    # English month terms are retrieval leads, not publication-date filters.
+    # Keep the exact observation bounds in metadata, including partial months.
+    months = ("january february march april may june july august september "
+              "october november december").split()
+    expanded = []
+    for source_type, channel, intents in families:
+        broad = [row for row in queries if row["source_type"] == source_type]
+        temporal = []
+        for index, row in enumerate(broad):
+            if index < len(selected_months):
+                month = selected_months[index]
+                temporal.append({
+                    **row,
+                    "query": (f'"{disease}" "{location}" {months[month % 12]} {month // 12} '
+                              f'{intents[0]}'),
+                    "query_rationale": "Task-derived month lead; observation dates are not publication limits.",
+                    "time_terms": [start.isoformat(), end.isoformat()],
+                })
+        # One month opportunity precedes archive/data intents. Remaining month
+        # leads must not displace those existing directions in a short budget.
+        expanded.extend([*temporal[:1], *broad, *temporal[1:]])
+    return [*expanded, *_media_discovery_queries(state)]
+
+
+def _discovery_query_direction(query: dict) -> str:
+    """A retrieval intention for scheduling, never a source coverage judgment."""
+    if query.get("temporal_probe"):
+        return "temporal_probe"
+    text = str(query.get("query") or "").casefold()
+    months = "january february march april may june july august september october november december".split()
+    month = re.search(r"\b(" + "|".join(months) + r")\s+([0-9]{4})\b", text)
+    if month:
+        return f"month:{month.group(2)}-{months.index(month.group(1)) + 1:02d}"
+    if re.search(r"\b(?:archives?|historical|history)\b", text):
+        return "historical"
+    if re.search(r"\b(?:datasets?|databases?|download|csv|tsv|xlsx?|spreadsheets?|export|tables?)\b", text):
+        return "data"
+    return "general"
 
 
 def _remaining_discovery_queries(
     pool: list[dict], state: DataCollectionState, settings: SourceSearchSettings,
     attempted: set[tuple[str, str]], family_counts: Counter,
+    attempted_directions: Counter | None = None,
+    *, reserved_media_count: int = 0,
 ) -> list[dict]:
-    """Select distinct grounded queries, prioritizing unexplored source families."""
+    """Balance source families, then untried directions within each family."""
     available = []
     seen = set(attempted)
+    # Refined advice may retag a duplicate query. Only actual execution records
+    # can establish its historical family and retrieval direction.
+    directions = (attempted_directions or Counter()).copy()
     for item in pool:
         query = dict(item)
+        # Only locally nominated probes may carry this accounting marker;
+        # planner/refinement/catalog metadata cannot spend its allowance.
+        query.pop("temporal_probe", None)
         query.setdefault("provider_channel", "web_search")
         key = _discovery_query_key(query)
         if (key in seen or _is_invalid_query(query)
@@ -4654,17 +4762,27 @@ def _remaining_discovery_queries(
         available.append(query)
     selected = []
     counts = family_counts.copy()
+    media_selected = reserved_media_count
     for _ in range(max(0, settings.iterative_max_queries_per_iteration)):
         if not available:
             break
-        # Only retrieval families are balanced here. This is not a claim that
-        # a source/query contains factual evidence or a quota of valid sources.
-        index = min(range(len(available)), key=lambda i: (
+        high_trust_available = any(_query_source_class(query) in _HIGH_TRUST_SOURCE_CLASSES
+                                   for query in available)
+        eligible = [i for i, query in enumerate(available)
+                    if not (high_trust_available and media_selected >= 1
+                            and _query_source_class(query) == "news_or_supporting_media")]
+        # Trying a different direction precedes another broad paraphrase.
+        # Attempts do not establish factual coverage or count verified sources.
+        index = min(eligible, key=lambda i: (
+            _query_source_class(available[i]) not in _EXPLORATION_SOURCE_CLASSES,
+            counts[_query_source_class(available[i])],
             _query_source_class(available[i]) not in _HIGH_TRUST_SOURCE_CLASSES,
-            counts[_query_source_class(available[i])], i))
+            directions[(_query_source_class(available[i]), _discovery_query_direction(available[i]))], i))
         query = available.pop(index)
         selected.append(query)
+        media_selected += _query_source_class(query) == "news_or_supporting_media"
         counts[_query_source_class(query)] += 1
+        directions[(_query_source_class(query), _discovery_query_direction(query))] += 1
     return selected
 
 
@@ -4797,6 +4915,8 @@ def _execute_iterative_source_search(
         query_pool.extend(_discovery_breadth_queries(state))
     attempted_queries: set[tuple[str, str]] = set()
     attempted_families: Counter = Counter()
+    attempted_directions: Counter = Counter()
+    direction_counted_queries: set[tuple[str, str]] = set()
     stagnant_batches = 0
 
     for iteration_index in range(1, settings.iterative_max_iterations + 1):
@@ -4852,6 +4972,10 @@ def _execute_iterative_source_search(
                 attempted_queries.add(_discovery_query_key(record))
             if record.get("selected_for_execution"):
                 attempted_families[_query_source_class(record)] += 1
+                key = _discovery_query_key(record)
+                if key not in direction_counted_queries:
+                    attempted_directions[(_query_source_class(record), _discovery_query_direction(record))] += 1
+                    direction_counted_queries.add(key)
         if any(record.get("selected_for_execution") for record in batch_records):
             stagnant_batches = 0 if batch_candidates else stagnant_batches + 1
 
@@ -4908,22 +5032,52 @@ def _execute_iterative_source_search(
                 stop_reason = "search_disabled" if not settings.search_enabled else "provider_unavailable"
                 break
             query_pool = [*(decision.get("next_query_batch") or []), *query_pool]
+            from ..temporal_search_queries import temporal_search_queries
+            from ..session_runtime import get_runtime
+            runtime = get_runtime()
             available_families = {
                 _query_source_class(query) for query in query_pool
-                if (str(query.get("provider_channel") or "web_search") in settings.provider_channel_allowlist
+                if (not _is_invalid_query(query)
+                    and str(query.get("provider_channel") or "web_search") in settings.provider_channel_allowlist
                     and assess_query_task_fit(query, state)["accepted"])
             } & _HIGH_TRUST_SOURCE_CLASSES
+            probe_channels = settings.provider_channel_allowlist
+            if (available_families <= set(attempted_families)
+                    and not attempted_families["news_or_supporting_media"]
+                    and "news_search" in probe_channels):
+                # The first media opportunity can also serve the existing gap
+                # reservation, including when only one query slot remains.
+                probe_channels = ["news_search"]
+            probes = temporal_search_queries(
+                state, candidates=[candidate.model_dump() for candidate in search_candidates],
+                query_records=query_records, channels=probe_channels,
+                operation_history=runtime.ledger.operation_audit() if runtime else ())
+            probe = next((query for query in probes
+                          if _discovery_query_key(query) not in attempted_queries
+                          and assess_query_task_fit(query, state)["accepted"]), None)
             breadth_floor = min(settings.iterative_max_total_queries,
                                 max(2 * settings.iterative_max_queries_per_iteration,
                                     len(available_families)))
             breadth_explored = (totals["selected_query_count"] >= breadth_floor
                                 and available_families <= set(attempted_families))
-            if stagnant_batches >= 2 and breadth_explored:
+            ordinary_stalled = stagnant_batches >= 2 and breadth_explored
+            if ordinary_stalled and probe is None:
                 stop_decision = "stop_no_promising_sources"
                 stop_reason = "no_new_sources_in_consecutive_batches"
                 break
-            next_batch = _remaining_discovery_queries(
-                query_pool, state, settings, attempted_queries, attempted_families)
+            selection_counts = attempted_families.copy()
+            selection_directions = attempted_directions.copy()
+            selection_attempted = set(attempted_queries)
+            if probe:
+                family = _query_source_class(probe)
+                selection_counts[family] += 1
+                selection_directions[(family, _discovery_query_direction(probe))] += 1
+                selection_attempted.add(_discovery_query_key(probe))
+            next_batch = [*([probe] if probe else []), *_remaining_discovery_queries(
+                query_pool, state, replace(settings, iterative_max_queries_per_iteration=(0 if ordinary_stalled else max(
+                    0, settings.iterative_max_queries_per_iteration - bool(probe)))),
+                selection_attempted, selection_counts, selection_directions,
+                reserved_media_count=int(bool(probe) and _query_source_class(probe) == "news_or_supporting_media"))]
             if not next_batch:
                 stop_decision = "stop_no_promising_sources"
                 stop_reason = "no_untried_task_grounded_queries"
@@ -5433,6 +5587,28 @@ def _execute_source_search(
     return search_candidates, manifest, search_summary, _disabled_iterative_outputs()
 
 
+def _historical_search_capacity(settings: SourceSearchSettings) -> dict | None:
+    """Reserve a small part of existing live discovery capacity for index leads."""
+    if not universal_queries_enabled() or not settings.live_search_enabled:
+        return None
+    from ..session_runtime import get_runtime
+    runtime = get_runtime()
+    if runtime is None:
+        return None
+    config = (runtime.config.get("universal") or {}).get("historical_discovery") or {}
+    if config.get("enabled", True) is False:
+        return None
+    query_limit = settings.iterative_max_total_queries if settings.iterative_enabled else settings.max_queries
+    result_limit = min(settings.max_total_results, settings.iterative_max_total_results) if settings.iterative_enabled else settings.max_total_results
+    return {
+        "query_limit": max(0, query_limit), "result_limit": max(0, result_limit),
+        "max_origins": max(0, min(4, int(config.get("max_origins", 4)))),
+        "max_records_per_origin": max(1, min(256, int(config.get("max_records_per_origin", 64)))),
+        "max_results": max(0, min(256, int(config.get("max_results", 64)))),
+        "timeout_seconds": max(1, min(30, float(config.get("timeout_seconds", 10)))),
+    }
+
+
 def source_discovery(state: DataCollectionState) -> dict:
     """Produce SourceCandidates from seed catalog and optional source search."""
 
@@ -5449,6 +5625,19 @@ def source_discovery(state: DataCollectionState) -> dict:
             catalog_dict = _merge_seed_source_overlay(catalog_dict, overlay, overlay_path)
     catalog = SeedSourceCatalog(**catalog_dict)
     settings = _effective_discovery_settings(_source_search_settings_from_env())
+    historical_capacity = _historical_search_capacity(settings)
+    ordinary_settings = settings
+    if historical_capacity:
+        reserved_queries = min(historical_capacity["max_origins"], historical_capacity["query_limit"] // 5)
+        reserved_results = min(historical_capacity["max_results"], historical_capacity["result_limit"] // 4) if reserved_queries else 0
+        ordinary_settings = replace(
+            settings, max_queries=max(0, settings.max_queries - reserved_queries),
+            _reserved_search_queries=reserved_queries,
+            _reserved_search_results=reserved_results,
+            iterative_max_total_queries=max(0, settings.iterative_max_total_queries - reserved_queries),
+            max_total_results=max(0, settings.max_total_results - reserved_results),
+            iterative_max_total_results=max(0, settings.iterative_max_total_results - reserved_results),
+        )
 
     search_query_inventory = list(state.get("search_query_inventory") or [])
     official_coverage_candidates = [
@@ -5474,7 +5663,7 @@ def source_discovery(state: DataCollectionState) -> dict:
             search_results_manifest,
             search_summary,
             iterative_outputs,
-        ) = _execute_source_search(state, settings)
+        ) = _execute_source_search(state, ordinary_settings)
     else:
         (
             search_candidates,
@@ -5482,6 +5671,31 @@ def source_discovery(state: DataCollectionState) -> dict:
             search_summary,
             iterative_outputs,
         ) = fast_stop_result
+    historical_summary = {"status": "disabled", "index_only": True}
+    historical_candidates = []
+    if historical_capacity:
+        remaining_queries = max(0, historical_capacity["query_limit"] - int(search_summary.get("selected_query_count") or 0))
+        remaining_results = max(0, historical_capacity["result_limit"] - len(search_candidates))
+        max_origins = min(historical_capacity["max_origins"], remaining_queries)
+        max_results = min(historical_capacity["max_results"], remaining_results)
+        if max_origins and max_results:
+            historical_rows, historical_manifest, historical_summary = discover_historical_versions(
+                state, [row.model_dump() for row in search_candidates],
+                max_origins=max_origins, max_results=max_results,
+                max_records_per_origin=historical_capacity["max_records_per_origin"],
+                timeout_seconds=historical_capacity["timeout_seconds"],
+            )
+            historical_candidates = [SourceCandidate(**row) for row in historical_rows]
+            search_results_manifest.extend(historical_manifest)
+        else:
+            historical_summary = {"status": "stage_budget_exhausted", "index_only": True}
+        historical_summary.update(
+            stage_query_limit=historical_capacity["query_limit"],
+            stage_result_limit=historical_capacity["result_limit"],
+            reserved_query_count=reserved_queries,
+            reserved_result_count=reserved_results,
+        )
+    search_summary["historical_discovery"] = historical_summary
     direct_generic_search = (
         _collection_mode(state) == "direct_collection"
         and settings.search_enabled
@@ -5495,6 +5709,7 @@ def source_discovery(state: DataCollectionState) -> dict:
         *official_coverage_candidates,
         *(seed_candidates if include_seeds else []),
         *search_candidates,
+        *historical_candidates,
     ]
 
     source_type_counts = dict(
@@ -5522,7 +5737,8 @@ def source_discovery(state: DataCollectionState) -> dict:
         discovery_method = _DISCOVERY_METHOD
 
     combined_search_sufficient, combined_target_verification = (
-        _verified_target_search_sufficient(candidates, _task_context(state))
+        _verified_target_search_sufficient(
+            [row for row in candidates if not row.historical_snapshot], _task_context(state))
     )
     combined_verified_ids = list(
         combined_target_verification.get("verified_target_source_ids") or []
@@ -5557,6 +5773,7 @@ def source_discovery(state: DataCollectionState) -> dict:
             "search_verified_target_source_count": len(search_verified_ids),
             "fetch_verified_target_source_count": 0,
             "total_candidate_count": len(candidates),
+            "candidate_from_historical_index_count": len(historical_candidates),
             "verified_target_source_count": len(combined_verified_ids),
             "verified_target_source_ids": combined_verified_ids,
             "target_source_miss_reasons": combined_target_verification.get(
@@ -5595,6 +5812,7 @@ def source_discovery(state: DataCollectionState) -> dict:
     search_summary["warnings"] = sorted(set(search_warnings))
 
     summary = {
+        "historical_discovery": historical_summary,
         "discovery_method": discovery_method,
         "seed_source_count": len(catalog.seed_sources),
         "candidate_count": len(candidates),
@@ -5804,6 +6022,9 @@ def _registry_entry_from_candidate(
     official_report_key: str | None,
 ) -> SourceRegistryEntry:
     return SourceRegistryEntry(
+        historical_snapshot=dict(candidate.get("historical_snapshot") or {}),
+        blocked_from_fetch=bool(candidate.get("blocked_from_fetch", False)),
+        blocked_from_fetch_reason=candidate.get("blocked_from_fetch_reason"),
         source_id=candidate.get("source_id") or canonical,
         canonical_url=canonical,
         title=candidate.get("title"),
@@ -5910,9 +6131,24 @@ def source_dedup_and_registry(state: DataCollectionState) -> dict:
             _record_official_alias(entry, official_report_key)
         if dedup_key in dedup_key_to_index:
             duplicate_count += 1
+            index = dedup_key_to_index[dedup_key]
+            previous = registry[index]
+            if entry.historical_snapshot or previous.historical_snapshot:
+                # An ordinary search can independently return the same replay.
+                # Keep the first ID but never discard its index-only boundary.
+                historical = previous if previous.historical_snapshot else entry
+                other = entry if previous.historical_snapshot else previous
+                merged = historical.model_copy(deep=True)
+                merged.source_id = previous.source_id
+                discoveries = merged.historical_snapshot.setdefault("other_discoveries", [])
+                provenance = {"source_id": other.source_id, "discovery_method": other.discovery_method,
+                              "query_id": other.query_id, "url": other.canonical_url}
+                if provenance not in discoveries:
+                    discoveries.append(provenance)
+                registry[index] = merged
+                continue
             if official_report_key:
                 official_report_alias_duplicate_count += 1
-                index = dedup_key_to_index[dedup_key]
                 registry[index] = _merge_official_alias_entries(
                     registry[index],
                     entry,
