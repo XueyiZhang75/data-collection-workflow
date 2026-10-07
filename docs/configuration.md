@@ -37,6 +37,14 @@ The interactive entry prompts for a missing model in a terminal. Noninteractive 
 
 Evidence mode persists operation usage in the session. `universal.budget_policy` selects its budget policy and `universal.budget_limits` sets operation limits. Retried calls count; cached successful responses are reused. Usage limits are operation counts, not a dollar spending cap. Token usage is recorded when the provider returns it.
 
+### Historical source versions
+
+Live discovery in evidence mode also checks the Internet Archive CDX index for historical versions of task-matching pages found by search. It prioritizes registered official sites and also admits monitoring or report pages on unregistered domains, without assigning them official status. It reserves at most one fifth of the existing search-query capacity (up to four original URLs) and one quarter of the result capacity. Shared session limits still apply. Standard mode and fixture searches do not contact the archive.
+
+Optional settings under `universal.historical_discovery` are `enabled` (default `true`), `max_origins` (default and maximum `4`), `max_records_per_origin` (default `64`, maximum `256`), `max_results` (default `64`, maximum `256`), and `timeout_seconds` (default `10`, maximum `30`). Set `enabled` to `false` to use all discovery capacity for ordinary search.
+
+The lookup uses exact original URLs and capture dates within the task window, so separate monthly or quarterly tasks discover versions from their own periods. This is a retrieval window, not evidence that the captured page reports observations in that period. It does not retrieve archived page bodies. Each candidate retains its original URL, parent source, replay URL, capture timestamp, and index record in `historical_snapshot` in the source registry. Capture time is not a publication date or a reporting period; candidates remain `index_only` and do not qualify as data evidence. The discovery summary distinguishes empty indexes, errors, exhausted budgets, and truncated results. A truncated index is incomplete coverage, not evidence that no other versions exist.
+
 The extraction scheduler's `soft_checkpoint_calls` and `safety_max_calls` govern its checkpoint and hard-call behavior. `llm.max_chunks` is a legacy setting and does not by itself express the current hard limit. Review the resolved configuration with `--print-config-only` before a live run.
 
 ## Sources and examples

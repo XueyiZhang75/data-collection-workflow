@@ -1998,6 +1998,10 @@ def _classify_skip_reason(
         return "not_in_source_id_allowlist"
     if entry.get("source_excluded_by_human_review") is True:
         return "source_excluded_by_human_review"
+    # Index metadata is not permission to fetch a historical snapshot body.
+    # Check the durable status even if advisory routing cleared the block flag.
+    if (entry.get("historical_snapshot") or {}).get("verification_status") == "index_only":
+        return "historical_index_only"
     adaptive = _adaptive_acquisition_runtime() is not None
     provisional = adaptive and entry.get("task_fit_evidence_origin") == "discovery_metadata"
     if entry.get("source_disease_relevance_status") == UNRELATED_DISEASE and not provisional:

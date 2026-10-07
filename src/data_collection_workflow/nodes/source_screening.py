@@ -596,6 +596,12 @@ def _apply_direct_triage_verification(
     *,
     collection_mode: str,
 ) -> tuple[dict, dict]:
+    if (entry.get("historical_snapshot") or {}).get("verification_status") == "index_only":
+        updated = _preserve_historical_metadata_only_routing(entry)
+        return updated, {key: updated[key] for key in (
+            "target_verification_status", "target_verification_reason", "triage_role",
+            "disease_fit", "geography_fit", "date_fit",
+        )}
     verification = _direct_target_verification(entry, state)
     triage = dict(verification)
     if universal_queries_enabled():
@@ -1724,6 +1730,38 @@ def _mark_llm_source_critic_disabled(entry: dict) -> dict:
     return updated
 
 
+def _preserve_historical_metadata_only_routing(entry: dict) -> dict:
+    """Preserve index leads without claiming verification of archived content."""
+    if (entry.get("historical_snapshot") or {}).get("verification_status") != "index_only":
+        return entry
+    return {
+        **entry,
+        "blocked_from_fetch": True,
+        "blocked_from_fetch_reason": "historical_index_only",
+        "ready_for_content_fetch": False,
+        "target_verification_status": "unverified_candidate",
+        "target_verification_reason": (
+            "Archive index metadata only; snapshot content and reporting period "
+            "have not been verified."
+        ),
+        "target_fit_status": "task_record_collection_candidate",
+        "triage_role": "task_record_collection_candidate",
+        "disease_fit": "unknown",
+        "geography_fit": "unknown",
+        "date_fit": "unknown",
+        "task_fit_evidence_origin": "historical_index_metadata",
+        "task_fit_content_hash": None,
+        "published_date": None,
+        "reporting_period_start": None,
+        "reporting_period_end": None,
+        "reporting_period_label": None,
+        "period_basis": None,
+        "must_fetch": False,
+        "must_fetch_reason": None,
+        "coverage_requirement_ids": [],
+    }
+
+
 def _reapply_source_critic_fetch_block(entry: dict) -> dict:
     if not entry.get("llm_source_critic_block_fetch"):
         return entry
@@ -2145,6 +2183,7 @@ def source_screening(state: DataCollectionState) -> dict:
             collection_mode=collection_mode,
         )
         # Validate via the model so any future field changes fail loudly here.
+        new_entry = _preserve_historical_metadata_only_routing(new_entry)
         validated = SourceRegistryEntry(**new_entry).model_dump()
         updated.append(validated)
 
@@ -2494,6 +2533,7 @@ def source_critic_and_uncertainty_routing(state: DataCollectionState) -> dict:
         new_entry = apply_source_identity_routing_guardrails(new_entry)
         new_entry = annotate_source_coverage([new_entry], state)[0][0]
         credibility_assessments.append(credibility_assessment)
+        new_entry = _preserve_historical_metadata_only_routing(new_entry)
         validated = SourceRegistryEntry(**new_entry).model_dump()
         updated.append(validated)
 
@@ -2675,6 +2715,7 @@ def source_critic_and_uncertainty_routing(state: DataCollectionState) -> dict:
         source_coverage_requirements,
         source_coverage_audit,
     ) = annotate_source_coverage(updated, state)
+    updated = [_preserve_historical_metadata_only_routing(row) for row in updated]
     must_fetch_sources = [
         {
             "source_id": row.get("source_id"),

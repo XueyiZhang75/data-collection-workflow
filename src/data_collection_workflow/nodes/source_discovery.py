@@ -15,6 +15,7 @@ import re
 from urllib.parse import urlsplit, urlunsplit
 
 from ..session_runtime import external_call, BudgetExceeded
+from ..historical_source_discovery import discover_historical_versions
 
 
 def _search_request_identity(query):
@@ -320,6 +321,10 @@ def canonicalize_url(url: str) -> str:
     scheme = parts.scheme.lower()
     netloc = parts.netloc.lower()
     path = parts.path or ""
+    # A replay path embeds an original URL. Its slashes and trailing slash
+    # belong to that original resource and must not be normalized away.
+    if netloc == "web.archive.org" and re.match(r"^/web/\d{14}/https?://", path, re.I):
+        return urlunsplit((scheme, netloc, path, parts.query, ""))
     if scheme in {"http", "https"}:
         path = re.sub(r"/{2,}", "/", path)
     if path.endswith("/") and len(path) > 1:
@@ -5464,6 +5469,28 @@ def _execute_source_search(
     return search_candidates, manifest, search_summary, _disabled_iterative_outputs()
 
 
+def _historical_search_capacity(settings: SourceSearchSettings) -> dict | None:
+    """Reserve a small part of existing live discovery capacity for index leads."""
+    if not universal_queries_enabled() or not settings.live_search_enabled:
+        return None
+    from ..session_runtime import get_runtime
+    runtime = get_runtime()
+    if runtime is None:
+        return None
+    config = (runtime.config.get("universal") or {}).get("historical_discovery") or {}
+    if config.get("enabled", True) is False:
+        return None
+    query_limit = settings.iterative_max_total_queries if settings.iterative_enabled else settings.max_queries
+    result_limit = min(settings.max_total_results, settings.iterative_max_total_results) if settings.iterative_enabled else settings.max_total_results
+    return {
+        "query_limit": max(0, query_limit), "result_limit": max(0, result_limit),
+        "max_origins": max(0, min(4, int(config.get("max_origins", 4)))),
+        "max_records_per_origin": max(1, min(256, int(config.get("max_records_per_origin", 64)))),
+        "max_results": max(0, min(256, int(config.get("max_results", 64)))),
+        "timeout_seconds": max(1, min(30, float(config.get("timeout_seconds", 10)))),
+    }
+
+
 def source_discovery(state: DataCollectionState) -> dict:
     """Produce SourceCandidates from seed catalog and optional source search."""
 
@@ -5480,6 +5507,17 @@ def source_discovery(state: DataCollectionState) -> dict:
             catalog_dict = _merge_seed_source_overlay(catalog_dict, overlay, overlay_path)
     catalog = SeedSourceCatalog(**catalog_dict)
     settings = _effective_discovery_settings(_source_search_settings_from_env())
+    historical_capacity = _historical_search_capacity(settings)
+    ordinary_settings = settings
+    if historical_capacity:
+        reserved_queries = min(historical_capacity["max_origins"], historical_capacity["query_limit"] // 5)
+        reserved_results = min(historical_capacity["max_results"], historical_capacity["result_limit"] // 4) if reserved_queries else 0
+        ordinary_settings = replace(
+            settings, max_queries=max(0, settings.max_queries - reserved_queries),
+            iterative_max_total_queries=max(0, settings.iterative_max_total_queries - reserved_queries),
+            max_total_results=max(0, settings.max_total_results - reserved_results),
+            iterative_max_total_results=max(0, settings.iterative_max_total_results - reserved_results),
+        )
 
     search_query_inventory = list(state.get("search_query_inventory") or [])
     official_coverage_candidates = [
@@ -5505,7 +5543,7 @@ def source_discovery(state: DataCollectionState) -> dict:
             search_results_manifest,
             search_summary,
             iterative_outputs,
-        ) = _execute_source_search(state, settings)
+        ) = _execute_source_search(state, ordinary_settings)
     else:
         (
             search_candidates,
@@ -5513,6 +5551,31 @@ def source_discovery(state: DataCollectionState) -> dict:
             search_summary,
             iterative_outputs,
         ) = fast_stop_result
+    historical_summary = {"status": "disabled", "index_only": True}
+    historical_candidates = []
+    if historical_capacity:
+        remaining_queries = max(0, historical_capacity["query_limit"] - int(search_summary.get("selected_query_count") or 0))
+        remaining_results = max(0, historical_capacity["result_limit"] - len(search_candidates))
+        max_origins = min(historical_capacity["max_origins"], remaining_queries)
+        max_results = min(historical_capacity["max_results"], remaining_results)
+        if max_origins and max_results:
+            historical_rows, historical_manifest, historical_summary = discover_historical_versions(
+                state, [row.model_dump() for row in search_candidates],
+                max_origins=max_origins, max_results=max_results,
+                max_records_per_origin=historical_capacity["max_records_per_origin"],
+                timeout_seconds=historical_capacity["timeout_seconds"],
+            )
+            historical_candidates = [SourceCandidate(**row) for row in historical_rows]
+            search_results_manifest.extend(historical_manifest)
+        else:
+            historical_summary = {"status": "stage_budget_exhausted", "index_only": True}
+        historical_summary.update(
+            stage_query_limit=historical_capacity["query_limit"],
+            stage_result_limit=historical_capacity["result_limit"],
+            reserved_query_count=reserved_queries,
+            reserved_result_count=reserved_results,
+        )
+    search_summary["historical_discovery"] = historical_summary
     direct_generic_search = (
         _collection_mode(state) == "direct_collection"
         and settings.search_enabled
@@ -5526,6 +5589,7 @@ def source_discovery(state: DataCollectionState) -> dict:
         *official_coverage_candidates,
         *(seed_candidates if include_seeds else []),
         *search_candidates,
+        *historical_candidates,
     ]
 
     source_type_counts = dict(
@@ -5553,7 +5617,8 @@ def source_discovery(state: DataCollectionState) -> dict:
         discovery_method = _DISCOVERY_METHOD
 
     combined_search_sufficient, combined_target_verification = (
-        _verified_target_search_sufficient(candidates, _task_context(state))
+        _verified_target_search_sufficient(
+            [row for row in candidates if not row.historical_snapshot], _task_context(state))
     )
     combined_verified_ids = list(
         combined_target_verification.get("verified_target_source_ids") or []
@@ -5588,6 +5653,7 @@ def source_discovery(state: DataCollectionState) -> dict:
             "search_verified_target_source_count": len(search_verified_ids),
             "fetch_verified_target_source_count": 0,
             "total_candidate_count": len(candidates),
+            "candidate_from_historical_index_count": len(historical_candidates),
             "verified_target_source_count": len(combined_verified_ids),
             "verified_target_source_ids": combined_verified_ids,
             "target_source_miss_reasons": combined_target_verification.get(
@@ -5626,6 +5692,7 @@ def source_discovery(state: DataCollectionState) -> dict:
     search_summary["warnings"] = sorted(set(search_warnings))
 
     summary = {
+        "historical_discovery": historical_summary,
         "discovery_method": discovery_method,
         "seed_source_count": len(catalog.seed_sources),
         "candidate_count": len(candidates),
@@ -5835,6 +5902,9 @@ def _registry_entry_from_candidate(
     official_report_key: str | None,
 ) -> SourceRegistryEntry:
     return SourceRegistryEntry(
+        historical_snapshot=dict(candidate.get("historical_snapshot") or {}),
+        blocked_from_fetch=bool(candidate.get("blocked_from_fetch", False)),
+        blocked_from_fetch_reason=candidate.get("blocked_from_fetch_reason"),
         source_id=candidate.get("source_id") or canonical,
         canonical_url=canonical,
         title=candidate.get("title"),
@@ -5941,9 +6011,24 @@ def source_dedup_and_registry(state: DataCollectionState) -> dict:
             _record_official_alias(entry, official_report_key)
         if dedup_key in dedup_key_to_index:
             duplicate_count += 1
+            index = dedup_key_to_index[dedup_key]
+            previous = registry[index]
+            if entry.historical_snapshot or previous.historical_snapshot:
+                # An ordinary search can independently return the same replay.
+                # Keep the first ID but never discard its index-only boundary.
+                historical = previous if previous.historical_snapshot else entry
+                other = entry if previous.historical_snapshot else previous
+                merged = historical.model_copy(deep=True)
+                merged.source_id = previous.source_id
+                discoveries = merged.historical_snapshot.setdefault("other_discoveries", [])
+                provenance = {"source_id": other.source_id, "discovery_method": other.discovery_method,
+                              "query_id": other.query_id, "url": other.canonical_url}
+                if provenance not in discoveries:
+                    discoveries.append(provenance)
+                registry[index] = merged
+                continue
             if official_report_key:
                 official_report_alias_duplicate_count += 1
-                index = dedup_key_to_index[dedup_key]
                 registry[index] = _merge_official_alias_entries(
                     registry[index],
                     entry,
