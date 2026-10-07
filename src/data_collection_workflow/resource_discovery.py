@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, unquote, urljoin, urlsplit, urlunsplit
 
 
 def canonical_resource_url(value):
@@ -62,8 +62,24 @@ def html_resource_links(soup, *, source_url, content_hash):
     if base:
         base_url = resolve_href(base.get('href'), base, {'base_index': 0}, source_url) or source_url
     declarations = {}
+    next_pages = []
     for declaration_index, node in enumerate(soup.find_all(['meta', 'link'])):
         kind = None
+        if node.name == 'link' and 'next' in {value.lower() for value in node.get('rel') or []}:
+            destination = resolve_href(node.get('href'), node, {'metadata_index': declaration_index}, base_url)
+            if destination:
+                heading = soup.find('h1')
+                next_pages.append({
+                    'href': destination, 'raw_href': str(node.get('href') or ''),
+                    'text': 'Next page', 'rel': ['next'], 'navigation': True,
+                    'heading_context': [heading.get_text(' ', strip=True)] if heading else [],
+                    'page_topic': soup.title.get_text(' ', strip=True) if soup.title else '',
+                    'scope_version': 2, 'anchor_present': False,
+                    'source_url': source_url, 'source_content_hash': content_hash,
+                    'locator': {'metadata_index': declaration_index,
+                                'source_line': getattr(node, 'sourceline', None),
+                                'source_position': getattr(node, 'sourcepos', None)},
+                })
         if node.name == 'meta' and str(node.get('name') or '').lower() == 'citation_pdf_url':
             kind, declared_url = 'citation_pdf_url', node.get('content')
         elif (node.name == 'link' and 'alternate' in (node.get('rel') or [])
@@ -132,7 +148,7 @@ def html_resource_links(soup, *, source_url, content_hash):
             'locator': {'metadata_index': first['tag_index'], 'source_line': first['source_line'],
                         'source_position': first['source_position']},
         })
-    return result
+    return result + next_pages
 
 
 _PRODUCT = re.compile(r'\b(?:data(?:set)?s?|dashboards?|download|table|counts?|surveillance|reports?|archives?|historical|history|series|bulletin|rapport|donnees|donn\u00e9es|telecharger|t\u00e9l\u00e9charger|boletin|boletim|informe|datos|relat\u00f3rio)\b', re.I)
@@ -147,6 +163,29 @@ _SUPPLEMENT = re.compile(r'\b(?:supplement(?:ary|al)?|appendi(?:x|ces))\b', re.I
 _DEICTIC = re.compile(r'^(?:here|this link|access|view|open|ici|ici les donn\u00e9es)?$', re.I)
 
 _FORMAT = re.compile(r'\.(csv|tsv|json|xlsx?|pdf)(?:$|[?&])|\b(?:format|type)=(csv|tsv|json|xlsx?|pdf)\b', re.I)
+
+# "start" can be a numeric date filter, so it must retain its original value.
+_PAGE_KEYS = {'page', 'paged', 'page_number', 'pagenumber', 'pageindex', 'offset'}
+_PAGE_PATH = re.compile(r'/page/\d+/?$', re.I)
+_REPORT_SERIES = re.compile(r'\b(?:reports?|archives?|surveillance|bulletins?|series)\b', re.I)
+
+
+def _same_report_series(parent_url, next_url):
+    """Require a real pagination change while retaining origin and filters."""
+    parent, target = urlsplit(parent_url), urlsplit(next_url)
+    if (parent.scheme.lower(), parent.netloc.lower()) != (target.scheme.lower(), target.netloc.lower()):
+        return False
+    if _PAGE_PATH.sub('', parent.path).rstrip('/') != _PAGE_PATH.sub('', target.path).rstrip('/'):
+        return False
+    old, new = parse_qsl(parent.query, keep_blank_values=True), parse_qsl(target.query, keep_blank_values=True)
+    filters = lambda values: sorted((key, value) for key, value in values if key.lower() not in _PAGE_KEYS)
+    if filters(old) != filters(new):
+        return False
+    paging = [(key, value) for key, value in new if key.lower() in _PAGE_KEYS]
+    if any(not re.fullmatch(r'[0-9]+', value) for _, value in paging):
+        return False
+    return bool((paging and sorted(old) != sorted(new)) or
+                (_PAGE_PATH.search(target.path) and parent.path != target.path))
 
 _UTILITY_ACTION = re.compile(
     r'\b(?:(?:give|send|submit|provide)\s+(?:us\s+)?feedback|tell us what you think|'
@@ -283,6 +322,25 @@ def task_resource_candidates(document, entry, state, *, diagnostics=None):
             kind = 'download'
         if _utility_link(url, link, kind) or 'author' in (link.get('rel') or []):
             continue
+        rel = link.get('rel') or []
+        rel = rel.split() if isinstance(rel, str) else rel
+        next_link = 'next' in {value.lower() for value in rel} or any(
+            re.fullmatch(r'next(?:\s+page)?', label.strip(' \t\r\n»›→>'), re.I)
+            for label in explicit_labels)
+        if next_link and not kind:
+            # Scope comes from this fetched page, never from the search title.
+            topic = next((value for value in reversed(headings) if matches(value) or contradicts(value)),
+                         str(link.get('page_topic') or ''))
+            if (not matches(topic) or contradicts(topic) or contradicts(own) or contradicts(local)
+                    or not _REPORT_SERIES.search(topic)
+                    or not _same_report_series(parent_url, url)):
+                continue
+            selected[url] = {
+                'url': url, 'score': 10, 'resource_type': 'html', 'is_pagination': True,
+                'link_text': str(link.get('text') or 'Next page'), 'same_domain': True,
+                'provenance': dict(link), 'selection_reasons': ['same_report_series_pagination'],
+            }
+            continue
         # Editorial files are not observations. A relevant related article is
         # still a candidate; its own scope is assessed independently below.
         if _EDITORIAL_FILE.search(own + ' ' + str(link.get('heading') or '')):
@@ -347,7 +405,7 @@ def task_resource_candidates(document, entry, state, *, diagnostics=None):
                      'provenance': dict(link), 'selection_reasons': [
                          'explicit_resource_format' if kind else 'linked_report_or_archive', reason]}
         previous = selected.get(url)
-        if previous is None or candidate['score'] > previous['score']:
+        if previous is None or (not previous.get('is_pagination') and candidate['score'] > previous['score']):
             selected[url] = candidate
     return sorted(selected.values(), key=lambda row: -row['score'])
 

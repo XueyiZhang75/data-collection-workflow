@@ -4010,7 +4010,13 @@ def content_fetch_and_parse(state: DataCollectionState) -> dict:
         except ValueError:
             pass
 
+    resource_deferred_limit = (resource_link_limit if resource_link_limit is not None else
+        max(0, int(fetch_config["max_total_sources"] if fetch_config.get("max_total_sources") is not None else 10)))
+    resource_deferred_count = 0
+    resource_deferred_limit_reached = False
+
     def _queue_task_resources(document: Document, parent: dict, after_index: int) -> None:
+        nonlocal resource_deferred_count, resource_deferred_limit_reached
         from ..resource_discovery import (
             canonical_resource_url, resource_source_entry, task_resource_candidates,
         )
@@ -4019,12 +4025,14 @@ def content_fetch_and_parse(state: DataCollectionState) -> dict:
         if not _env_flag("EVENT_LINK_EXPANSION_ENABLED", default=True):
             return
         limit = resource_link_limit
-        depth = int(parent.get("resource_link_depth") or 0) + 1
-        if depth > 3 or (limit is not None and len(resource_link_rows) >= limit):
+        parent_depth = int(parent.get("resource_link_depth") or 0)
+        if limit == 0:
             return
+        fetched_urls = set()
         for fetched in documents:
             for url in (fetched.url, fetched.canonical_url, fetched.final_url):
-                resource_seen_urls.add(canonical_resource_url(url))
+                fetched_urls.add(canonical_resource_url(url))
+        resource_seen_urls.update(fetched_urls)
         pending_downloads, pending_navigation = [], []
         existing_by_url = {canonical_resource_url(e.get("canonical_url") or e.get("url")): e
                            for e in registry}
@@ -4033,13 +4041,24 @@ def content_fetch_and_parse(state: DataCollectionState) -> dict:
         if resource_issues:
             document.metadata['resource_discovery_issues'] = resource_issues
         for candidate in candidates:
-            if limit is not None and len(resource_link_rows) >= limit:
-                break
             terminal = candidate["resource_type"] != "html"
-            if depth > 2 and not terminal:
-                continue
+            depth = parent_depth if candidate.get("is_pagination") else parent_depth + 1
+            depth_limited = depth > 3 or (depth > 2 and not terminal)
             url = candidate["url"]
-            if url in resource_seen_urls:
+            entry = existing_by_url.get(url)
+            previous_link_row = next((row for row in resource_link_rows if row["child_url"] == url), None)
+            promote_depth_deferred = bool(
+                entry is not None and not depth_limited
+                and entry.get("blocked_from_fetch")
+                and entry.get("blocked_from_fetch_reason") == "resource_depth_limit"
+                and entry.get("processing_reason") == "resource_depth_limit"
+                and entry.get("discovery_method") == "task_resource_link"
+            )
+            if url in fetched_urls or (url in resource_seen_urls and not promote_depth_deferred):
+                continue
+            if limit is not None and len(resource_link_rows) >= limit and not (
+                promote_depth_deferred and previous_link_row is not None
+            ):
                 continue
             domain = urlsplit(url).hostname or ""
             if _domain_matches(domain, list(fetch_config.get("domain_blocklist") or [])):
@@ -4047,8 +4066,45 @@ def content_fetch_and_parse(state: DataCollectionState) -> dict:
             allowed = list(fetch_config.get("domain_allowlist") or [])
             if allowed and not _domain_matches(domain, allowed):
                 continue
-            entry = existing_by_url.get(url)
-            if entry is not None:
+            if promote_depth_deferred:
+                # Only remove this route's depth restriction; independent
+                # human, critic, role, domain and task exclusions still apply.
+                if (entry.get("requires_human_review") or entry.get("human_review_recommended")
+                        or entry.get("llm_source_critic_block_fetch")):
+                    continue
+                proposed = {**entry, "blocked_from_fetch": False, "blocked_from_fetch_reason": None,
+                            "ready_for_content_fetch": True, "status": "ready_for_content_fetch",
+                            "processing_status": "pending", "processing_reason": None,
+                            "acquisition_status": None}
+                if _classify_skip_reason(proposed, policy, allowlist, collection_mode, role_policy, fetch_config):
+                    continue
+                history = list(entry.get("resource_link_provenance_history") or [{
+                    "parent_source_id": entry.get("parent_source_id"),
+                    "resource_link_depth": entry.get("resource_link_depth"),
+                    "link_provenance": entry.get("resource_link_provenance") or {},
+                }])
+                history.append({"parent_source_id": parent.get("source_id"),
+                                "resource_link_depth": depth, "link_provenance": candidate["provenance"]})
+                proposed.update(
+                    parent_source_id=parent.get("source_id"),
+                    parent_canonical_url=candidate["provenance"].get("source_url"),
+                    resource_link_depth=depth, resource_link_provenance=candidate["provenance"],
+                    resource_link_provenance_history=history,
+                    resource_link_selection_score=candidate["score"],
+                    resource_link_selection_reasons=candidate["selection_reasons"],
+                )
+                entry.update(proposed)
+                request = _request_for_source_entry(entry)
+                selection = next((row for row in selection_manifest if row.get("source_id") == entry["source_id"]), None)
+                if selection is not None:
+                    selection.update(selected_for_fetch=True, skip_reason=None,
+                        parent_source_id=parent.get("source_id"), resource_link_depth=depth,
+                        selection_reason="; ".join(candidate["selection_reasons"]))
+            elif entry is not None:
+                # A depth-limited edge grants no new permission and must not
+                # replace an independently registered source's existing route.
+                if depth_limited:
+                    continue
                 # Promote an already selected request without creating another
                 # identity or bypassing an explicit upstream exclusion.
                 request = next((r for r in (fetch_requests if frontier else fetch_requests[after_index + 1:])
@@ -4064,20 +4120,49 @@ def content_fetch_and_parse(state: DataCollectionState) -> dict:
                     fetch_requests.remove(request)
                 entry["resource_link_depth"] = depth
             else:
+                if depth_limited and resource_deferred_count >= resource_deferred_limit:
+                    resource_deferred_limit_reached = True
+                    continue
                 entry = resource_source_entry(candidate, parent=parent, depth=depth, state=state)
+                if depth_limited:
+                    entry.update(
+                        blocked_from_fetch=True, blocked_from_fetch_reason="resource_depth_limit",
+                        ready_for_content_fetch=False, status="deferred",
+                        processing_status="deferred", processing_reason="resource_depth_limit",
+                        acquisition_status="not_started",
+                    )
+                    resource_deferred_count += 1
                 registry.append(entry)
                 registry_by_id[entry["source_id"]] = entry
                 existing_by_url[url] = entry
-                request = _request_for_source_entry(entry)
+                request = None if depth_limited else _request_for_source_entry(entry)
                 selection_manifest.append({
                     "source_id": entry["source_id"], "canonical_url": url,
                     "domain": domain, "discovery_method": "task_resource_link",
                     "source_role_final": entry["source_role_final"],
-                    "selected_for_fetch": True, "skip_reason": None, "must_fetch": False,
+                    "selected_for_fetch": not depth_limited,
+                    "skip_reason": "resource_depth_limit" if depth_limited else None,
+                    "must_fetch": False,
                     "parent_source_id": parent.get("source_id"), "resource_link_depth": depth,
                     "selection_reason": "; ".join(candidate["selection_reasons"]),
                 })
             resource_seen_urls.add(url)
+            link_row = {
+                "parent_source_id": parent.get("source_id"), "child_source_id": entry["source_id"],
+                "child_url": url, "resource_link_depth": depth,
+                "resource_type": candidate["resource_type"], "score": candidate["score"],
+                "link_provenance": candidate["provenance"],
+                "selected_for_fetch": not depth_limited,
+                "deferred_reason": "resource_depth_limit" if depth_limited else None,
+            }
+            if promote_depth_deferred:
+                link_row["link_provenance_history"] = entry["resource_link_provenance_history"]
+            if previous_link_row is not None:
+                previous_link_row.update(link_row)
+            else:
+                resource_link_rows.append(link_row)
+            if depth_limited:
+                continue
             if frontier:
                 from ..acquisition_scheduling import acquisition_priority
                 if request not in fetch_requests:
@@ -4088,12 +4173,6 @@ def content_fetch_and_parse(state: DataCollectionState) -> dict:
                 pending_downloads.append(request)
             elif request not in fetch_requests:
                 pending_navigation.append(request)
-            resource_link_rows.append({
-                "parent_source_id": parent.get("source_id"), "child_source_id": entry["source_id"],
-                "child_url": url, "resource_link_depth": depth,
-                "resource_type": candidate["resource_type"], "score": candidate["score"],
-                "link_provenance": candidate["provenance"],
-            })
         if frontier:
             return
         # Legacy strict scheduling retains its existing local limits.
@@ -4893,7 +4972,10 @@ def content_fetch_and_parse(state: DataCollectionState) -> dict:
         or item.get("discovery_method") == "official_coverage_requirement"
     ]
     summary["resource_link_discovery"] = resource_link_rows
-    summary["resource_link_selected_count"] = len(resource_link_rows)
+    summary["resource_link_selected_count"] = sum(bool(row["selected_for_fetch"]) for row in resource_link_rows)
+    summary["resource_link_deferred_count"] = sum(bool(row["deferred_reason"]) for row in resource_link_rows)
+    summary["resource_link_deferred_limit"] = resource_deferred_limit if universal_resources else None
+    summary["resource_link_deferred_limit_reached"] = resource_deferred_limit_reached
     summary["resource_link_limit"] = resource_link_limit if universal_resources else None
     summary["source_coverage_audit"] = source_coverage_audit
     summary["coverage_status"] = source_coverage_audit.get("coverage_status")

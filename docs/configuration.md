@@ -49,6 +49,10 @@ The extraction scheduler's `soft_checkpoint_calls` and `safety_max_calls` govern
 
 ## Sources and examples
 
+Evidence-mode resource discovery follows explicit next-page links on fetched, task-matching report indexes. Both anchor links and HTML `link rel="next"` declarations are supported. The next URL must preserve the origin, report-series path, and non-pagination query filters; the workflow does not invent page URLs. Pagination retains the series depth, while existing resource and acquisition limits bound the number of pages.
+
+Report links found beyond the acquisition depth remain in the source registry as deferred candidates with `resource_depth_limit`, their parent source, and link provenance. They are not fetched or treated as evidence. Explicit resource-expansion limits, including zero, still apply; links outside those limits remain in the parsed page's outbound-link metadata.
+
 The default template has no study-specific source overlay or allowlist. Supply optional source policies explicitly. Example configurations under `configs/examples/covid19/` and `configs/examples/dengue/` describe their actual fixture tasks. Files prefixed `offline_` use synthetic local resources. Other example configurations may enable live search, fetch, or inherited model stages and require corresponding credentials.
 
 ## Recovery and review
