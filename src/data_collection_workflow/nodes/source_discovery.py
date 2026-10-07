@@ -4624,7 +4624,7 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
             "case report hospitalization study",
             "population incidence mortality study supplementary tables"]),
     ]
-    return [
+    queries = [
         {"query": f"{anchor} {terms}", "source_type": source_type,
          "provider_channel": channel, "role_hint": "collection_support",
          "expected_fields": task.get("target_fields") or [],
@@ -4633,6 +4633,37 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
          "disease_terms_used": [disease]}
         for source_type, channel, intents in families for terms in intents
     ]
+    try:
+        start = date.fromisoformat(str(task.get("start_date") or ""))
+        end = date.fromisoformat(str(task.get("end_date") or ""))
+    except ValueError:
+        return queries
+    first_month = start.year * 12 + start.month - 1
+    last_month = end.year * 12 + end.month - 1
+    if end < start or not 0 <= last_month - first_month <= 2:
+        return queries
+
+    # English month terms are retrieval leads, not publication-date filters.
+    # Keep the exact observation bounds in metadata, including partial months.
+    months = ("january february march april may june july august september "
+              "october november december").split()
+    expanded = []
+    for source_type, channel, intents in families:
+        broad = [row for row in queries if row["source_type"] == source_type]
+        for index, row in enumerate(broad):
+            month = first_month + index
+            if month <= last_month:
+                expanded.append({
+                    **row,
+                    "query": (f'"{disease}" "{location}" {months[month % 12]} {month // 12} '
+                              f'{intents[0]}'),
+                    "query_rationale": "Task-derived month lead; observation dates are not publication limits.",
+                    "time_terms": [start.isoformat(), end.isoformat()],
+                })
+            # Interleave month leads with broad queries within each existing
+            # family. The selector and all search budgets remain unchanged.
+            expanded.append(row)
+    return expanded
 
 
 def _remaining_discovery_queries(

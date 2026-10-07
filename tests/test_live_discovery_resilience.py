@@ -54,7 +54,8 @@ def _query(number):
 
 def _run(monkeypatch, *, refinement='stop', initial='valid', empty=False,
          total=20, iterations=3, per_iteration=4, result_limit=260,
-         duplicate=False, disabled=False, first_failure=None, real_runtime=False):
+         duplicate=False, disabled=False, first_failure=None, real_runtime=False,
+         state=None):
     mod = importlib.import_module('data_collection_workflow.nodes.source_discovery')
     from data_collection_workflow.agents import iterative_source_discovery_agent as agent
     calls = []
@@ -96,8 +97,69 @@ def _run(monkeypatch, *, refinement='stop', initial='valid', empty=False,
         iterative_enabled=True, iterative_max_iterations=iterations,
         iterative_max_queries_per_iteration=per_iteration,
         iterative_max_total_queries=total, authority_gap_retry_enabled=False)
-    result = mod._execute_iterative_source_search(_state(), settings)
+    result = mod._execute_iterative_source_search(state or _state(), settings)
     return calls, result
+
+
+@pytest.mark.parametrize('start,end,month_terms', [
+    ('2025-01-01', '2025-01-31', ['january 2025']),
+    ('2025-05-01', '2025-05-31', ['may 2025']),
+    ('2025-05-10', '2025-05-20', ['may 2025']),
+    ('2024-02-29', '2024-02-29', ['february 2024']),
+    ('2025-04-01', '2025-06-30', ['april 2025', 'may 2025', 'june 2025']),
+    ('2025-12-20', '2026-01-10', ['december 2025', 'january 2026']),
+])
+def test_short_windows_add_grounded_month_leads_without_removing_broad_queries(
+        start, end, month_terms):
+    from data_collection_workflow.query_policy import assess_query_task_fit
+    mod = importlib.import_module('data_collection_workflow.nodes.source_discovery')
+    state = _state()
+    state['structured_task'].update(start_date=start, end_date=end)
+    queries = mod._discovery_breadth_queries(state)
+    monthly = [row for row in queries if any(term in row['query'] for term in month_terms)]
+    assert {term for term in month_terms if any(term in row['query'] for row in monthly)} == set(month_terms)
+    assert all(assess_query_task_fit(row, state)['accepted'] for row in queries)
+    assert all(row['time_terms'] == [start, end] for row in monthly)
+    assert all('before:' not in row['query'] and 'after:' not in row['query'] for row in queries)
+    # Keep the existing broad searches, including archives and non-official families.
+    years = '2025 2026' if start == '2025-12-20' else start[:4]
+    assert {f'"mpox" "United States" {years} public health historical reports archive',
+            f'"mpox" "United States" {years} historical data csv spreadsheet export',
+            f'"mpox" "United States" {years} population incidence mortality study supplementary tables'} <= {
+                row['query'] for row in queries}
+
+
+@pytest.mark.parametrize('start,end', [
+    ('2025-01-01', '2025-12-31'), ('2025-01-01', '2026-01-01'),
+    ('2025-01-01', '2025-06-30'), ('', '2025-05-31'),
+    ('2025-02-30', '2025-03-31'), ('2025-05-31', '2025-05-01'),
+])
+def test_long_or_invalid_windows_keep_broad_fallbacks_only(start, end):
+    mod = importlib.import_module('data_collection_workflow.nodes.source_discovery')
+    state = _state()
+    state['structured_task'].update(start_date=start, end_date=end)
+    queries = mod._discovery_breadth_queries(state)
+    assert len(queries) == 12
+    assert not any(row.get('time_terms') for row in queries)
+
+
+@pytest.mark.parametrize('initial', ['valid', 'error'])
+@pytest.mark.parametrize('start,end,month', [
+    ('2025-01-01', '2025-01-31', 'january 2025'),
+    ('2025-05-01', '2025-05-31', 'may 2025'),
+])
+def test_month_lead_reaches_search_provider_with_existing_budgets(
+        monkeypatch, initial, start, end, month):
+    state = _state()
+    state['structured_task'].update(start_date=start, end_date=end)
+    calls, (_, _, summary, _) = _run(monkeypatch, initial=initial, state=state)
+    assert any(month in row['query'] for row in calls)
+    assert len(calls) == len({row['query'] for row in calls}) == 12
+    assert summary['stop_decision'] == 'stop_limits_reached'
+    mod = importlib.import_module('data_collection_workflow.nodes.source_discovery')
+    assert {mod._query_source_class(row) for row in calls} >= {
+        'international_official', 'national_or_local_official',
+        'structured_database', 'peer_reviewed_literature'}
 
 
 @pytest.mark.parametrize('refinement', ['stop', 'malformed', 'error'])
