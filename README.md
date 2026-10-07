@@ -26,17 +26,6 @@ The command-line runner currently uses the repository's `scripts/` and `configs/
 
 For the evidence pipeline, also prepare Chromium and Tesseract as described in [Runtime setup](docs/runtime.md). The workflow checks these local tools before sending model or search requests.
 
-## Try an offline example
-
-The included examples use synthetic documents and require no model or search credentials:
-
-```bash
-data-collection-workflow collect --config configs/examples/dengue/offline_collection.jsonc --session-id offline_example
-data-collection-workflow inspect-run --session-dir outputs/sessions/offline_example
-```
-
-Example disease and location names describe the fixture contents. They do not restrict the diseases or locations accepted by the workflow. Offline fixtures exercise the standard pipeline; evidence-pipeline acquisition tests also require the local browser/OCR tools.
-
 ## Configure credentials
 
 Copy `.env.example` to `.env` in this checkout. Add your own `TAVILY_API_KEY` and either `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Choose a model available to that account. Live searches and model calls use those accounts and may incur provider charges.
@@ -57,7 +46,7 @@ OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 TAVILY_API_KEY=YOUR_TAVILY_API_KEY
 ```
 
-For Anthropic, use `LLM_PROVIDER=anthropic`, your Anthropic model ID, and `ANTHROPIC_API_KEY`. Tavily is the separate search service. There is no fixed model: choose one in `.env`, the task configuration, or `--model`. When model-assisted stages are enabled, collection stops if no model is selected. Offline examples need neither a model nor API keys.
+For Anthropic, use `LLM_PROVIDER=anthropic`, your Anthropic model ID, and `ANTHROPIC_API_KEY`. Tavily is the separate search service. There is no fixed model: choose one in `.env`, the task configuration, or `--model`. When model-assisted stages are enabled, collection stops if no model is selected.
 
 ## Collect your own task
 
@@ -67,10 +56,10 @@ Start an interactive task and enter the requested task fields and any missing mo
 python scripts/collect.py --pipeline-mode evidence --no-dashboard
 ```
 
-Or supply the task explicitly. Replace the example values and model ID:
+Or supply the task explicitly. Replace the disease, location, date, and model placeholders with your task inputs:
 
 ```bash
-python scripts/collect.py --pipeline-mode evidence --disease "dengue" --location "Florida" --start-date 2025-01-01 --end-date 2025-12-31 --provider anthropic --model "YOUR_MODEL_ID" --session-id my_collection --no-dashboard
+python scripts/collect.py --pipeline-mode evidence --disease "YOUR_DISEASE" --location "YOUR_LOCATION" --start-date "YYYY-MM-DD" --end-date "YYYY-MM-DD" --provider anthropic --model "YOUR_MODEL_ID" --session-id my_collection --no-dashboard
 ```
 
 Add `--print-config-only` to inspect the resolved settings without starting collection. `--quick-test-mode` reduces the live-run budget; it is not an offline mode.
@@ -136,7 +125,7 @@ src/data_collection_workflow/  Workflow nodes, agents, evidence, runtime, and re
   nodes/                      Collection and validation steps
   resources/                  Policies, prompts, disease profiles, and fixtures
 scripts/                      Collection, configured execution, and optional interfaces
-configs/                      Task template and runnable examples
+configs/                      Blank task template
 integrations/langflow/        Optional visual interface components
 tests/                        Software behavior and integration tests
 docs/                         Configuration and runtime instructions

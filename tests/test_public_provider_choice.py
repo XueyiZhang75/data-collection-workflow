@@ -167,11 +167,16 @@ def test_preview_remains_available_without_a_model(tmp_path, capsys):
 @pytest.mark.parametrize("mode", ["offline", "fixture-search", "live-search"])
 def test_generated_template_keeps_llm_optional(tmp_path, mode):
     path = tmp_path / "offline.jsonc"
-    assert cli.main([
+    args = [
         "init-config", "--disease", "dengue", "--location", "Example region",
         "--start-date", "2025-01-01", "--end-date", "2025-12-31",
         "--mode", mode, "--output", str(path),
-    ]) == 0
+    ]
+    if mode == "fixture-search":
+        search_path = tmp_path / "search.json"
+        search_path.write_text(json.dumps({"queries": []}), encoding="utf-8")
+        args.extend(["--search-fixture-path", str(search_path)])
+    assert cli.main(args) == 0
     config = profile.load_workflow_run_config(path)
     assert config["llm"]["model"] == ""
     updates = profile.workflow_run_env_from_config(config)

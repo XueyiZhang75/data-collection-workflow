@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from synthetic_workflow_inputs import write_workflow_config
+
 from pathlib import Path
 
 import pytest
@@ -180,7 +182,7 @@ def _apply(state: dict) -> dict:
     return apply_human_review_decisions(state)
 
 
-def _run_fixture_config(config_name: str) -> dict:
+def _run_fixture_config(config_path: Path) -> dict:
     from data_collection_workflow.runtime_profile import (
         load_workflow_run_config,
         temporary_workflow_env,
@@ -188,7 +190,7 @@ def _run_fixture_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config = load_workflow_run_config(Path("configs") / "examples" / config_name)
+    config = load_workflow_run_config(config_path)
     with temporary_workflow_env(workflow_run_env_from_config(config)):
         return build_graph().invoke(workflow_initial_state_from_config(config))
 
@@ -544,8 +546,8 @@ def test_final_package_exports_anomaly_and_review_application_artifacts(tmp_path
     assert Path(manifest["files"]["human_review_audit_trail_json"]).exists()
 
 
-def test_full_graph_fixture_review_application_smoke():
-    result = _run_fixture_config("covid19/offline_review.jsonc")
+def test_full_graph_fixture_review_application_smoke(tmp_path):
+    result = _run_fixture_config(write_workflow_config(tmp_path, disease='COVID-19', location='New York', year='2024', phase='review'))
 
     assert result["anomaly_summary"]["anomaly_result_count"] >= 0
     assert result["human_review_application_summary"]["decisions_applied_count"] >= 1
@@ -554,8 +556,8 @@ def test_full_graph_fixture_review_application_smoke():
     assert all(record["disease"] == "COVID-19" for record in result["normalized_records"])
 
 
-def test_full_graph_dengue_fixture_review_application_smoke():
-    result = _run_fixture_config("dengue/offline_review.jsonc")
+def test_full_graph_dengue_fixture_review_application_smoke(tmp_path):
+    result = _run_fixture_config(write_workflow_config(tmp_path, disease='dengue', location='Florida', year='2025', phase='review'))
 
     assert result["anomaly_summary"]["anomaly_result_count"] >= 0
     assert result["human_review_application_summary"]["decisions_applied_count"] >= 1

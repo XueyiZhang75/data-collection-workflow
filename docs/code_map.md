@@ -33,7 +33,7 @@ Evidence mode adds runtime readiness and a recovery controller after the quality
 
 Source-planning and source-critic prompt resources are in `resources/source_planning_agent_prompt.json` and `resources/source_critic_agent_prompt.json`. Their agents read those resources. Source identity and iterative discovery prompts are defined with their agents in `agents/`. Disease-intelligence and credibility prompts live with their corresponding task/source code. Extraction instructions combine `resources/llm_structured_extraction_policy.json` with task, schema, and source evidence in `llm_clients.py`.
 
-Disease profiles and schemas keep their disease names because their content is disease-specific. Synthetic fixtures retain their task identity and synthetic-data notices. The live task and its evidence determine which observations qualify.
+Disease profiles and schemas keep their disease names because their content is disease-specific. They support task interpretation and field selection; the live task and its evidence determine which observations qualify. User-provided fixtures are configured explicitly as described in [Configuration](configuration.md).
 
 ## Optional interfaces
 

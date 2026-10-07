@@ -19,3 +19,11 @@ outputs/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local disease demonstration assets are not part of the public package.
+configs/examples/
+src/data_collection_workflow/resources/search_fixtures/*
+!src/data_collection_workflow/resources/search_fixtures/example_search_results.json
+src/data_collection_workflow/resources/content_fixtures/
+src/data_collection_workflow/resources/human_review_decision_fixtures/*
+!src/data_collection_workflow/resources/human_review_decision_fixtures/mixed_decisions.json

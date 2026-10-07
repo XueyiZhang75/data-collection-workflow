@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from synthetic_workflow_inputs import write_workflow_config
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CLI = [sys.executable, "-m", "data_collection_workflow.cli"]
@@ -41,16 +42,17 @@ def test_cli_help_lists_user_facing_subcommands():
         assert command in result.stdout
 
 
-def test_validate_config_accepts_fixture_and_live_configs_without_secrets():
-    configs = [
-        "configs/examples/covid19/offline_review.jsonc",
-        "configs/examples/dengue/offline_review.jsonc",
-        "configs/examples/covid19/review.jsonc",
-        "configs/examples/dengue/review.jsonc",
-    ]
+def test_validate_config_accepts_fixture_and_live_configs_without_secrets(tmp_path):
+    fixture_config = write_workflow_config(tmp_path / "fixture", phase="review")
+    live_config = write_workflow_config(tmp_path / "live")
+    live = json.loads(live_config.read_text(encoding="utf-8"))
+    live["live_web"]["enabled"] = True
+    live["source_search"].update(enabled=True, mode="live", provider="tavily", fixture_path=None)
+    live_config.write_text(json.dumps(live), encoding="utf-8")
+    configs = [fixture_config, live_config]
 
     for config in configs:
-        result = _run(["validate-config", "--config", config])
+        result = _run(["validate-config", "--config", str(config)])
         combined = result.stdout + result.stderr
         assert result.returncode == 0, combined
         assert "valid: true" in result.stdout.lower()
@@ -58,7 +60,8 @@ def test_validate_config_accepts_fixture_and_live_configs_without_secrets():
         assert "sk-ant-test-key" not in combined
 
 
-def test_collect_print_config_only_sanitizes_secret_values():
+def test_collect_print_config_only_sanitizes_secret_values(tmp_path):
+    config_path = write_workflow_config(tmp_path, phase="review")
     env = _env(
         {
             "TAVILY_API_KEY": "tvly-test-key",
@@ -70,7 +73,7 @@ def test_collect_print_config_only_sanitizes_secret_values():
         [
             "collect",
             "--config",
-            "configs/examples/covid19/offline_review.jsonc",
+            str(config_path),
             "--print-config-only",
         ],
         env=env,
@@ -85,11 +88,12 @@ def test_collect_print_config_only_sanitizes_secret_values():
 
 
 def test_collect_dry_run_shows_structured_overrides_without_running_graph(tmp_path):
+    config_path = write_workflow_config(tmp_path, phase="review")
     result = _run(
         [
             "collect",
             "--config",
-            "configs/examples/covid19/offline_review.jsonc",
+            str(config_path),
             "--disease",
             "COVID-19",
             "--location",
@@ -125,7 +129,8 @@ def test_configured_runner_case_study_real_mode_helper_accepts_cli_namespace_wit
 
 
 def test_collect_offline_fixture_run_inspect_review_and_export(tmp_path):
-    session_id = "stage12_pytest_cli_covid19_fixture"
+    config_path = write_workflow_config(tmp_path, phase="review")
+    session_id = "pytest_cli_temporary_fixture"
     output_root = tmp_path / "runs"
     export_dir = tmp_path / "exported"
 
@@ -133,7 +138,7 @@ def test_collect_offline_fixture_run_inspect_review_and_export(tmp_path):
         [
             "collect",
             "--config",
-            "configs/examples/covid19/offline_review.jsonc",
+            str(config_path),
             "--session-id",
             session_id,
             "--output-dir",
@@ -178,15 +183,16 @@ def test_collect_offline_fixture_run_inspect_review_and_export(tmp_path):
 
 
 def test_init_config_writes_safe_template_and_validate_config_accepts_it(tmp_path):
-    config_path = tmp_path / "generated_dengue_config.jsonc"
+    write_workflow_config(tmp_path, phase="search")
+    config_path = tmp_path / "generated_task_config.jsonc"
 
     init = _run(
         [
             "init-config",
             "--disease",
-            "dengue",
+            "Example disease",
             "--location",
-            "Florida",
+            "Example region",
             "--start-date",
             "2025",
             "--end-date",
@@ -197,6 +203,8 @@ def test_init_config_writes_safe_template_and_validate_config_accepts_it(tmp_pat
             "deaths",
             "--mode",
             "fixture-search",
+            "--search-fixture-path",
+            str(tmp_path / "search.json"),
             "--output",
             str(config_path),
         ]
@@ -232,7 +240,7 @@ def test_public_documentation_covers_configuration_runtime_and_results():
     code_map = (PROJECT_ROOT / "docs" / "code_map.md").read_text(encoding="utf-8")
 
     assert "data collection workflow" in readme.lower()
-    for token in ("configs/examples/dengue/offline_collection.jsonc", "TAVILY_API_KEY",
+    for token in ("configs/workflow.jsonc", "TAVILY_API_KEY",
                   "ANTHROPIC_API_KEY", "scripts/collect.py", "result_manifest.json",
                   "review-summary", "--resume-session"):
         assert token in readme

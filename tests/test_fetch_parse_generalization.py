@@ -6,6 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+from synthetic_workflow_inputs import write_workflow_config
+
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _SRC = _PROJECT_ROOT / "src"
 if str(_PROJECT_ROOT) not in sys.path:
@@ -120,8 +122,17 @@ def _state_with_sources(entries: list[dict]) -> dict:
     }
 
 
-def _fixture_path(name: str) -> Path:
-    return _PROJECT_ROOT / "src" / "data_collection_workflow" / "resources" / "content_fixtures" / name
+def _write_html_fixture(tmp_path: Path, *, title: str, published_date: str) -> Path:
+    path = tmp_path / "surveillance.html"
+    path.write_text(
+        f'<html><head><title>{title}</title>'
+        f'<meta name="date" content="{published_date}"></head>'
+        f'<body><h1>{title}</h1><p>Reported {published_date}.</p>'
+        '<table><tr><th>Cases</th><th>Deaths</th></tr>'
+        '<tr><td>12</td><td>1</td></tr></table></body></html>',
+        encoding="utf-8",
+    )
+    return path
 
 
 def test_default_behavior_does_not_fetch_search_derived_sources(monkeypatch):
@@ -3057,10 +3068,12 @@ def test_content_fetch_node_time_budget_skips_remaining_sources_fail_open(monkey
     )
 
 
-def test_html_parser_extracts_title_text_table_and_date():
+def test_html_parser_extracts_title_text_table_and_date(tmp_path):
     from data_collection_workflow.nodes.content_processing import _parse_document_content
 
-    fixture = _fixture_path("covid19_ny_official_page.html")
+    fixture = _write_html_fixture(
+        tmp_path, title="New York COVID-19 Surveillance Update 2024", published_date="2024-06-01",
+    )
     result = _parse_document_content(
         fixture.read_bytes(),
         url="https://health.ny.gov/example/covid-19-surveillance-2024",
@@ -3078,10 +3091,12 @@ def test_html_parser_extracts_title_text_table_and_date():
     assert result["table_count"] > 0
 
 
-def test_dengue_html_fixture_parses_correctly():
+def test_dengue_html_fixture_parses_correctly(tmp_path):
     from data_collection_workflow.nodes.content_processing import _parse_document_content
 
-    fixture = _fixture_path("dengue_florida_official_page.html")
+    fixture = _write_html_fixture(
+        tmp_path, title="Florida Dengue Surveillance Update 2025", published_date="2025-06-01",
+    )
     result = _parse_document_content(
         fixture.read_bytes(),
         url="https://www.floridahealth.gov/example/dengue-surveillance-2025",
@@ -3554,7 +3569,7 @@ def test_markdown_metric_heading_context_switches_to_heading_with_digits():
     ]
 
 
-def _run_full_graph_from_config(config_name: str) -> dict:
+def _run_full_graph_from_config(config_path: Path) -> dict:
     from data_collection_workflow.graph import build_graph
     from data_collection_workflow.workflow_run_config import (
         load_workflow_run_config,
@@ -3563,8 +3578,6 @@ def _run_full_graph_from_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config_path = _PROJECT_ROOT / "configs" / "examples" / config_name
-    assert config_path.exists(), f"missing required config example: {config_path}"
     config = load_workflow_run_config(config_path)
     env_updates = workflow_run_env_from_config(config)
     assert env_updates["ENABLE_LIVE_FETCH"] == "false"
@@ -3576,10 +3589,10 @@ def _run_full_graph_from_config(config_name: str) -> dict:
         return build_graph().invoke(workflow_initial_state_from_config(config))
 
 
-def test_full_graph_covid19_fixture_search_and_fixture_content_smoke():
-    result = _run_full_graph_from_config(
-        "covid19/offline_fetch.jsonc"
-    )
+def test_full_graph_covid19_fixture_search_and_fixture_content_smoke(tmp_path):
+    result = _run_full_graph_from_config(write_workflow_config(
+        tmp_path, disease="COVID-19", location="New York", year="2024", phase="fetch",
+    ))
     package = result.get("final_data_package") or {}
     summaries = package.get("workflow_summaries") or {}
     fetch_summary = result.get("content_fetch_summary") or {}
@@ -3597,10 +3610,10 @@ def test_full_graph_covid19_fixture_search_and_fixture_content_smoke():
     assert summaries.get("content_fetch_summary")
 
 
-def test_full_graph_dengue_fixture_search_and_fixture_content_smoke():
-    result = _run_full_graph_from_config(
-        "dengue/offline_fetch.jsonc"
-    )
+def test_full_graph_dengue_fixture_search_and_fixture_content_smoke(tmp_path):
+    result = _run_full_graph_from_config(write_workflow_config(
+        tmp_path, disease="dengue", location="Florida", year="2025", phase="fetch",
+    ))
     package = result.get("final_data_package") or {}
     summaries = package.get("workflow_summaries") or {}
     fetch_summary = result.get("content_fetch_summary") or {}

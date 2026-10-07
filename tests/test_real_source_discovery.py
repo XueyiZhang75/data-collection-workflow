@@ -8,6 +8,8 @@ import json
 import sys
 from pathlib import Path
 
+from synthetic_workflow_inputs import write_workflow_config
+
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _SRC = _PROJECT_ROOT / "src"
 if str(_SRC) not in sys.path:
@@ -84,8 +86,33 @@ def _run_to_source_discovery(state: dict) -> dict:
     return state
 
 
-def _fixture_path(name: str) -> Path:
-    return _PROJECT_ROOT / "src" / "data_collection_workflow" / "resources" / "search_fixtures" / name
+def _write_search_fixture(
+    tmp_path: Path,
+    *,
+    disease: str,
+    location: str,
+    year: str,
+    invalid_results: bool = False,
+) -> Path:
+    result = {
+        "title": f"{location} {disease} surveillance {year}",
+        "url": "https://health.example.gov/surveillance/update",
+        "snippet": f"Official {disease} cases and deaths in {location} during {year}.",
+        "published_date": f"{year}-06-01",
+        "source": f"{location} Department of Health",
+        "rank": 1,
+    }
+    results = [result]
+    if invalid_results:
+        results.extend([
+            {**result, "url": result["url"] + "#summary"},
+            {**result, "url": "ftp://health.example.gov/report"},
+            {**result, "url": ""},
+            {**result, "url": "https://health.example.gov/empty", "title": "", "snippet": ""},
+        ])
+    path = tmp_path / "search_results.json"
+    path.write_text(json.dumps({"results": results}), encoding="utf-8")
+    return path
 
 
 def test_direct_verified_target_sufficiency_requires_all_target_weeks():
@@ -252,11 +279,23 @@ def test_target_verification_excludes_explicit_validation_role_sources():
     )
 
 
-def _enable_fixture_search(monkeypatch, fixture_name: str) -> None:
+def _enable_fixture_search(
+    monkeypatch,
+    tmp_path: Path,
+    *,
+    disease: str = "COVID-19",
+    location: str = "New York",
+    year: str = "2024",
+    invalid_results: bool = False,
+) -> None:
     _clear_search_env(monkeypatch)
     monkeypatch.setenv("SEARCH_MODE", "fixture")
     monkeypatch.setenv("SEARCH_PROVIDER", "fixture")
-    monkeypatch.setenv("SEARCH_FIXTURE_PATH", str(_fixture_path(fixture_name)))
+    fixture_path = _write_search_fixture(
+        tmp_path, disease=disease, location=location, year=year,
+        invalid_results=invalid_results,
+    )
+    monkeypatch.setenv("SEARCH_FIXTURE_PATH", str(fixture_path))
     monkeypatch.setenv("SEARCH_MAX_QUERIES", "3")
     monkeypatch.setenv("SEARCH_MAX_RESULTS_PER_QUERY", "5")
     monkeypatch.setenv("SEARCH_MAX_TOTAL_RESULTS", "15")
@@ -272,7 +311,7 @@ def _search_candidates(result: dict) -> list[dict]:
     ]
 
 
-def _run_full_graph_from_config(config_name: str) -> dict:
+def _run_full_graph_from_config(config_path: Path) -> dict:
     from data_collection_workflow.graph import build_graph
     from data_collection_workflow.workflow_run_config import (
         load_workflow_run_config,
@@ -281,9 +320,8 @@ def _run_full_graph_from_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config_path = _PROJECT_ROOT / "configs" / "examples" / config_name
-    assert config_path.exists(), f"missing required config example: {config_path}"
     config = load_workflow_run_config(config_path)
+    config["source_search"]["combine_with_seed_catalog"] = True
     env_updates = workflow_run_env_from_config(config)
     assert env_updates["ENABLE_LIVE_FETCH"] == "false"
     assert env_updates["ENABLE_LLM_SOURCE_PLANNING"] == "false"
@@ -322,8 +360,8 @@ def test_search_disabled_preserves_offline_seed_catalog_behavior(monkeypatch):
     }
 
 
-def test_fixture_search_provider_executes_planned_queries(monkeypatch):
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+def test_fixture_search_provider_executes_planned_queries(monkeypatch, tmp_path):
+    _enable_fixture_search(monkeypatch, tmp_path)
 
     result = _run_to_source_discovery(_state_for("COVID-19", "New York", "2024"))
 
@@ -492,9 +530,10 @@ def test_source_discovery_executes_search_query_inventory_when_plan_is_empty(
 
 
 def test_source_discovery_reports_query_generation_failure_for_requirements(
+    tmp_path,
     monkeypatch,
 ):
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+    _enable_fixture_search(monkeypatch, tmp_path)
     from data_collection_workflow.nodes.source_discovery import source_discovery
 
     state = {
@@ -536,9 +575,10 @@ def test_source_discovery_reports_query_generation_failure_for_requirements(
 
 
 def test_direct_collection_non_hantavirus_search_does_not_mix_hantavirus_seed_catalog(
+    tmp_path,
     monkeypatch,
 ):
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+    _enable_fixture_search(monkeypatch, tmp_path)
     state = _state_for("FLU", "California", "2024")
     state["structured_task"]["collection_mode"] = "direct_collection"
 
@@ -561,9 +601,10 @@ def test_direct_collection_non_hantavirus_search_does_not_mix_hantavirus_seed_ca
 
 
 def test_direct_collection_searches_to_validate_generated_official_candidate(
+    tmp_path,
     monkeypatch,
 ):
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+    _enable_fixture_search(monkeypatch, tmp_path)
     monkeypatch.setenv("DIRECT_FAST_STOP_ON_VERIFIED_TARGET", "true")
     state = _state_for("FLU", "United States", "2024")
     state["structured_task"].update(
@@ -673,8 +714,8 @@ def test_direct_collection_partial_week_coverage_does_not_stop_as_sufficient(
     assert set(search_summary["target_source_miss_reasons"])
 
 
-def test_fixture_covid19_search_candidates_are_disease_specific(monkeypatch):
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+def test_fixture_covid19_search_candidates_are_disease_specific(monkeypatch, tmp_path):
+    _enable_fixture_search(monkeypatch, tmp_path)
 
     result = _run_to_source_discovery(_state_for("COVID-19", "New York", "2024"))
     text = "\n".join(
@@ -690,8 +731,8 @@ def test_fixture_covid19_search_candidates_are_disease_specific(monkeypatch):
     assert not any(candidate.get("seed_source_id") for candidate in _search_candidates(result))
 
 
-def test_fixture_dengue_search_candidates_are_disease_specific(monkeypatch):
-    _enable_fixture_search(monkeypatch, "dengue_florida_search_results.json")
+def test_fixture_dengue_search_candidates_are_disease_specific(monkeypatch, tmp_path):
+    _enable_fixture_search(monkeypatch, tmp_path, disease="dengue", location="Florida", year="2025")
 
     result = _run_to_source_discovery(_state_for("dengue", "Florida", "2025"))
     text = "\n".join(
@@ -707,8 +748,8 @@ def test_fixture_dengue_search_candidates_are_disease_specific(monkeypatch):
     assert not any(candidate.get("seed_source_id") for candidate in _search_candidates(result))
 
 
-def test_search_result_url_validation_and_deduplication(monkeypatch):
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+def test_search_result_url_validation_and_deduplication(monkeypatch, tmp_path):
+    _enable_fixture_search(monkeypatch, tmp_path, invalid_results=True)
 
     result = _run_to_source_discovery(_state_for("COVID-19", "New York", "2024"))
     summary = result.get("source_search_execution_summary") or {}
@@ -724,23 +765,64 @@ def test_search_result_url_validation_and_deduplication(monkeypatch):
     assert rejection_counts.get("empty_title_and_snippet", 0) >= 1
 
 
-def test_query_and_result_limits_are_enforced(monkeypatch):
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+def test_query_and_result_limits_are_enforced(monkeypatch, tmp_path):
+    from data_collection_workflow.nodes.source_discovery import source_discovery
+
+    _enable_fixture_search(monkeypatch, tmp_path)
     monkeypatch.setenv("SEARCH_MAX_QUERIES", "2")
     monkeypatch.setenv("SEARCH_MAX_RESULTS_PER_QUERY", "2")
     monkeypatch.setenv("SEARCH_MAX_TOTAL_RESULTS", "3")
-
-    result = _run_to_source_discovery(_state_for("COVID-19", "New York", "2024"))
-    summary = result.get("source_search_execution_summary") or {}
-    statuses = {
-        record.get("execution_status")
-        for record in summary.get("query_execution_records") or []
+    planned_queries = [
+        {
+            "query_id": f"q_limit_{index}",
+            "query": f"COVID-19 New York 2024 official surveillance report {index}",
+            "provider_channel": "web_search",
+            "query_type": "general_web",
+            "source_type": "official_public_health_agency",
+            "role_hint": "collection",
+            "priority": index,
+        }
+        for index in range(1, 4)
+    ]
+    # Each query can return four distinct URLs, so both result limits must bind.
+    fixture = {
+        "queries": [
+            {
+                "query_ids": [query["query_id"]],
+                "results": [
+                    {
+                        "title": "New York COVID-19 surveillance 2024",
+                        "url": f"https://health.example.gov/{query['query_id']}/{rank}",
+                        "snippet": "Official COVID-19 cases in New York during 2024.",
+                        "source": "New York Department of Health",
+                    }
+                    for rank in range(1, 5)
+                ],
+            }
+            for query in planned_queries
+        ]
     }
+    (tmp_path / "search_results.json").write_text(json.dumps(fixture), encoding="utf-8")
+    state = _state_for("COVID-19", "New York", "2024")
+    state["agentic_source_plan"] = {"planned_queries": planned_queries}
 
-    assert summary["executed_query_count"] <= 2
-    assert summary["candidate_from_search_count"] <= 3
+    result = source_discovery(state)
+    summary = result.get("source_search_execution_summary") or {}
+    records = summary.get("query_execution_records") or []
+    statuses = {record.get("execution_status") for record in records}
+
+    assert summary["executed_query_count"] == 2
+    assert summary["candidate_from_search_count"] == 3
+    assert summary["raw_search_result_count"] == 8
     assert summary["skipped_query_count"] > 0
     assert "skipped_query_limit" in statuses or "skipped_total_result_limit" in statuses
+    assert [record["result_count"] for record in records if record["execution_status"] == "executed"] == [2, 1]
+    assert summary["rejection_reason_counts"]["result_limit_reached"] == 1
+    assert {candidate["canonical_url"] for candidate in _search_candidates(result)} == {
+        "https://health.example.gov/q_limit_1/1",
+        "https://health.example.gov/q_limit_1/2",
+        "https://health.example.gov/q_limit_2/1",
+    }
 
 
 def test_outbreak_query_budget_keeps_database_and_literature_under_cap(
@@ -2893,10 +2975,10 @@ def test_high_trust_no_result_domain_retry_uses_event_aliases_without_benchmark_
     assert any("pathoplexus.org" in str(url) for url in urls)
 
 
-def test_source_candidate_and_registry_preserve_search_provenance(monkeypatch):
+def test_source_candidate_and_registry_preserve_search_provenance(monkeypatch, tmp_path):
     from data_collection_workflow.nodes.source_discovery import source_dedup_and_registry
 
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+    _enable_fixture_search(monkeypatch, tmp_path)
     state = _run_to_source_discovery(_state_for("COVID-19", "New York", "2024"))
     candidates = _search_candidates(state)
     assert candidates
@@ -2934,8 +3016,10 @@ def test_source_candidate_and_registry_preserve_search_provenance(monkeypatch):
         assert entry.get(key) not in (None, "", [])
 
 
-def test_full_graph_covid19_fixture_search_smoke():
-    result = _run_full_graph_from_config("covid19/offline_search.jsonc")
+def test_full_graph_covid19_fixture_search_smoke(tmp_path):
+    result = _run_full_graph_from_config(write_workflow_config(
+        tmp_path, disease="COVID-19", location="New York", year="2024", phase="search",
+    ))
     package = result.get("final_data_package") or {}
     metadata = package.get("package_metadata") or {}
     summaries = package.get("workflow_summaries") or {}
@@ -2953,8 +3037,10 @@ def test_full_graph_covid19_fixture_search_smoke():
     assert any(entry.get("discovery_method") == "fixture_search_result" for entry in registry)
 
 
-def test_full_graph_dengue_fixture_search_smoke():
-    result = _run_full_graph_from_config("dengue/offline_search.jsonc")
+def test_full_graph_dengue_fixture_search_smoke(tmp_path):
+    result = _run_full_graph_from_config(write_workflow_config(
+        tmp_path, disease="dengue", location="Florida", year="2025", phase="search",
+    ))
     package = result.get("final_data_package") or {}
     metadata = package.get("package_metadata") or {}
     summaries = package.get("workflow_summaries") or {}
@@ -2972,7 +3058,7 @@ def test_full_graph_dengue_fixture_search_smoke():
     assert any(entry.get("discovery_method") == "fixture_search_result" for entry in registry)
 
 
-def test_live_search_provider_is_not_called_unless_live_mode_is_explicit(monkeypatch):
+def test_live_search_provider_is_not_called_unless_live_mode_is_explicit(monkeypatch, tmp_path):
     source_discovery_module = importlib.import_module(
         "data_collection_workflow.nodes.source_discovery"
     )
@@ -2991,7 +3077,7 @@ def test_live_search_provider_is_not_called_unless_live_mode_is_explicit(monkeyp
     _clear_search_env(monkeypatch)
     _run_to_source_discovery(_state_for("COVID-19", "New York", "2024"))
 
-    _enable_fixture_search(monkeypatch, "covid19_new_york_search_results.json")
+    _enable_fixture_search(monkeypatch, tmp_path)
     _run_to_source_discovery(_state_for("COVID-19", "New York", "2024"))
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from synthetic_workflow_inputs import write_workflow_config
+
 import importlib
 from pathlib import Path
 
@@ -399,7 +401,7 @@ def test_optional_llm_generic_extraction_failure_falls_back(monkeypatch):
     assert result["raw_records"][0]["disease"] == "COVID-19"
 
 
-def _run_fixture_config(config_name: str) -> dict:
+def _run_fixture_config(config_path: Path) -> dict:
     from data_collection_workflow.runtime_profile import (
         load_workflow_run_config,
         temporary_workflow_env,
@@ -407,33 +409,33 @@ def _run_fixture_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config = load_workflow_run_config(Path("configs") / "examples" / config_name)
+    config = load_workflow_run_config(config_path)
     with temporary_workflow_env(workflow_run_env_from_config(config)):
         return build_graph().invoke(workflow_initial_state_from_config(config))
 
 
-def test_full_graph_covid19_fixture_search_fetch_generic_extraction_smoke():
-    result = _run_fixture_config("covid19/offline_collection.jsonc")
+def test_full_graph_covid19_fixture_search_fetch_generic_extraction_smoke(tmp_path):
+    result = _run_fixture_config(write_workflow_config(tmp_path, disease='COVID-19', location='New York', year='2024', phase='collection'))
     records = result["normalized_records"]
     package = result["final_data_package"]
 
     assert result["evidence_chunks"]
     assert records
     assert all(r["disease"] == "COVID-19" for r in records)
-    assert any(r.get("hospitalizations") == 74 for r in records)
+    assert any(r.get("hospitalizations") == 3 for r in records)
     assert package["final_dataset"][0]["disease"] == "COVID-19"
     assert "generic_record_count" in result["structured_extraction_summary"]
 
 
-def test_full_graph_dengue_fixture_search_fetch_generic_extraction_smoke():
-    result = _run_fixture_config("dengue/offline_collection.jsonc")
+def test_full_graph_dengue_fixture_search_fetch_generic_extraction_smoke(tmp_path):
+    result = _run_fixture_config(write_workflow_config(tmp_path, disease='dengue', location='Florida', year='2025', phase='collection'))
     records = result["normalized_records"]
     package = result["final_data_package"]
 
     assert result["evidence_chunks"]
     assert records
     assert all(r["disease"] == "Dengue" for r in records)
-    assert any(r.get("cases_unspecified") == 42 for r in records)
+    assert any(r.get("cases_unspecified") == 12 for r in records)
     assert package["final_dataset"][0]["disease"] == "Dengue"
 
 

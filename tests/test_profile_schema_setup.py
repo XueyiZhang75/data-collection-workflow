@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from synthetic_workflow_inputs import write_workflow_config
+
 import sys
 from pathlib import Path
 
@@ -67,7 +69,7 @@ def _run_profile_schema(
     return profile_and_schema_setup(state)
 
 
-def _run_full_graph_from_example_config(config_name: str) -> dict:
+def _run_full_graph_from_example_config(config_path: Path) -> dict:
     from data_collection_workflow.graph import build_graph
     from data_collection_workflow.workflow_run_config import (
         load_workflow_run_config,
@@ -76,11 +78,9 @@ def _run_full_graph_from_example_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config = load_workflow_run_config(
-        _PROJECT_ROOT / "configs" / "examples" / config_name
-    )
+    config = load_workflow_run_config(config_path)
     env_updates = workflow_run_env_from_config(config)
-    assert env_updates["USE_FIXTURE_DOCUMENTS"] == "true"
+    assert env_updates["USE_FIXTURE_DOCUMENTS"] == "false"
     assert env_updates["ENABLE_LIVE_FETCH"] == "false"
     assert env_updates["ENABLE_LLM_SOURCE_PLANNING"] == "false"
     assert env_updates["ENABLE_LLM_SOURCE_CRITIC"] == "false"
@@ -192,8 +192,8 @@ def test_dengue_generated_profile_schema_is_not_hantavirus_active_resource():
     assert "source_discovery_not_yet_disease_generic" not in warnings
 
 
-def test_full_graph_covid19_exports_profile_schema_summary_and_active_resources():
-    result = _run_full_graph_from_example_config("covid19/task.jsonc")
+def test_full_graph_covid19_exports_profile_schema_summary_and_active_resources(tmp_path):
+    result = _run_full_graph_from_example_config(write_workflow_config(tmp_path, disease='COVID-19', location='New York', year='2024', phase='task'))
 
     package = result["final_data_package"]
     summaries = package["workflow_summaries"]
@@ -211,8 +211,8 @@ def test_full_graph_covid19_exports_profile_schema_summary_and_active_resources(
     assert "source_discovery_not_yet_disease_generic" not in warnings
 
 
-def test_full_graph_dengue_exports_profile_schema_summary_and_active_resources():
-    result = _run_full_graph_from_example_config("dengue/task.jsonc")
+def test_full_graph_dengue_exports_profile_schema_summary_and_active_resources(tmp_path):
+    result = _run_full_graph_from_example_config(write_workflow_config(tmp_path, disease='dengue', location='Florida', year='2025', phase='task'))
 
     summaries = result["final_data_package"]["workflow_summaries"]
     assert "profile_schema_summary" in summaries

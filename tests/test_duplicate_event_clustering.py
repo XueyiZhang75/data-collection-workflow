@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from synthetic_workflow_inputs import write_workflow_config
+
 from pathlib import Path
 
 from data_collection_workflow.graph import build_graph
@@ -62,7 +64,7 @@ def _records_by_id(records: list[dict]) -> dict[str, dict]:
     return {record["record_id"]: record for record in records}
 
 
-def _run_fixture_config(config_name: str) -> dict:
+def _run_fixture_config(config_path: Path) -> dict:
     from data_collection_workflow.runtime_profile import (
         load_workflow_run_config,
         temporary_workflow_env,
@@ -70,7 +72,7 @@ def _run_fixture_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config = load_workflow_run_config(Path("configs") / "examples" / config_name)
+    config = load_workflow_run_config(config_path)
     with temporary_workflow_env(workflow_run_env_from_config(config)):
         return build_graph().invoke(workflow_initial_state_from_config(config))
 
@@ -338,8 +340,8 @@ def test_final_package_exports_clustering_artifacts():
     assert "countable" in package["final_dataset"][0]
 
 
-def test_full_graph_covid19_fixture_extraction_clustering_smoke():
-    result = _run_fixture_config("covid19/offline_collection.jsonc")
+def test_full_graph_covid19_fixture_extraction_clustering_smoke(tmp_path):
+    result = _run_fixture_config(write_workflow_config(tmp_path, disease='COVID-19', location='New York', year='2024', phase='collection'))
     records = result["normalized_records"]
     package = result["final_data_package"]
 
@@ -352,8 +354,8 @@ def test_full_graph_covid19_fixture_extraction_clustering_smoke():
     assert package["workflow_summaries"]["event_clustering_summary"]
 
 
-def test_full_graph_dengue_fixture_extraction_clustering_smoke():
-    result = _run_fixture_config("dengue/offline_collection.jsonc")
+def test_full_graph_dengue_fixture_extraction_clustering_smoke(tmp_path):
+    result = _run_fixture_config(write_workflow_config(tmp_path, disease='dengue', location='Florida', year='2025', phase='collection'))
     records = result["normalized_records"]
     package = result["final_data_package"]
 

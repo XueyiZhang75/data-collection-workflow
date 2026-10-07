@@ -39,9 +39,25 @@ Evidence mode persists operation usage in the session. `universal.budget_policy`
 
 The extraction scheduler's `soft_checkpoint_calls` and `safety_max_calls` govern its checkpoint and hard-call behavior. `llm.max_chunks` is a legacy setting and does not by itself express the current hard limit. Review the resolved configuration with `--print-config-only` before a live run.
 
-## Sources and examples
+## Sources and user-provided fixtures
 
-The default template has no study-specific source overlay or allowlist. Supply optional source policies explicitly. Example configurations under `configs/examples/covid19/` and `configs/examples/dengue/` describe their actual fixture tasks. Files prefixed `offline_` use synthetic local resources. Other example configurations may enable live search, fetch, or inherited model stages and require corresponding credentials.
+The default template has no study-specific source overlay or allowlist. Supply optional source policies explicitly.
+
+Offline fixture support accepts your own search results, content map, and review decisions. `init-config` does not select fixture files from the disease name. Supply paths explicitly:
+
+| `init-config` argument | Configuration field |
+| --- | --- |
+| `--search-fixture-path` | `source_search.fixture_path` |
+| `--content-fixture-map-path` | `content_fetch.content_fixture_map_path` |
+| `--review-decisions-path` | `human_review.decisions_path` |
+
+Use `--mode fixture-search` with your search fixture and content map to generate a configuration for local fixture collection. The review-decision file is optional. Replace the task, date, and file placeholders before running:
+
+```bash
+data-collection-workflow init-config --disease "YOUR_DISEASE" --location "YOUR_LOCATION" --start-date "YYYY-MM-DD" --end-date "YYYY-MM-DD" --mode fixture-search --search-fixture-path "PATH_TO_SEARCH_FIXTURE.json" --content-fixture-map-path "PATH_TO_CONTENT_MAP.json" --output configs/my_task.jsonc
+```
+
+Review the generated configuration, then use `validate-config` and `collect` with `--config configs/my_task.jsonc`. Live search and model-assisted stages require their corresponding credentials when enabled.
 
 ## Recovery and review
 

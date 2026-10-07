@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from synthetic_workflow_inputs import write_workflow_config
+
 import importlib
 import sys
 from pathlib import Path
@@ -137,7 +139,7 @@ def _run_source_scoring(
     return state
 
 
-def _run_full_graph_from_config(config_name: str) -> dict:
+def _run_full_graph_from_config(config_path: Path) -> dict:
     from data_collection_workflow.graph import build_graph
     from data_collection_workflow.workflow_run_config import (
         load_workflow_run_config,
@@ -146,7 +148,6 @@ def _run_full_graph_from_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config_path = _PROJECT_ROOT / "configs" / "examples" / config_name
     config = load_workflow_run_config(config_path)
     env_updates = workflow_run_env_from_config(config)
     with temporary_workflow_env(env_updates):
@@ -257,10 +258,10 @@ def test_official_health_department_news_url_can_remain_collection(monkeypatch):
     assert "secondary_news_or_media_source" not in entry["risk_flags"]
 
 
-def test_covid19_search_derived_source_credibility_is_disease_aware(monkeypatch):
+def test_covid19_search_derived_source_credibility_is_disease_aware(tmp_path, monkeypatch):
     _clear_stage6_env(monkeypatch)
 
-    result = _run_full_graph_from_config("covid19/offline_search.jsonc")
+    result = _run_full_graph_from_config(write_workflow_config(tmp_path, disease='COVID-19', location='New York', year='2024', phase='search'))
     search_entries = _search_derived_entries(result)
     summary = result.get("source_credibility_summary") or {}
 
@@ -276,10 +277,10 @@ def test_covid19_search_derived_source_credibility_is_disease_aware(monkeypatch)
         assert entry["source_role_final"] in ALLOWED_FINAL_ROLES
 
 
-def test_dengue_search_derived_source_credibility_is_disease_aware(monkeypatch):
+def test_dengue_search_derived_source_credibility_is_disease_aware(tmp_path, monkeypatch):
     _clear_stage6_env(monkeypatch)
 
-    result = _run_full_graph_from_config("dengue/offline_search.jsonc")
+    result = _run_full_graph_from_config(write_workflow_config(tmp_path, disease='dengue', location='Florida', year='2025', phase='search'))
     search_entries = _search_derived_entries(result)
     summary = result.get("source_credibility_summary") or {}
 
@@ -481,10 +482,10 @@ def test_optional_llm_source_credibility_failure_falls_back(monkeypatch):
     assert any("llm_source_credibility_failed" in warning for warning in entry["warnings"])
 
 
-def test_full_graph_covid19_fixture_search_source_credibility_smoke(monkeypatch):
+def test_full_graph_covid19_fixture_search_source_credibility_smoke(tmp_path, monkeypatch):
     _clear_stage6_env(monkeypatch)
 
-    result = _run_full_graph_from_config("covid19/offline_search.jsonc")
+    result = _run_full_graph_from_config(write_workflow_config(tmp_path, disease='COVID-19', location='New York', year='2024', phase='search'))
     package = result.get("final_data_package") or {}
     workflow_summaries = package.get("workflow_summaries") or {}
     search_entries = _search_derived_entries(result)
@@ -497,10 +498,10 @@ def test_full_graph_covid19_fixture_search_source_credibility_smoke(monkeypatch)
     assert all(entry.get("source_role_final") in ALLOWED_FINAL_ROLES for entry in search_entries)
 
 
-def test_full_graph_dengue_fixture_search_source_credibility_smoke(monkeypatch):
+def test_full_graph_dengue_fixture_search_source_credibility_smoke(tmp_path, monkeypatch):
     _clear_stage6_env(monkeypatch)
 
-    result = _run_full_graph_from_config("dengue/offline_search.jsonc")
+    result = _run_full_graph_from_config(write_workflow_config(tmp_path, disease='dengue', location='Florida', year='2025', phase='search'))
     package = result.get("final_data_package") or {}
     workflow_summaries = package.get("workflow_summaries") or {}
     search_entries = _search_derived_entries(result)

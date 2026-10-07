@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from synthetic_workflow_inputs import write_workflow_config
+
 import sys
 from pathlib import Path
 
@@ -184,7 +186,7 @@ def test_workflow_initial_state_from_config_includes_structured_task():
     assert state["structured_task"]["location"] == "Canada"
 
 
-def _run_full_graph_from_example_config(config_name: str) -> dict:
+def _run_full_graph_from_example_config(config_path: Path) -> dict:
     from data_collection_workflow.graph import build_graph
     from data_collection_workflow.workflow_run_config import (
         load_workflow_run_config,
@@ -193,10 +195,10 @@ def _run_full_graph_from_example_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config = load_workflow_run_config(_PROJECT_ROOT / "configs" / "examples" / config_name)
+    config = load_workflow_run_config(config_path)
     env_updates = workflow_run_env_from_config(config)
 
-    assert env_updates["USE_FIXTURE_DOCUMENTS"] == "true"
+    assert env_updates["USE_FIXTURE_DOCUMENTS"] == "false"
     assert env_updates["ENABLE_LIVE_FETCH"] == "false"
     assert env_updates["ENABLE_LLM_SOURCE_PLANNING"] == "false"
     assert env_updates["ENABLE_LLM_SOURCE_CRITIC"] == "false"
@@ -262,8 +264,8 @@ def _assert_full_graph_non_hantavirus_task(
     assert all(stale_warnings.isdisjoint(warnings) for warnings in trace_warning_sets)
 
 
-def test_full_graph_offline_covid19_new_york_preserves_task_metadata():
-    result = _run_full_graph_from_example_config("covid19/task.jsonc")
+def test_full_graph_offline_covid19_new_york_preserves_task_metadata(tmp_path):
+    result = _run_full_graph_from_example_config(write_workflow_config(tmp_path, disease='COVID-19', location='New York', year='2024', phase='task'))
 
     _assert_full_graph_non_hantavirus_task(
         result,
@@ -273,8 +275,8 @@ def test_full_graph_offline_covid19_new_york_preserves_task_metadata():
     )
 
 
-def test_full_graph_offline_dengue_florida_preserves_task_metadata():
-    result = _run_full_graph_from_example_config("dengue/task.jsonc")
+def test_full_graph_offline_dengue_florida_preserves_task_metadata(tmp_path):
+    result = _run_full_graph_from_example_config(write_workflow_config(tmp_path, disease='dengue', location='Florida', year='2025', phase='task'))
 
     _assert_full_graph_non_hantavirus_task(
         result,

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from synthetic_workflow_inputs import write_workflow_config
+
 import sys
 from pathlib import Path
 
@@ -112,7 +114,7 @@ def test_curated_dengue_disease_intelligence_terms_not_hantavirus_primary():
     assert not {"hps", "sin nombre virus"}.intersection(terms)
 
 
-def _run_full_graph_from_example_config(config_name: str) -> dict:
+def _run_full_graph_from_example_config(config_path: Path) -> dict:
     from data_collection_workflow.graph import build_graph
     from data_collection_workflow.workflow_run_config import (
         load_workflow_run_config,
@@ -121,7 +123,7 @@ def _run_full_graph_from_example_config(config_name: str) -> dict:
         workflow_run_env_from_config,
     )
 
-    config = load_workflow_run_config(_PROJECT_ROOT / "configs" / "examples" / config_name)
+    config = load_workflow_run_config(config_path)
     env_updates = workflow_run_env_from_config(config)
     assert env_updates["ENABLE_LIVE_FETCH"] == "false"
     assert env_updates["ENABLE_LLM_DISEASE_INTELLIGENCE"] == "false"
@@ -129,8 +131,8 @@ def _run_full_graph_from_example_config(config_name: str) -> dict:
         return build_graph().invoke(workflow_initial_state_from_config(config))
 
 
-def test_full_graph_covid19_exports_disease_intelligence_summary():
-    result = _run_full_graph_from_example_config("covid19/task.jsonc")
+def test_full_graph_covid19_exports_disease_intelligence_summary(tmp_path):
+    result = _run_full_graph_from_example_config(write_workflow_config(tmp_path, disease='COVID-19', location='New York', year='2024', phase='task'))
 
     package = result["final_data_package"]
     metadata = package["package_metadata"]
@@ -151,8 +153,8 @@ def test_full_graph_covid19_exports_disease_intelligence_summary():
     assert _STALE_PROFILE_SCHEMA_WARNINGS.isdisjoint(profile_warnings)
 
 
-def test_full_graph_dengue_exports_disease_intelligence_summary():
-    result = _run_full_graph_from_example_config("dengue/task.jsonc")
+def test_full_graph_dengue_exports_disease_intelligence_summary(tmp_path):
+    result = _run_full_graph_from_example_config(write_workflow_config(tmp_path, disease='dengue', location='Florida', year='2025', phase='task'))
 
     package = result["final_data_package"]
     summaries = package["workflow_summaries"]

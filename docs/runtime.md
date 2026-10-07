@@ -1,6 +1,6 @@
 # Runtime setup
 
-Evidence mode requires a local Chromium browser, PDFium (installed with the Python dependencies), and Tesseract 5 with `eng`, `osd`, `fra`, `spa`, `por`, and `chi_sim` language data. It checks the browser, text PDF parsing, and scanned-PDF OCR locally before provider requests. Standard offline examples do not need browser/OCR setup.
+Evidence mode requires a local Chromium browser, PDFium (installed with the Python dependencies), and Tesseract 5 with `eng`, `osd`, `fra`, `spa`, `por`, and `chi_sim` language data. It checks the browser, text PDF parsing, and scanned-PDF OCR locally before provider requests. Standard-mode runs using local content fixtures do not need browser/OCR setup.
 
 ## Chromium
 

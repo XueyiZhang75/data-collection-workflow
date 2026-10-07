@@ -549,37 +549,20 @@ def cmd_export(args: argparse.Namespace) -> int:
     return 0
 
 
-def _fixture_for_disease(disease: str) -> tuple[str, str, str]:
-    key = disease.strip().lower()
-    if "covid" in key:
-        return (
-            "src/data_collection_workflow/resources/search_fixtures/covid19_new_york_search_results.json",
-            "src/data_collection_workflow/resources/content_fixtures/content_map.json",
-            "src/data_collection_workflow/resources/human_review_decision_fixtures/covid19_review_decisions.json",
-        )
-    if "dengue" in key:
-        return (
-            "src/data_collection_workflow/resources/search_fixtures/dengue_florida_search_results.json",
-            "src/data_collection_workflow/resources/content_fixtures/content_map.json",
-            "src/data_collection_workflow/resources/human_review_decision_fixtures/dengue_review_decisions.json",
-        )
-    return (
-        "src/data_collection_workflow/resources/search_fixtures/example_search_results.json",
-        "src/data_collection_workflow/resources/content_fixtures/content_map.json",
-        "",
-    )
-
-
 def _template_text(args: argparse.Namespace) -> str:
     disease = args.disease
     location = args.location
     start_date = args.start_date
     end_date = args.end_date
     target_fields = args.target_field or ["cases_unspecified", "deaths", "date_reported", "source_url", "evidence_quote"]
-    fixture_path, fixture_map, decision_path = _fixture_for_disease(disease)
     live_search = args.mode == "live-search"
     fixture_search = args.mode == "fixture-search"
     disabled_search = args.mode == "offline"
+    fixture_path = getattr(args, "search_fixture_path", None) if fixture_search else None
+    fixture_map = getattr(args, "content_fixture_map_path", None) if fixture_search else None
+    decision_path = getattr(args, "review_decisions_path", None) if fixture_search else None
+    if fixture_search and not fixture_path:
+        raise ValueError("fixture-search requires --search-fixture-path to your own local search data.")
     source_provider = "tavily" if live_search else "fixture"
     search_mode = "live" if live_search else "fixture" if fixture_search else "disabled"
     config = f"""{{
@@ -617,7 +600,7 @@ def _template_text(args: argparse.Namespace) -> str:
     "enabled": {str(not disabled_search).lower()},
     "mode": "{search_mode}",
     "provider": "{source_provider}",
-    "fixture_path": "{fixture_path}",
+    "fixture_path": {_json_dump(fixture_path)},
     "max_queries": 3,
     "max_results_per_query": 5,
     "max_total_results": 15,
@@ -637,7 +620,7 @@ def _template_text(args: argparse.Namespace) -> str:
     ],
     "allow_needs_review": false,
     "domain_allowlist": [],
-    "content_fixture_map_path": "{fixture_map}"
+    "content_fixture_map_path": {_json_dump(fixture_map)}
   }},
   "llm": {{
     "provider": "",
@@ -786,6 +769,9 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--end-date", required=True)
     init.add_argument("--target-field", action="append", default=[])
     init.add_argument("--mode", choices=["offline", "fixture-search", "live-search"], default="offline")
+    init.add_argument("--search-fixture-path", help="Local search data for fixture-search mode.")
+    init.add_argument("--content-fixture-map-path", help="Optional local content map for fixture-search mode.")
+    init.add_argument("--review-decisions-path", help="Optional local review decisions for fixture-search mode.")
     init.add_argument("--output", required=True)
     init.set_defaults(func=cmd_init_config)
     return parser
