@@ -703,6 +703,8 @@ def recovery_control(state):
     if requirements is None:
         requirements=(state.get('source_coverage_audit') or {}).get('requirements') or []
     coverage=qualified_coverage(requirements,state.get('qualified_records') or [])
+    from .report_timeline import build_report_timeline_inventory
+    coverage['reporting_timeline']=build_report_timeline_inventory(state)
     state={**state,'source_coverage_audit':coverage}
     round_number=int(state.get('recovery_round') or 0)
     runtime=get_runtime()
