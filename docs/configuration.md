@@ -47,6 +47,8 @@ The lookup uses exact original URLs and capture dates within the task window, so
 
 The extraction scheduler's `soft_checkpoint_calls` and `safety_max_calls` govern its checkpoint and hard-call behavior. `llm.max_chunks` is a legacy setting and does not by itself express the current hard limit. Review the resolved configuration with `--print-config-only` before a live run.
 
+In evidence-mode iterative search, follow-up selection first balances the existing source families, then prefers less-tried retrieval directions within each family: named months, historical archives, data downloads, and general searches. Existing query order breaks remaining ties. This prevents repeated broad paraphrases from always preceding available month or archive leads. Attempts measure search effort, not verified source coverage; task-fit checks, channel restrictions, query limits, and stopping rules still apply. Adaptive settings preserve the capacity already reserved for historical indexes.
+
 ## Sources and examples
 
 Evidence-mode resource discovery follows explicit next-page links on fetched, task-matching report indexes. Both anchor links and HTML `link rel="next"` declarations are supported. The next URL must preserve the origin, report-series path, and non-pagination query filters; the workflow does not invent page URLs. Pagination retains the series depth, while existing resource and acquisition limits bound the number of pages.

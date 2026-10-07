@@ -1,5 +1,6 @@
 """Historical candidates retain URL identity and metadata through discovery."""
 import importlib
+import json
 
 import pytest
 
@@ -123,3 +124,111 @@ def test_ineligible_modes_or_zero_capacity_do_not_dispatch(monkeypatch, tmp_path
 def test_existing_search_overspend_never_gets_extra_stage_budget(monkeypatch, tmp_path):
     observed, _ = _discover(monkeypatch, tmp_path, spent=20)
     assert "historical_limits" not in observed
+
+
+@pytest.mark.parametrize("authority_retry", [False, True], ids=["without_authority_retry", "with_authority_retry"])
+@pytest.mark.parametrize(
+    "result_limit,results_per_query,captures_per_origin,ordinary_queries,ordinary_results,archive_queries,archive_results",
+    [(100, 1, 1, 16, 16, 4, 4), (20, 4, 2, 4, 15, 3, 5)],
+    ids=["query_reservation", "result_reservation"],
+)
+def test_adaptive_real_iterative_search_preserves_historical_reservation(
+    monkeypatch, tmp_path, result_limit, results_per_query, captures_per_origin,
+    ordinary_queries, ordinary_results, archive_queries, archive_results, authority_retry,
+):
+    """Adaptive normalization must not restore caps already reserved by the caller."""
+    from data_collection_workflow.agents import iterative_source_discovery_agent as agent
+    from data_collection_workflow import historical_source_discovery as historical
+
+    monkeypatch.setenv("PIPELINE_MODE", "evidence")
+    monkeypatch.setenv("ENABLE_LIVE_SEARCH", "true")
+    settings = mod.SourceSearchSettings(
+        mode="live", max_queries=20, max_results_per_query=results_per_query,
+        max_total_results=result_limit, iterative_enabled=True,
+        iterative_max_iterations=20, iterative_max_queries_per_iteration=4,
+        iterative_max_total_queries=20, iterative_max_total_results=result_limit,
+        authority_gap_retry_enabled=authority_retry,
+    )
+    monkeypatch.setattr(mod, "_source_search_settings_from_env", lambda: settings)
+    queries = [{"query_id": f"query_{index}",
+                "query": f"measles United States surveillance report data {index}",
+                "provider_channel": "web_search", "source_type": "official_public_health_agency",
+                "role_hint": "collection", "priority": 1}
+               for index in range(32)]
+    monkeypatch.setattr(agent, "plan_initial_search_iteration", lambda **kwargs: {"query_batch": queries})
+    monkeypatch.setattr(agent, "refine_search_iteration", lambda **kwargs: {
+        "decision": "continue_search", "decision_reason": "Explore remaining task-grounded reports",
+        "next_query_batch": queries,
+    })
+    provider_queries, index_queries = [], []
+
+    class NovelResultProvider:
+        def search(self, query, *, max_results, timeout_seconds):
+            provider_queries.append(query["query"])
+            number = len(provider_queries)
+            return {"provider": "tavily", "raw_result_count": results_per_query,
+                    "results": [{"title": "Measles surveillance report United States",
+                                 "snippet": "Measles surveillance case counts in the United States",
+                                 "url": f"https://www.cdc.gov/measles/surveillance/{number}-{rank}.html",
+                                 "rank": rank}
+                                for rank in range(1, results_per_query + 1)]}
+
+    monkeypatch.setattr(mod, "_provider_for_settings", lambda limits: NovelResultProvider())
+
+    class IndexResponse:
+        status_code = 200
+        headers = {}
+
+        def __init__(self, original):
+            rows = [["timestamp", "original", "statuscode", "mimetype", "digest"]]
+            rows.extend([f"20250{month}01000000", original, "200", "text/html", "CDX-DIGEST"]
+                        for month in range(1, captures_per_origin + 1))
+            self.body = json.dumps(rows).encode()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, chunk_size):
+            for index in range(0, len(self.body), chunk_size):
+                yield self.body[index:index + chunk_size]
+
+    def index_get(url, *, params, **kwargs):
+        assert url == "https://web.archive.org/cdx/search/cdx"
+        index_queries.append(dict(params))
+        return IndexResponse(dict(params)["url"])
+
+    monkeypatch.setattr(historical.requests, "get", index_get)
+    ctx = RunContext(tmp_path / "adaptive", {
+        "pipeline_mode": "evidence",
+        "universal": {"budget_policy": {"version": 2, "mode": "adaptive"},
+                      "budget_limits": {"search": 20, "search_results": result_limit},
+                      "historical_discovery": {"enabled": True}},
+    })
+    state = {"structured_task": {"disease": "measles", "location": "United States",
+                                 "start_date": "2025-01-01", "end_date": "2025-12-31"},
+             "agentic_source_plan": {"planned_queries": queries}, "search_query_inventory": queries}
+    with ctx.activate():
+        result = mod.source_discovery(state)
+
+    candidates = result["source_candidates"]
+    ordinary = [row for row in candidates if row["discovery_method"] == "live_search_result"]
+    archived = [row for row in candidates if row["discovery_method"] == "historical_archive_index"]
+    summary = result["source_discovery_summary"]["historical_discovery"]
+    budget = ctx.ledger.snapshot()
+    assert len(provider_queries) == ordinary_queries, summary
+    assert len(set(provider_queries)) == ordinary_queries
+    assert len(ordinary) == ordinary_results
+    assert summary["reserved_query_count"] == 4
+    assert summary["reserved_result_count"] == result_limit // 4
+    assert len(index_queries) == archive_queries and summary["index_query_count"] == archive_queries
+    assert len(archived) == archive_results
+    assert budget["used"]["search"] == ordinary_queries + archive_queries <= 20
+    assert budget["used"]["search_results"] == ordinary_results + archive_results <= result_limit
+    assert budget["limits"]["search"] == 20 and budget["limits"]["search_results"] == result_limit
+    assert set(budget["used"]) == {"search", "search_results"}

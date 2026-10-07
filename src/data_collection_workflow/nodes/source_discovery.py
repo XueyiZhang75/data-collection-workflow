@@ -258,6 +258,9 @@ class SourceSearchSettings:
     authority_gap_official_page_family_retry_max_queries: int = 3
     authority_gap_retry_result_budget: int = 32
     authority_gap_retry_max_iterations: int = 1
+    # Internal allocation survives repeated adaptive settings resolution.
+    _reserved_search_queries: int = field(default=0, repr=False)
+    _reserved_search_results: int = field(default=0, repr=False)
 
     @property
     def fixture_search_enabled(self) -> bool:
@@ -288,8 +291,8 @@ def _effective_discovery_settings(settings: SourceSearchSettings) -> SourceSearc
     if not is_adaptive_budget(runtime.config):
         return settings
     limits = runtime.ledger.limits
-    queries = max(0, int(limits.get("search", settings.iterative_max_total_queries)))
-    results = max(0, int(limits.get("search_results", settings.iterative_max_total_results)))
+    queries = max(0, int(limits.get("search", settings.iterative_max_total_queries)) - settings._reserved_search_queries)
+    results = max(0, int(limits.get("search_results", settings.iterative_max_total_results)) - settings._reserved_search_results)
     return replace(settings, max_queries=queries, max_total_results=results,
                    iterative_max_total_queries=queries, iterative_max_total_results=results,
                    iterative_max_iterations=queries)
@@ -4056,6 +4059,16 @@ def _execute_iterative_query_batch(
         if max_total_queries_override is not None
         else settings.iterative_max_total_queries
     )
+    # Supplementary authority retries share the ordinary-search allocation.
+    # Their legacy overrides cannot consume capacity reserved for indexes.
+    if settings._reserved_search_queries:
+        ordinary_queries = (settings.iterative_max_total_queries if settings.iterative_enabled
+                            else settings.max_queries)
+        max_total_queries = min(max_total_queries, ordinary_queries)
+    if settings._reserved_search_results:
+        ordinary_results = (min(settings.max_total_results, settings.iterative_max_total_results)
+                            if settings.iterative_enabled else settings.max_total_results)
+        max_total_results = min(max_total_results, ordinary_results)
 
     for query_index, query in enumerate(query_batch):
         if totals.get("search_budget_exhausted") or totals.get("search_result_budget_exhausted"):
@@ -4671,13 +4684,31 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
     return expanded
 
 
+def _discovery_query_direction(query: dict) -> str:
+    """A retrieval intention for scheduling, never a source coverage judgment."""
+    text = str(query.get("query") or "").casefold()
+    months = "january february march april may june july august september october november december".split()
+    month = re.search(r"\b(" + "|".join(months) + r")\s+([0-9]{4})\b", text)
+    if month:
+        return f"month:{month.group(2)}-{months.index(month.group(1)) + 1:02d}"
+    if re.search(r"\b(?:archives?|historical|history)\b", text):
+        return "historical"
+    if re.search(r"\b(?:datasets?|databases?|download|csv|tsv|xlsx?|spreadsheets?|export|tables?)\b", text):
+        return "data"
+    return "general"
+
+
 def _remaining_discovery_queries(
     pool: list[dict], state: DataCollectionState, settings: SourceSearchSettings,
     attempted: set[tuple[str, str]], family_counts: Counter,
+    attempted_directions: Counter | None = None,
 ) -> list[dict]:
-    """Select distinct grounded queries, prioritizing unexplored source families."""
+    """Balance source families, then untried directions within each family."""
     available = []
     seen = set(attempted)
+    # Refined advice may retag a duplicate query. Only actual execution records
+    # can establish its historical family and retrieval direction.
+    directions = (attempted_directions or Counter()).copy()
     for item in pool:
         query = dict(item)
         query.setdefault("provider_channel", "web_search")
@@ -4693,14 +4724,16 @@ def _remaining_discovery_queries(
     for _ in range(max(0, settings.iterative_max_queries_per_iteration)):
         if not available:
             break
-        # Only retrieval families are balanced here. This is not a claim that
-        # a source/query contains factual evidence or a quota of valid sources.
+        # Trying a different direction precedes another broad paraphrase.
+        # Attempts do not establish factual coverage or count verified sources.
         index = min(range(len(available)), key=lambda i: (
             _query_source_class(available[i]) not in _HIGH_TRUST_SOURCE_CLASSES,
-            counts[_query_source_class(available[i])], i))
+            counts[_query_source_class(available[i])],
+            directions[(_query_source_class(available[i]), _discovery_query_direction(available[i]))], i))
         query = available.pop(index)
         selected.append(query)
         counts[_query_source_class(query)] += 1
+        directions[(_query_source_class(query), _discovery_query_direction(query))] += 1
     return selected
 
 
@@ -4833,6 +4866,8 @@ def _execute_iterative_source_search(
         query_pool.extend(_discovery_breadth_queries(state))
     attempted_queries: set[tuple[str, str]] = set()
     attempted_families: Counter = Counter()
+    attempted_directions: Counter = Counter()
+    direction_counted_queries: set[tuple[str, str]] = set()
     stagnant_batches = 0
 
     for iteration_index in range(1, settings.iterative_max_iterations + 1):
@@ -4888,6 +4923,10 @@ def _execute_iterative_source_search(
                 attempted_queries.add(_discovery_query_key(record))
             if record.get("selected_for_execution"):
                 attempted_families[_query_source_class(record)] += 1
+                key = _discovery_query_key(record)
+                if key not in direction_counted_queries:
+                    attempted_directions[(_query_source_class(record), _discovery_query_direction(record))] += 1
+                    direction_counted_queries.add(key)
         if any(record.get("selected_for_execution") for record in batch_records):
             stagnant_batches = 0 if batch_candidates else stagnant_batches + 1
 
@@ -4959,7 +4998,8 @@ def _execute_iterative_source_search(
                 stop_reason = "no_new_sources_in_consecutive_batches"
                 break
             next_batch = _remaining_discovery_queries(
-                query_pool, state, settings, attempted_queries, attempted_families)
+                query_pool, state, settings, attempted_queries, attempted_families,
+                attempted_directions)
             if not next_batch:
                 stop_decision = "stop_no_promising_sources"
                 stop_reason = "no_untried_task_grounded_queries"
@@ -5514,6 +5554,8 @@ def source_discovery(state: DataCollectionState) -> dict:
         reserved_results = min(historical_capacity["max_results"], historical_capacity["result_limit"] // 4) if reserved_queries else 0
         ordinary_settings = replace(
             settings, max_queries=max(0, settings.max_queries - reserved_queries),
+            _reserved_search_queries=reserved_queries,
+            _reserved_search_results=reserved_results,
             iterative_max_total_queries=max(0, settings.iterative_max_total_queries - reserved_queries),
             max_total_results=max(0, settings.max_total_results - reserved_results),
             iterative_max_total_results=max(0, settings.iterative_max_total_results - reserved_results),
