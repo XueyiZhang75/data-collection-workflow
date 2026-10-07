@@ -139,7 +139,7 @@ def temporal_search_queries(state, *, candidates=(), query_records=(), operation
     templates = [("official_site_search", "official_public_health_agency", "surveillance reports cases"),
                  ("database_search", "structured_database", "surveillance data tables"),
                  ("literature_api", "peer_reviewed_literature", "surveillance study cases"),
-                 ("news_search", "news_and_situation_report", "reported cases updates"),
+                 ("news_search", "news_and_situation_report", "news reports reported cases updates"),
                  ("web_search", "news_and_situation_report", "surveillance reports cases")]
     template = next((item for item in templates if item[0] in available), None)
     if not template:

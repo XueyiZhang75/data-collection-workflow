@@ -103,7 +103,7 @@ def _assert_existing_search_contract(calls, state, summary, details):
     assert len(calls) == 12
     keys = {discovery._discovery_query_key(query) for query in calls}
     assert len(keys) == 12
-    assert {discovery._query_source_class(query) for query in calls} == EXPECTED_FAMILIES
+    assert {discovery._query_source_class(query) for query in calls} == EXPECTED_FAMILIES | {"news_or_supporting_media"}
     assert all(assess_query_task_fit(query, state)["accepted"] for query in calls)
     assert summary["stop_decision"] == "stop_limits_reached"
     assert len(details["search_iteration_observations"]) == 3
@@ -120,16 +120,18 @@ def test_month_and_history_directions_survive_repeated_broad_refinement(monkeypa
 
 def test_refinement_cannot_retag_initial_national_history_and_displace_its_month_slot(monkeypatch):
     state = _state()
+    control, _, _ = _run_repeated_broad_refinement(monkeypatch, state)
     calls, summary, details = _run_repeated_broad_refinement(
         monkeypatch, state, retag_initial_national=True)
     _assert_existing_search_contract(calls, state, summary, details)
-    # The duplicate changes only the initial national query's family metadata.
-    # The bounded official gap probe occupies its existing family slot; the
-    # other families retain month leads despite the forged historical retag.
+    # Changing only a duplicate's family cannot alter actual execution history
+    # or consume the national month opportunity. Media shares the probe slot.
+    assert [discovery._discovery_query_key(query) for query in calls] == [
+        discovery._discovery_query_key(query) for query in control]
     temporal_families = Counter(
-        discovery._query_source_class(query) for query in calls[4:8]
-        if "may 2025" in query["query"].lower() or query.get("temporal_probe"))
-    assert temporal_families == Counter({family: 1 for family in EXPECTED_FAMILIES})
+        discovery._query_source_class(query) for query in calls[4:]
+        if "may 2025" in query["query"].lower())
+    assert all(temporal_families[family] >= 1 for family in EXPECTED_FAMILIES)
 
 
 def test_annual_history_and_download_directions_get_existing_budget_slots(monkeypatch):

@@ -138,7 +138,7 @@ def test_invalid_windows_keep_broad_fallbacks_only(start, end):
     state = _state()
     state['structured_task'].update(start_date=start, end_date=end)
     queries = mod._discovery_breadth_queries(state)
-    assert len(queries) == 12
+    assert len(queries) == 13  # Twelve existing family leads and one media lead.
     assert not any(row.get('time_terms') for row in queries)
 
 
@@ -152,7 +152,7 @@ def test_long_windows_offer_bounded_temporal_and_existing_broad_leads(start, end
     state = _state()
     state['structured_task'].update(start_date=start, end_date=end)
     queries = mod._discovery_breadth_queries(state)
-    assert len([row for row in queries if not row.get('time_terms')]) == 12
+    assert len([row for row in queries if not row.get('time_terms')]) == 13
     assert len([row for row in queries if row.get('time_terms')]) == 12
     assert all(assess_query_task_fit(row, state)['accepted'] for row in queries)
 

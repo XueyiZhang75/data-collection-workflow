@@ -87,6 +87,7 @@ _HIGH_TRUST_SOURCE_CLASSES = {
     "structured_database",
     "peer_reviewed_literature",
 }
+_EXPLORATION_SOURCE_CLASSES = _HIGH_TRUST_SOURCE_CLASSES | {"news_or_supporting_media"}
 _OFFICIAL_QUERY_SOURCE_TYPES = {
     "official_public_health_agency",
     "government_report",
@@ -753,6 +754,10 @@ def _select_source_search_queries(
                 prefer_known_domain=True,
             )
 
+        if universal_queries_enabled():
+            add_from_bucket("news_or_supporting_media", 1,
+                            "source_class_floor:news_or_supporting_media")
+
         targets = {
             "international_official": 4,
             "national_or_local_official": 3,
@@ -777,7 +782,8 @@ def _select_source_search_queries(
                 },
             )
 
-        news_selected = 0
+        news_selected = sum(item.get("selection_bucket") == "news_or_supporting_media"
+                            for item in selected.values())
         for _, _, key, bucket in eligible:
             if len(selected) >= max_queries:
                 break
@@ -2630,6 +2636,10 @@ def _execute_one_shot_source_search(
     settings: SourceSearchSettings,
 ) -> tuple[list[SourceCandidate], list[dict], dict]:
     planned_queries = _planned_queries(state)
+    if universal_queries_enabled():
+        existing = {_discovery_query_key(query) for query in planned_queries}
+        planned_queries.extend(query for query in _media_discovery_queries(state)
+                               if _discovery_query_key(query) not in existing)
     task = state.get("structured_task") or {}
     selection_plan = _select_source_search_queries(planned_queries, state, settings)
     query_records: list[dict] = []
@@ -4622,6 +4632,22 @@ def _discovery_query_key(query: dict) -> tuple[str, str]:
             str(query.get("provider_channel") or "web_search"))
 
 
+def _media_discovery_queries(state: DataCollectionState) -> list[dict]:
+    """One generic reporting lead; source identity and evidence remain unverified."""
+    task = _task_context(state)
+    disease = str(task.get("disease") or "").strip()
+    if not disease:
+        return []
+    location = str(task.get("location") or "").strip()
+    years = " ".join(dict.fromkeys(str(task.get(key) or "")[:4]
+                                   for key in ("start_date", "end_date"))).strip()
+    return [{"query": f'"{disease}" "{location}" {years} news reports reported cases deaths',
+             "source_type": "news_and_situation_report", "provider_channel": "news_search",
+             "role_hint": "collection_support", "expected_fields": task.get("target_fields") or [],
+             "query_rationale": "Task-grounded media reporting retrieval opportunity.",
+             "query_source": "deterministic_discovery_fallback", "disease_terms_used": [disease]}]
+
+
 def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
     """Task-derived fallbacks cover retrieval families, without inventing URLs."""
     task = _task_context(state)
@@ -4663,11 +4689,11 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
         start = date.fromisoformat(str(task.get("start_date") or ""))
         end = date.fromisoformat(str(task.get("end_date") or ""))
     except ValueError:
-        return queries
+        return [*queries, *_media_discovery_queries(state)]
     from ..temporal_search_queries import representative_months
     selected_months = representative_months(start, end)
     if not selected_months:
-        return queries
+        return [*queries, *_media_discovery_queries(state)]
 
     # English month terms are retrieval leads, not publication-date filters.
     # Keep the exact observation bounds in metadata, including partial months.
@@ -4690,7 +4716,7 @@ def _discovery_breadth_queries(state: DataCollectionState) -> list[dict]:
         # One month opportunity precedes archive/data intents. Remaining month
         # leads must not displace those existing directions in a short budget.
         expanded.extend([*temporal[:1], *broad, *temporal[1:]])
-    return expanded
+    return [*expanded, *_media_discovery_queries(state)]
 
 
 def _discovery_query_direction(query: dict) -> str:
@@ -4713,6 +4739,7 @@ def _remaining_discovery_queries(
     pool: list[dict], state: DataCollectionState, settings: SourceSearchSettings,
     attempted: set[tuple[str, str]], family_counts: Counter,
     attempted_directions: Counter | None = None,
+    *, reserved_media_count: int = 0,
 ) -> list[dict]:
     """Balance source families, then untried directions within each family."""
     available = []
@@ -4735,17 +4762,25 @@ def _remaining_discovery_queries(
         available.append(query)
     selected = []
     counts = family_counts.copy()
+    media_selected = reserved_media_count
     for _ in range(max(0, settings.iterative_max_queries_per_iteration)):
         if not available:
             break
+        high_trust_available = any(_query_source_class(query) in _HIGH_TRUST_SOURCE_CLASSES
+                                   for query in available)
+        eligible = [i for i, query in enumerate(available)
+                    if not (high_trust_available and media_selected >= 1
+                            and _query_source_class(query) == "news_or_supporting_media")]
         # Trying a different direction precedes another broad paraphrase.
         # Attempts do not establish factual coverage or count verified sources.
-        index = min(range(len(available)), key=lambda i: (
-            _query_source_class(available[i]) not in _HIGH_TRUST_SOURCE_CLASSES,
+        index = min(eligible, key=lambda i: (
+            _query_source_class(available[i]) not in _EXPLORATION_SOURCE_CLASSES,
             counts[_query_source_class(available[i])],
+            _query_source_class(available[i]) not in _HIGH_TRUST_SOURCE_CLASSES,
             directions[(_query_source_class(available[i]), _discovery_query_direction(available[i]))], i))
         query = available.pop(index)
         selected.append(query)
+        media_selected += _query_source_class(query) == "news_or_supporting_media"
         counts[_query_source_class(query)] += 1
         directions[(_query_source_class(query), _discovery_query_direction(query))] += 1
     return selected
@@ -5000,18 +5035,26 @@ def _execute_iterative_source_search(
             from ..temporal_search_queries import temporal_search_queries
             from ..session_runtime import get_runtime
             runtime = get_runtime()
+            available_families = {
+                _query_source_class(query) for query in query_pool
+                if (not _is_invalid_query(query)
+                    and str(query.get("provider_channel") or "web_search") in settings.provider_channel_allowlist
+                    and assess_query_task_fit(query, state)["accepted"])
+            } & _HIGH_TRUST_SOURCE_CLASSES
+            probe_channels = settings.provider_channel_allowlist
+            if (available_families <= set(attempted_families)
+                    and not attempted_families["news_or_supporting_media"]
+                    and "news_search" in probe_channels):
+                # The first media opportunity can also serve the existing gap
+                # reservation, including when only one query slot remains.
+                probe_channels = ["news_search"]
             probes = temporal_search_queries(
                 state, candidates=[candidate.model_dump() for candidate in search_candidates],
-                query_records=query_records, channels=settings.provider_channel_allowlist,
+                query_records=query_records, channels=probe_channels,
                 operation_history=runtime.ledger.operation_audit() if runtime else ())
             probe = next((query for query in probes
                           if _discovery_query_key(query) not in attempted_queries
                           and assess_query_task_fit(query, state)["accepted"]), None)
-            available_families = {
-                _query_source_class(query) for query in query_pool
-                if (str(query.get("provider_channel") or "web_search") in settings.provider_channel_allowlist
-                    and assess_query_task_fit(query, state)["accepted"])
-            } & _HIGH_TRUST_SOURCE_CLASSES
             breadth_floor = min(settings.iterative_max_total_queries,
                                 max(2 * settings.iterative_max_queries_per_iteration,
                                     len(available_families)))
@@ -5033,7 +5076,8 @@ def _execute_iterative_source_search(
             next_batch = [*([probe] if probe else []), *_remaining_discovery_queries(
                 query_pool, state, replace(settings, iterative_max_queries_per_iteration=(0 if ordinary_stalled else max(
                     0, settings.iterative_max_queries_per_iteration - bool(probe)))),
-                selection_attempted, selection_counts, selection_directions)]
+                selection_attempted, selection_counts, selection_directions,
+                reserved_media_count=int(bool(probe) and _query_source_class(probe) == "news_or_supporting_media"))]
             if not next_batch:
                 stop_decision = "stop_no_promising_sources"
                 stop_reason = "no_untried_task_grounded_queries"
