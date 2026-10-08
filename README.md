@@ -123,7 +123,7 @@ TESSDATA_DIR="C:/Program Files/Tesseract-OCR/tessdata"
 
 See [Runtime setup](docs/runtime.md) for custom Chromium paths, OCR self-check fonts, and Windows OCR path settings. The workflow checks browser, PDF, and OCR readiness locally before sending provider requests in evidence mode.
 
-## Step 4. Choose a task and preview its settings
+## Step 4. Define your task and start collection
 
 You need four task inputs and a name for this run:
 
@@ -135,21 +135,7 @@ You need four task inputs and a name for this run:
 | `--end-date` | End of the requested period | `2025-01-31` |
 | `--session-id` | Local name for this run; use letters, digits, `_`, or `-` | `my_first_collection` |
 
-The example defines a task; it does not load a bundled case dataset. Replace the disease, location, and dates with your own task, keeping the quotation marks around names that contain spaces.
-
-Preview a small first run:
-
-```bash
-python scripts/collect.py --pipeline-mode evidence --disease "Measles" --location "Canada" --start-date "2025-01-01" --end-date "2025-01-31" --session-id my_first_collection --quick-test-mode --no-dashboard --print-config-only
-```
-
-Check the displayed task, provider/model, acquisition settings, and operation budgets. `--print-config-only` prints a sanitized configuration and exits before collection; it does not call the search/model providers or create a session. A preview does not validate the account or install missing browser/OCR tools.
-
-`--quick-test-mode` selects smaller live-run budgets. It still performs real searches, downloads, and model calls when collection starts. The budgets count operations; they are not a dollar spending cap. `--no-dashboard` keeps the first run entirely in the terminal.
-
-## Step 5. Start collection
-
-Run the same command without `--print-config-only`:
+Replace the example disease, location, and dates with your own task, keeping quotation marks around names that contain spaces. This command **starts collection**:
 
 ```bash
 python scripts/collect.py --pipeline-mode evidence --disease "Measles" --location "Canada" --start-date "2025-01-01" --end-date "2025-01-31" --session-id my_first_collection --quick-test-mode --no-dashboard
@@ -165,7 +151,11 @@ python scripts/collect.py --pipeline-mode evidence --quick-test-mode --no-dashbo
 
 Answer the disease, location, start/end dates, and session-name prompts. Press Enter to accept the generated session name or task description. A missing model selection is also requested in an interactive terminal.
 
-## Step 6. Open and assess the results
+`--quick-test-mode` uses smaller search and extraction budgets for a first run. It still makes real search and model requests. The budgets count operations; they are not a dollar spending cap. `--no-dashboard` shows progress in the terminal without opening an additional monitoring interface.
+
+**Optional preview:** add `--print-config-only` to either command to display the task, model, and budgets without starting collection or creating a session. Remove that flag when you are ready to run. Previewing is optional; it does not validate the account or install missing browser/OCR tools.
+
+## Step 5. Open and assess the results
 
 For the named example, open `outputs/sessions/my_first_collection/`. For an automatically named run, use the session path printed in the terminal.
 
@@ -221,15 +211,15 @@ data-collection-workflow export --session-dir outputs/sessions/my_first_collecti
 
 The export includes `final_report.html`, `session_report.zip`, and the report's supporting `data/` and `evidence/` folders. `--format` selects the collection data export format; the portable report retains both CSV and JSON. The same report is used by command-line collection and export.
 
-## Step 7. Run a larger task or resume an interrupted session
+## Step 6. Run again or resume a session (optional)
 
-For a run with the regular interactive budgets, omit `--quick-test-mode` and use a **new session ID**. Preview the new settings before starting:
+For a run with the regular interactive budgets, omit `--quick-test-mode`. This command asks for your task inputs; choose a **new session ID**, such as `my_full_collection`:
 
 ```bash
-python scripts/collect.py --pipeline-mode evidence --disease "Measles" --location "Canada" --start-date "2025-01-01" --end-date "2025-01-31" --session-id my_full_collection --no-dashboard --print-config-only
+python scripts/collect.py --pipeline-mode evidence --no-dashboard
 ```
 
-Remove `--print-config-only` to execute. Use a new ID whenever you change the task, configuration, model, code, or resources. Changing the model provider also requires choosing a model for that provider, for example `--provider openai --model "YOUR_OPENAI_MODEL_ID"`.
+Use a new ID whenever you change the task, configuration, model, code, or resources. Changing the model provider also requires choosing a model for that provider, for example `--provider openai --model "YOUR_OPENAI_MODEL_ID"`.
 
 To continue an existing evidence-mode session created by `scripts/collect.py`:
 
@@ -239,65 +229,7 @@ python scripts/collect.py --resume-session my_first_collection --no-dashboard
 
 Resume loads its saved task and configuration. It preserves used budgets, cached successful responses, and checkpoints. Keep the original code/resources and session files. Resuming does not reset exhausted budgets or clear a provider-account stop; explicit budget amendments and provider recovery are explained in [Configuration](docs/configuration.md#recovery-and-review).
 
-## Step 8. Use a configuration file for repeated or customized tasks
-
-Use this route when you want to edit target fields, search/fetch limits, model settings, or allowed/blocked source domains. Start from the blank template and keep your task file in the Git-ignored `configs/local/` directory.
-
-**PowerShell:**
-
-```powershell
-New-Item -ItemType Directory -Force configs/local
-Copy-Item configs/workflow.jsonc configs/local/my_task.jsonc
-```
-
-**macOS or Linux:**
-
-```bash
-mkdir -p configs/local
-cp configs/workflow.jsonc configs/local/my_task.jsonc
-```
-
-Edit `configs/local/my_task.jsonc`:
-
-1. Set the top-level `pipeline_mode` to `"evidence"`.
-2. Replace the empty `structured_task` object with your task, for example:
-
-   ```json
-   "structured_task": {
-     "disease": "Measles",
-     "location": "Canada",
-     "start_date": "2025-01-01",
-     "end_date": "2025-01-31",
-     "target_fields": [
-       "disease", "country", "subnational_location", "date_reported",
-       "cases_confirmed", "deaths", "source_url", "source_type", "evidence_quote"
-     ]
-   }
-   ```
-
-3. In the existing `output` object, set `session_id` to `"my_configured_collection"`. Leave `run_output_root` as `"outputs"`.
-4. Leave `llm.provider` and `llm.model` blank to inherit `.env`, or fill both explicitly. Adjust the limits described in [Configuration](docs/configuration.md#budgets) if needed. The file-driven runner uses the file/default budgets; it does not add the interactive quick-run preset.
-
-Preserve the surrounding commas when editing the JSONC template. Validate and preview it:
-
-```bash
-data-collection-workflow validate-config --config configs/local/my_task.jsonc
-data-collection-workflow collect --config configs/local/my_task.jsonc --dry-run
-```
-
-Resolve any validation issues and confirm `valid: true`. Then start the configured run:
-
-```bash
-python scripts/run_workflow.py --config configs/local/my_task.jsonc
-```
-
-To resume it later, keep the same configuration file:
-
-```bash
-python scripts/run_workflow.py --config configs/local/my_task.jsonc --resume-session my_configured_collection
-```
-
-`pipeline_mode` belongs in the configuration for this route: `scripts/run_workflow.py` and the installed `collect` subcommand do not accept `--pipeline-mode`. The separate `workflow.collection_mode` setting controls source/validation roles. `standard` pipeline mode runs the regular collection and validation chain; `evidence` adds evidence qualification and persisted recovery. See [Configuration](docs/configuration.md) for the full distinction and user-supplied offline inputs.
+For custom extraction fields, detailed budgets, or reusable task files, see the optional [configuration-file guide](docs/configuration.md#run-with-a-configuration-file-optional).
 
 ## Troubleshooting
 

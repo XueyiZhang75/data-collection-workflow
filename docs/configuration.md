@@ -4,7 +4,7 @@ Use `scripts/collect.py` for interactive task entry, or copy `configs/workflow.j
 
 ## Task and modes
 
-Fill in `structured_task.disease`, `location`, `start_date`, and `end_date`. Also provide a nonempty `structured_task.target_fields` list when using `validate-config`; the README contains a complete task example. Target fields and source preferences are configurable. `user_request` can add context to these explicit fields; it does not replace them. Missing task fields stop collection before provider calls. The blank template does not select a case study for you.
+Fill in `structured_task.disease`, `location`, `start_date`, and `end_date`. Also provide a nonempty `structured_task.target_fields` list when using `validate-config`; the [configuration-file guide below](#run-with-a-configuration-file-optional) contains a complete task example. Target fields and source preferences are configurable. `user_request` can add context to these explicit fields; it does not replace them. Missing task fields stop collection before provider calls. The blank template does not select a case study for you.
 
 `pipeline_mode` selects execution behavior:
 
@@ -14,6 +14,68 @@ Fill in `structured_task.disease`, `location`, `start_date`, and `end_date`. Als
 `workflow.collection_mode` is a separate setting controlling source and validation handling (`standard`, `masked_validation`, or `direct_collection`). A pipeline mode is not a source-holdout policy.
 
 The interactive entry accepts `--pipeline-mode`; the configured runner and `collect` CLI subcommand read the mode from the configuration file. Their flags are not interchangeable. Use `--help` on the entry you are running.
+
+## Run with a configuration file (optional)
+
+Use this alternative to interactive task entry when you want to edit target fields, search/fetch limits, model settings, or allowed/blocked source domains. It is not an additional step after the README tutorial. Complete the installation, credentials, and browser/OCR setup in the [README](../README.md) first.
+
+Start from the blank template and keep your task file in the Git-ignored `configs/local/` directory.
+
+**PowerShell:**
+
+```powershell
+New-Item -ItemType Directory -Force configs/local
+Copy-Item configs/workflow.jsonc configs/local/my_task.jsonc
+```
+
+**macOS or Linux:**
+
+```bash
+mkdir -p configs/local
+cp configs/workflow.jsonc configs/local/my_task.jsonc
+```
+
+Edit `configs/local/my_task.jsonc`:
+
+1. Set the top-level `pipeline_mode` to `"evidence"`.
+2. Replace the empty `structured_task` object with your task, for example:
+
+   ```json
+   "structured_task": {
+     "disease": "Measles",
+     "location": "Canada",
+     "start_date": "2025-01-01",
+     "end_date": "2025-01-31",
+     "target_fields": [
+       "disease", "country", "subnational_location", "date_reported",
+       "cases_confirmed", "deaths", "source_url", "source_type", "evidence_quote"
+     ]
+   }
+   ```
+
+3. In the existing `output` object, set `session_id` to `"my_configured_collection"`. Leave `run_output_root` as `"outputs"`.
+4. Leave `llm.provider` and `llm.model` blank to inherit `.env`, or fill both explicitly. Adjust the [budgets](#budgets) if needed. The file-driven runner uses the file/default budgets; it does not add the interactive quick-run preset.
+
+Preserve the surrounding commas when editing the JSONC template. Validate and preview it:
+
+```bash
+data-collection-workflow validate-config --config configs/local/my_task.jsonc
+data-collection-workflow collect --config configs/local/my_task.jsonc --dry-run
+```
+
+Resolve any validation issues and confirm `valid: true`. Then start the configured run:
+
+```bash
+python scripts/run_workflow.py --config configs/local/my_task.jsonc
+```
+
+To resume it later, keep the same configuration file:
+
+```bash
+python scripts/run_workflow.py --config configs/local/my_task.jsonc --resume-session my_configured_collection
+```
+
+`pipeline_mode` belongs in the configuration for this route: `scripts/run_workflow.py` and the installed `collect` subcommand do not accept `--pipeline-mode`. The separate `workflow.collection_mode` setting controls source/validation roles. See [Task and modes](#task-and-modes) for the distinction.
 
 ## Credentials and providers
 
@@ -49,7 +111,7 @@ Evidence-mode coverage exports include a `reporting_timeline` diagnostic inside 
 
 Each timeline lists known dates, separate counts of unknown dates and sources dated only outside the window, and up to 24 gaps between known points, including the window boundaries. Gaps carry stable identifiers, their date basis, inclusive endpoints, and day counts; larger gaps appear first, and omitted gaps are counted. These are discovery opportunities, not missing reports, zero cases, or a completeness measure. An annual aggregate can satisfy observation-period coverage while leaving the report-date inventory empty. The diagnostic uses exact task endpoints for daily through multi-year windows, handles leap days, and does not create calendar bins or assume weekly publication. Invalid or reversed windows are marked `not_evaluable`. Building this diagnostic performs no searches and changes neither qualification nor budgets.
 
-The extraction scheduler's `soft_checkpoint_calls` and `safety_max_calls` govern its checkpoint and hard-call behavior. `llm.max_chunks` is a legacy setting and does not by itself express the current hard limit. Review the resolved configuration with `--print-config-only` before a live run.
+The extraction scheduler's `soft_checkpoint_calls` and `safety_max_calls` govern its checkpoint and hard-call behavior. `llm.max_chunks` is a legacy setting and does not by itself express the current hard limit. To preview settings without collecting data, use `scripts/collect.py --print-config-only` with your task inputs, or `data-collection-workflow collect --config <path> --dry-run` for a configuration file.
 
 In evidence-mode iterative search, follow-up selection balances attempts across official reports, databases, literature, and media before preferring less-tried retrieval directions within each family: named months, historical archives, data downloads, and general searches. Official, database, and literature queries win ties in family effort; existing query order breaks remaining ties. While those queries remain available, a continuation batch uses at most one media slot. This prevents repeated broad paraphrases from always preceding available month, archive, or media leads. Attempts measure search effort, not verified source coverage; task-fit checks, channel restrictions, query limits, and stopping rules still apply. Adaptive settings preserve the capacity already reserved for historical indexes.
 
