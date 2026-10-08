@@ -436,6 +436,9 @@ def test_visualization_artifacts_are_generated(tmp_path):
     assert (session / "workflow_visualization" / "dataset_decision_flow.json").exists()
     assert (session / "workflow_visualization" / "dataset_decision_flow.html").exists()
     assert "workflow_visualization_index" in paths
+    index = (session / 'workflow_visualization' / 'index.html').read_text(encoding='utf-8')
+    assert '../final_report.html' in index
+    assert '../workflow_interpretive_report.md' not in index
 
 
 def test_workflow_timeline_uses_collection_trace(tmp_path):
@@ -572,3 +575,6 @@ def test_console_links_visualization_artifacts(tmp_path):
     assert "claim_comparison_cards.html" in html
     assert "dataset_decision_flow.html" in html
     assert "human_review_workflow.html" in html
+    assert '"final_report.html": "final_report.html"' in html
+    assert '"session_report.zip": "session_report.zip"' in html
+    assert '"workflow_interpretive_report.md": "workflow_interpretive_report.md"' not in html

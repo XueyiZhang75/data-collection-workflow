@@ -991,9 +991,6 @@ def write_task_result_artifacts(result, output_dir):
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    report_path = out / "task_result.md"
-    report_path.write_text(render_task_result(result), encoding="utf-8")
     return {
         "task_result_json": str(write_json(result, out / "task_result.json")),
-        "task_result_english": str(report_path),
     }

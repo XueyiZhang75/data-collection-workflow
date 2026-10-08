@@ -621,8 +621,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _print_task_result_summary(summary: dict) -> None:
     artifacts = summary.get('artifact_paths') or {}
-    if artifacts.get('task_result_english'):
-        print(f"task_result_report: {artifacts['task_result_english']}")
+    report = artifacts.get('final_report_english') or artifacts.get('task_result_english')
+    if report:
+        label = 'final_report' if artifacts.get('final_report_english') else 'task_result_report'
+        print(f"{label}: {report}")
+    if artifacts.get('report_bundle'):
+        print(f"report_bundle: {artifacts['report_bundle']}")
     result = summary.get('task_result_summary') or {}
     if result.get('headline'):
         print(f"task_result: {result['headline']}")

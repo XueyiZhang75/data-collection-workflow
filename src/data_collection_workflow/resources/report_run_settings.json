@@ -1,0 +1,2765 @@
+{
+  "schema_version": 1,
+  "default_note": "Current public template and runtime references only; never evidence of a saved run value. Update with the configuration API when documented controls change.",
+  "groups": [
+    {
+      "id": "task",
+      "label": "Task and workflow mode",
+      "description": "Task scope, requested fields, source preferences and collection mode."
+    },
+    {
+      "id": "model",
+      "label": "Model and generation",
+      "description": "Provider, model, generation controls and model-assisted stages."
+    },
+    {
+      "id": "discovery",
+      "label": "Source discovery",
+      "description": "Search providers, iterative search, authority follow-up and historical versions."
+    },
+    {
+      "id": "retrieval",
+      "label": "Document acquisition and parsing",
+      "description": "Retrieval policies, content limits, browser and OCR controls."
+    },
+    {
+      "id": "extraction",
+      "label": "Extraction, concurrency and recovery",
+      "description": "Extraction scheduling, concurrency, per-source limits and recovery."
+    },
+    {
+      "id": "budgets",
+      "label": "Session budgets",
+      "description": "Cumulative operation limits and model-stage budgets; these are not dollar spending caps."
+    },
+    {
+      "id": "review",
+      "label": "Validation and review",
+      "description": "Validation, anomaly detection, source assessment and human review."
+    },
+    {
+      "id": "sources",
+      "label": "Source policies and fixtures",
+      "description": "Optional source sets, allowlists and user-supplied local inputs."
+    },
+    {
+      "id": "output",
+      "label": "Output and interface",
+      "description": "Output locations, artifact switches, local interfaces and tracing controls."
+    },
+    {
+      "id": "environment",
+      "label": "Runtime environment and credentials",
+      "description": "Runtime tool paths and credential variable names. Credential values are never exported."
+    },
+    {
+      "id": "execution",
+      "label": "Execution and resume controls",
+      "description": "Command-line controls that affect the run, recovery or output."
+    }
+  ],
+  "settings": [
+    {
+      "key": "description",
+      "label": "Description",
+      "description": "Controls description in the workflow profile.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "task",
+      "default": "Task and runtime settings for source discovery, document acquisition, extraction, validation, review, and export.",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "direct_collection_enable_audit_validation",
+      "label": "Direct collection enable audit validation",
+      "description": "Compatibility alias enabling audit validation in direct collection.",
+      "environment_variables": [
+        "DIRECT_COLLECTION_ENABLE_AUDIT_VALIDATION"
+      ],
+      "cli_aliases": [],
+      "group": "task",
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1299"
+    },
+    {
+      "key": "pipeline_mode",
+      "label": "Pipeline mode",
+      "description": "Selects standard collection or evidence-qualified execution.",
+      "environment_variables": [
+        "PIPELINE_MODE"
+      ],
+      "cli_aliases": [
+        "--pipeline-mode (interactive entry)"
+      ],
+      "group": "task",
+      "default": "standard",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "profile_name",
+      "label": "Profile name",
+      "description": "Controls profile name in the workflow profile.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "task",
+      "default": "data_collection",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "run_mode",
+      "label": "Run mode",
+      "description": "Controls run mode in the workflow profile.",
+      "environment_variables": [
+        "RUN_MODE"
+      ],
+      "cli_aliases": [],
+      "group": "task",
+      "default": "standard",
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "structured_task.collection_mode",
+      "label": "Collection mode",
+      "description": "Controls collection mode in structured task.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "task",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "structured_task.disease",
+      "label": "Disease",
+      "description": "Controls disease in structured task.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--disease"
+      ],
+      "group": "task",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "structured_task.end_date",
+      "label": "End date",
+      "description": "Controls end date in structured task.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--end-date"
+      ],
+      "group": "task",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "structured_task.location",
+      "label": "Location",
+      "description": "Controls location in structured task.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--location"
+      ],
+      "group": "task",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "structured_task.run_label",
+      "label": "Run label",
+      "description": "Controls run label in structured task.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "task",
+      "default": null,
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "structured_task.source_preferences",
+      "label": "Source preferences",
+      "description": "Controls source preferences in structured task.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "task",
+      "default": [
+        "official_public_health_agency",
+        "international_organization_report",
+        "peer_reviewed_literature",
+        "structured_database",
+        "news_and_situation_report"
+      ],
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "structured_task.start_date",
+      "label": "Start date",
+      "description": "Controls start date in structured task.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--start-date"
+      ],
+      "group": "task",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "structured_task.target_fields",
+      "label": "Target fields",
+      "description": "Fields requested by the task configuration, including any explicitly saved generated defaults.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--target-field"
+      ],
+      "group": "task",
+      "default": [
+        "disease",
+        "virus_or_syndrome",
+        "country",
+        "subnational_location",
+        "date_reported",
+        "event_start_date",
+        "event_end_date",
+        "cases_confirmed",
+        "cases_probable",
+        "cases_suspected",
+        "cases_unspecified",
+        "deaths",
+        "case_definition",
+        "source_url",
+        "source_type",
+        "evidence_quote"
+      ],
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "structured_task.user_request",
+      "label": "User request",
+      "description": "Controls user request in structured task.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "task",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "user_request",
+      "label": "User request",
+      "description": "Controls user request in the workflow profile.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--user-request"
+      ],
+      "group": "task",
+      "default": "",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "workflow.collection_mode",
+      "label": "Collection mode",
+      "description": "Controls collection mode in workflow.",
+      "environment_variables": [
+        "COLLECTION_MODE"
+      ],
+      "cli_aliases": [
+        "--audit-mode (interactive entry)"
+      ],
+      "group": "task",
+      "default": "standard",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "workflow.graph_name",
+      "label": "Graph name",
+      "description": "Controls graph name in workflow.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "task",
+      "default": "data_collection_workflow",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "workflow.use_fixture_documents",
+      "label": "Use fixture documents",
+      "description": "Controls use fixture documents in workflow.",
+      "environment_variables": [
+        "USE_FIXTURE_DOCUMENTS"
+      ],
+      "cli_aliases": [],
+      "group": "task",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "workflow.validation_ground_truth_records_path",
+      "label": "Validation ground truth records path",
+      "description": "Controls validation ground truth records path in workflow.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "task",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "disease_intelligence.fallback_to_curated",
+      "label": "Fallback to curated",
+      "description": "Controls fallback to curated in disease intelligence.",
+      "environment_variables": [
+        "DISEASE_INTELLIGENCE_FALLBACK_TO_CURATED"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "disease_intelligence.force_llm",
+      "label": "Force LLM",
+      "description": "Controls force llm in disease intelligence.",
+      "environment_variables": [
+        "DISEASE_INTELLIGENCE_FORCE_LLM"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "disease_intelligence.llm_enabled",
+      "label": "LLM enabled",
+      "description": "Controls llm enabled in disease intelligence.",
+      "environment_variables": [
+        "ENABLE_LLM_DISEASE_INTELLIGENCE"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "environment.LLM_TEMPERATURE",
+      "label": "LLM TEMPERATURE",
+      "description": "Model sampling-temperature setting, where supported by the selected model.",
+      "environment_variables": [
+        "LLM_TEMPERATURE"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "llm.effort",
+      "label": "Effort",
+      "description": "Optional reasoning-effort setting. Null leaves it unspecified.",
+      "environment_variables": [
+        "LLM_EFFORT"
+      ],
+      "cli_aliases": [
+        "--llm-effort"
+      ],
+      "group": "model",
+      "default": null,
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "llm.fallback_to_rule_based",
+      "label": "Fallback to rule based",
+      "description": "Controls fallback to rule based in llm.",
+      "environment_variables": [
+        "LLM_FALLBACK_TO_RULE_BASED"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.max_retries",
+      "label": "Max retries",
+      "description": "Provider-client retry count. Retries still consume relevant session operation budgets.",
+      "environment_variables": [
+        "LLM_MAX_RETRIES"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": 2,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1150"
+    },
+    {
+      "key": "llm.max_tokens",
+      "label": "Max tokens",
+      "description": "Maximum requested output tokens per model call.",
+      "environment_variables": [
+        "LLM_MAX_TOKENS"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": 4096,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.model",
+      "label": "Model",
+      "description": "Controls model in llm.",
+      "environment_variables": [
+        "LLM_MODEL"
+      ],
+      "cli_aliases": [
+        "--model"
+      ],
+      "group": "model",
+      "default": "",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.provider",
+      "label": "Provider",
+      "description": "Controls provider in llm.",
+      "environment_variables": [
+        "LLM_PROVIDER"
+      ],
+      "cli_aliases": [
+        "--provider"
+      ],
+      "group": "model",
+      "default": "",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_planning_enabled",
+      "label": "Source planning enabled",
+      "description": "Controls source planning enabled in llm.",
+      "environment_variables": [
+        "ENABLE_LLM_SOURCE_PLANNING"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.structured_extraction_enabled",
+      "label": "Structured extraction enabled",
+      "description": "Controls structured extraction enabled in llm.",
+      "environment_variables": [
+        "ENABLE_LLM_EXTRACTION"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.structured_output_method",
+      "label": "Structured output method",
+      "description": "Method used to request structured model output.",
+      "environment_variables": [
+        "LLM_STRUCTURED_OUTPUT_METHOD"
+      ],
+      "cli_aliases": [
+        "--llm-output-mode"
+      ],
+      "group": "model",
+      "default": "auto",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "llm.thinking",
+      "label": "Thinking",
+      "description": "Configured reasoning/thinking mode; support depends on the chosen model.",
+      "environment_variables": [
+        "LLM_THINKING"
+      ],
+      "cli_aliases": [
+        "--llm-thinking"
+      ],
+      "group": "model",
+      "default": "auto",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "llm.timeout_seconds",
+      "label": "Timeout seconds",
+      "description": "Model request timeout in seconds; absence does not prove a recorded timeout value.",
+      "environment_variables": [
+        "LLM_TIMEOUT_SECONDS"
+      ],
+      "cli_aliases": [],
+      "group": "model",
+      "default": null,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1147"
+    },
+    {
+      "key": "source_search.authority_gap_retry.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in source search / authority gap retry.",
+      "environment_variables": [
+        "AUTHORITY_GAP_RETRY_ENABLED"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "source_search.authority_gap_retry.jurisdiction_max_queries",
+      "label": "Jurisdiction max queries",
+      "description": "Controls jurisdiction max queries in source search / authority gap retry.",
+      "environment_variables": [
+        "AUTHORITY_GAP_JURISDICTION_RETRY_MAX_QUERIES"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 12,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "source_search.authority_gap_retry.known_domain_max_queries",
+      "label": "Known domain max queries",
+      "description": "Controls known domain max queries in source search / authority gap retry.",
+      "environment_variables": [
+        "AUTHORITY_GAP_KNOWN_DOMAIN_RETRY_MAX_QUERIES"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 10,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "source_search.authority_gap_retry.max_iterations",
+      "label": "Max iterations",
+      "description": "Controls max iterations in source search / authority gap retry.",
+      "environment_variables": [
+        "AUTHORITY_GAP_RETRY_MAX_ITERATIONS"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 1,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "source_search.authority_gap_retry.max_queries",
+      "label": "Max queries",
+      "description": "Controls max queries in source search / authority gap retry.",
+      "environment_variables": [
+        "AUTHORITY_GAP_RETRY_MAX_QUERIES"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 24,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "source_search.authority_gap_retry.official_page_family_max_queries",
+      "label": "Official page family max queries",
+      "description": "Controls official page family max queries in source search / authority gap retry.",
+      "environment_variables": [
+        "AUTHORITY_GAP_OFFICIAL_PAGE_FAMILY_RETRY_MAX_QUERIES"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 10,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "source_search.authority_gap_retry.result_budget",
+      "label": "Result budget",
+      "description": "Controls result budget in source search / authority gap retry.",
+      "environment_variables": [
+        "AUTHORITY_GAP_RETRY_RESULT_BUDGET"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 80,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "source_search.cache_enabled",
+      "label": "Cache enabled",
+      "description": "Reserved search adapter setting; the search adapter does not implement a cache for this switch.",
+      "environment_variables": [
+        "SEARCH_CACHE_ENABLED"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.combine_with_seed_catalog",
+      "label": "Combine with seed catalog",
+      "description": "Controls combine with seed catalog in source search.",
+      "environment_variables": [
+        "SEARCH_COMBINE_WITH_SEED_CATALOG"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in source search.",
+      "environment_variables": [
+        "ENABLE_LIVE_SEARCH"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.fixture_path",
+      "label": "Fixture path",
+      "description": "Controls fixture path in source search.",
+      "environment_variables": [
+        "SEARCH_FIXTURE_PATH"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": "src/data_collection_workflow/resources/search_fixtures/example_search_results.json",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.allow_deterministic_fallback",
+      "label": "Allow deterministic fallback",
+      "description": "Controls allow deterministic fallback in source search / iterative.",
+      "environment_variables": [
+        "ITERATIVE_SEARCH_ALLOW_DETERMINISTIC_FALLBACK"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in source search / iterative.",
+      "environment_variables": [
+        "ENABLE_ITERATIVE_SOURCE_DISCOVERY"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.max_iterations",
+      "label": "Max iterations",
+      "description": "Controls max iterations in source search / iterative.",
+      "environment_variables": [
+        "ITERATIVE_SEARCH_MAX_ITERATIONS"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 3,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.max_queries_per_iteration",
+      "label": "Max queries per iteration",
+      "description": "Controls max queries per iteration in source search / iterative.",
+      "environment_variables": [
+        "ITERATIVE_SEARCH_MAX_QUERIES_PER_ITERATION"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 4,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.max_total_queries",
+      "label": "Max total queries",
+      "description": "Controls max total queries in source search / iterative.",
+      "environment_variables": [
+        "ITERATIVE_SEARCH_MAX_TOTAL_QUERIES"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 20,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.max_total_results",
+      "label": "Max total results",
+      "description": "Controls max total results in source search / iterative.",
+      "environment_variables": [
+        "ITERATIVE_SEARCH_MAX_TOTAL_RESULTS"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 120,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.require_llm",
+      "label": "Require LLM",
+      "description": "Controls require llm in source search / iterative.",
+      "environment_variables": [
+        "ITERATIVE_SEARCH_REQUIRE_LLM"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.require_observation_after_each_iteration",
+      "label": "Require observation after each iteration",
+      "description": "Controls require observation after each iteration in source search / iterative.",
+      "environment_variables": [
+        "ITERATIVE_SEARCH_REQUIRE_OBSERVATION_AFTER_EACH_ITERATION"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.iterative.stop_when_llm_says_sufficient",
+      "label": "Stop when LLM says sufficient",
+      "description": "Controls stop when llm says sufficient in source search / iterative.",
+      "environment_variables": [
+        "ITERATIVE_SEARCH_STOP_WHEN_LLM_SAYS_SUFFICIENT"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.live_search_enabled",
+      "label": "Live search enabled",
+      "description": "Controls live search enabled in source search.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1042"
+    },
+    {
+      "key": "source_search.max_queries",
+      "label": "Max queries",
+      "description": "Search-query limit; adaptive evidence execution may replace the configured stage limit with available session capacity.",
+      "environment_variables": [
+        "SEARCH_MAX_QUERIES"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 8,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.max_results_per_query",
+      "label": "Max results per query",
+      "description": "Controls max results per query in source search.",
+      "environment_variables": [
+        "SEARCH_MAX_RESULTS_PER_QUERY"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 8,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.max_total_results",
+      "label": "Max total results",
+      "description": "Search-result limit; adaptive evidence execution may replace the configured stage limit with available session capacity.",
+      "environment_variables": [
+        "SEARCH_MAX_TOTAL_RESULTS"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 64,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.mode",
+      "label": "Mode",
+      "description": "Controls mode in source search.",
+      "environment_variables": [
+        "SEARCH_MODE"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": "live",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.provider",
+      "label": "Provider",
+      "description": "Controls provider in source search.",
+      "environment_variables": [
+        "SEARCH_PROVIDER"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": "tavily",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.provider_channel_allowlist",
+      "label": "Provider channel allowlist",
+      "description": "Controls provider channel allowlist in source search.",
+      "environment_variables": [
+        "SEARCH_PROVIDER_CHANNEL_ALLOWLIST"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": [
+        "web_search",
+        "official_site_search",
+        "news_search",
+        "literature_api",
+        "database_search"
+      ],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_search.timeout_seconds",
+      "label": "Timeout seconds",
+      "description": "Controls timeout seconds in source search.",
+      "environment_variables": [
+        "SEARCH_TIMEOUT_SECONDS"
+      ],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 15,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "universal.historical_discovery.enabled",
+      "label": "Enabled",
+      "description": "Enables discovery of historical page-version metadata; this does not itself retrieve archived page bodies.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": true,
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "universal.historical_discovery.max_origins",
+      "label": "Max origins",
+      "description": "Controls max origins in universal / historical discovery.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 4,
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "universal.historical_discovery.max_records_per_origin",
+      "label": "Max records per origin",
+      "description": "Controls max records per origin in universal / historical discovery.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 64,
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "universal.historical_discovery.max_results",
+      "label": "Max results",
+      "description": "Controls max results in universal / historical discovery.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 64,
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "universal.historical_discovery.timeout_seconds",
+      "label": "Timeout seconds",
+      "description": "Controls timeout seconds in universal / historical discovery.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "discovery",
+      "default": 10,
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "content_fetch.allow_needs_review",
+      "label": "Allow needs review",
+      "description": "Controls allow needs review in content fetch.",
+      "environment_variables": [
+        "FETCH_ALLOW_NEEDS_REVIEW"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.allowed_final_roles",
+      "label": "Allowed final roles",
+      "description": "Controls allowed final roles in content fetch.",
+      "environment_variables": [
+        "FETCH_ALLOWED_FINAL_ROLES"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": [
+        "collection",
+        "validation",
+        "collection_support",
+        "context"
+      ],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.content_fixture_map_path",
+      "label": "Content fixture map path",
+      "description": "Controls content fixture map path in content fetch.",
+      "environment_variables": [
+        "CONTENT_FIXTURE_MAP_PATH"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": null,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.domain_allowlist",
+      "label": "Domain allowlist",
+      "description": "Controls domain allowlist in content fetch.",
+      "environment_variables": [
+        "FETCH_DOMAIN_ALLOWLIST"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": [],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.domain_blocklist",
+      "label": "Domain blocklist",
+      "description": "Controls domain blocklist in content fetch.",
+      "environment_variables": [
+        "FETCH_DOMAIN_BLOCKLIST"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": [],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.adaptive_budget.max_candidate_urls",
+      "label": "Max candidate URLs",
+      "description": "Controls max candidate urls in content fetch / external fetch / adaptive budget.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 120,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.adaptive_budget.max_fetch_urls",
+      "label": "Max fetch URLs",
+      "description": "Controls max fetch urls in content fetch / external fetch / adaptive budget.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 18,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.adaptive_budget.max_iterations",
+      "label": "Max iterations",
+      "description": "Controls max iterations in content fetch / external fetch / adaptive budget.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 3,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.adaptive_budget.min_collection_sources",
+      "label": "Min collection sources",
+      "description": "Controls min collection sources in content fetch / external fetch / adaptive budget.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 6,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.adaptive_budget.min_usable_documents",
+      "label": "Min usable documents",
+      "description": "Controls min usable documents in content fetch / external fetch / adaptive budget.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 12,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.adaptive_budget.min_validation_sources",
+      "label": "Min validation sources",
+      "description": "Controls min validation sources in content fetch / external fetch / adaptive budget.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 3,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.adaptive_budget.stop_when_llm_says_sufficient",
+      "label": "Stop when LLM says sufficient",
+      "description": "Controls stop when llm says sufficient in content fetch / external fetch / adaptive budget.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in content fetch / external fetch.",
+      "environment_variables": [
+        "EXTERNAL_FETCH_ENABLED"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.provider_order",
+      "label": "Provider order",
+      "description": "Controls provider order in content fetch / external fetch.",
+      "environment_variables": [
+        "EXTERNAL_FETCH_PROVIDER_ORDER"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": [
+        "tavily_extract",
+        "native_requests"
+      ],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.tavily_extract.chunks_per_source",
+      "label": "Chunks per source",
+      "description": "Controls chunks per source in content fetch / external fetch / tavily extract.",
+      "environment_variables": [
+        "TAVILY_EXTRACT_CHUNKS_PER_SOURCE"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 5,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.tavily_extract.extract_depth",
+      "label": "Extract depth",
+      "description": "Controls extract depth in content fetch / external fetch / tavily extract.",
+      "environment_variables": [
+        "TAVILY_EXTRACT_DEPTH"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": "advanced",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.tavily_extract.format",
+      "label": "Format",
+      "description": "Controls format in content fetch / external fetch / tavily extract.",
+      "environment_variables": [
+        "TAVILY_EXTRACT_FORMAT"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": "markdown",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.external_fetch.tavily_extract.timeout_seconds",
+      "label": "Timeout seconds",
+      "description": "Controls timeout seconds in content fetch / external fetch / tavily extract.",
+      "environment_variables": [
+        "TAVILY_EXTRACT_TIMEOUT_SECONDS"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 45,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.fetch_search_derived_sources",
+      "label": "Fetch search derived sources",
+      "description": "Controls fetch search derived sources in content fetch.",
+      "environment_variables": [
+        "FETCH_SEARCH_DERIVED_SOURCES"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.max_bytes",
+      "label": "Max bytes",
+      "description": "Controls max bytes in content fetch.",
+      "environment_variables": [
+        "FETCH_MAX_BYTES"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 5000000,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.max_node_seconds",
+      "label": "Max node seconds",
+      "description": "Controls max node seconds in content fetch.",
+      "environment_variables": [
+        "FETCH_MAX_NODE_SECONDS"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1256"
+    },
+    {
+      "key": "content_fetch.max_search_derived_sources",
+      "label": "Max search derived sources",
+      "description": "Controls max search derived sources in content fetch.",
+      "environment_variables": [
+        "FETCH_MAX_SEARCH_DERIVED_SOURCES"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 18,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.max_total_sources",
+      "label": "Max total sources",
+      "description": "Configured stage-level source target. It is distinct from the session source-target and HTTP-request budgets.",
+      "environment_variables": [
+        "FETCH_MAX_TOTAL_SOURCES"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 18,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.min_credibility_score",
+      "label": "Min credibility score",
+      "description": "Controls min credibility score in content fetch.",
+      "environment_variables": [
+        "FETCH_MIN_CREDIBILITY_SCORE"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 0.55,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.parse_pdf_text",
+      "label": "Parse PDF text",
+      "description": "Controls parse pdf text in content fetch.",
+      "environment_variables": [
+        "FETCH_PARSE_PDF_TEXT"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.parse_tables",
+      "label": "Parse tables",
+      "description": "Controls parse tables in content fetch.",
+      "environment_variables": [
+        "FETCH_PARSE_TABLES"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.store_raw_text",
+      "label": "Store raw text",
+      "description": "Controls store raw text in content fetch.",
+      "environment_variables": [
+        "FETCH_STORE_RAW_TEXT"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "content_fetch.user_agent",
+      "label": "User agent",
+      "description": "Controls user agent in content fetch.",
+      "environment_variables": [
+        "FETCH_USER_AGENT"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": "data-collection-workflow/0.1",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "environment.EVENT_LINK_EXPANSION_ENABLED",
+      "label": "EVENT LINK EXPANSION ENABLED",
+      "description": "Enables following eligible event-related links discovered in fetched pages.",
+      "environment_variables": [
+        "EVENT_LINK_EXPANSION_ENABLED"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.EVENT_LINK_EXPANSION_LIMIT",
+      "label": "EVENT LINK EXPANSION LIMIT",
+      "description": "Limit on eligible event-related links followed from retrieved content.",
+      "environment_variables": [
+        "EVENT_LINK_EXPANSION_LIMIT"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.RESOURCE_LINK_EXPANSION_LIMIT",
+      "label": "RESOURCE LINK EXPANSION LIMIT",
+      "description": "Limit on resource-link expansion. An explicit zero disables expansion; a missing recorded value is not zero.",
+      "environment_variables": [
+        "RESOURCE_LINK_EXPANSION_LIMIT"
+      ],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "live_web.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in live web.",
+      "environment_variables": [
+        "ENABLE_LIVE_FETCH"
+      ],
+      "cli_aliases": [
+        "--live-fetch",
+        "--no-live-fetch"
+      ],
+      "group": "retrieval",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "live_web.timeout_seconds",
+      "label": "Timeout seconds",
+      "description": "Controls timeout seconds in live web.",
+      "environment_variables": [
+        "FETCH_TIMEOUT_SECONDS"
+      ],
+      "cli_aliases": [
+        "--timeout-seconds"
+      ],
+      "group": "retrieval",
+      "default": 30,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "universal.acquisition.acquisition_strategy",
+      "label": "Acquisition strategy",
+      "description": "Controls acquisition strategy in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": "native",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:590"
+    },
+    {
+      "key": "universal.acquisition.chromium_mode",
+      "label": "Chromium mode",
+      "description": "Controls chromium mode in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default_basis": "docs/runtime.md"
+    },
+    {
+      "key": "universal.acquisition.force_ocr",
+      "label": "Force OCR",
+      "description": "Controls force ocr in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:325"
+    },
+    {
+      "key": "universal.acquisition.max_bytes",
+      "label": "Max bytes",
+      "description": "Controls max bytes in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 20000000,
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:540"
+    },
+    {
+      "key": "universal.acquisition.ocr_languages",
+      "label": "OCR languages",
+      "description": "Controls ocr languages in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": "eng",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:119"
+    },
+    {
+      "key": "universal.acquisition.ocr_min_confidence",
+      "label": "OCR min confidence",
+      "description": "Controls ocr min confidence in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 80,
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:369"
+    },
+    {
+      "key": "universal.acquisition.ocr_render_scale",
+      "label": "OCR render scale",
+      "description": "Controls ocr render scale in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 3,
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:333"
+    },
+    {
+      "key": "universal.acquisition.render_wait_ms",
+      "label": "Render wait ms",
+      "description": "Controls render wait ms in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 300,
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:651"
+    },
+    {
+      "key": "universal.acquisition.timeout_ms",
+      "label": "Timeout ms",
+      "description": "Controls timeout ms in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 30000,
+      "default_basis": "src/data_collection_workflow/browser_transport.py:283"
+    },
+    {
+      "key": "universal.acquisition.timeout_seconds",
+      "label": "Timeout seconds",
+      "description": "Controls timeout seconds in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "retrieval",
+      "default": 30,
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:533"
+    },
+    {
+      "key": "environment.DIRECT_ALLOW_GENERATED_URL_ONLY",
+      "label": "DIRECT ALLOW GENERATED URL ONLY",
+      "description": "Direct-collection compatibility control for candidates supported only by generated URLs.",
+      "environment_variables": [
+        "DIRECT_ALLOW_GENERATED_URL_ONLY"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.DIRECT_ENABLE_TEXT_FALLBACK_AFTER_ROW_EXTRACTION",
+      "label": "DIRECT ENABLE TEXT FALLBACK AFTER ROW EXTRACTION",
+      "description": "Allows text extraction fallback after structured row extraction in direct collection.",
+      "environment_variables": [
+        "DIRECT_ENABLE_TEXT_FALLBACK_AFTER_ROW_EXTRACTION"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.DIRECT_FALLBACK_FETCH_LIMIT",
+      "label": "DIRECT FALLBACK FETCH LIMIT",
+      "description": "Fetch limit used by direct-collection fallback acquisition.",
+      "environment_variables": [
+        "DIRECT_FALLBACK_FETCH_LIMIT"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.DIRECT_FALLBACK_LINK_FETCH_LIMIT",
+      "label": "DIRECT FALLBACK LINK FETCH LIMIT",
+      "description": "Link-fetch limit used by direct-collection fallback acquisition.",
+      "environment_variables": [
+        "DIRECT_FALLBACK_LINK_FETCH_LIMIT"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.DIRECT_FAST_STOP_ON_VERIFIED_TARGET",
+      "label": "DIRECT FAST STOP ON VERIFIED TARGET",
+      "description": "Allows direct collection to stop early when its verified target criteria are satisfied.",
+      "environment_variables": [
+        "DIRECT_FAST_STOP_ON_VERIFIED_TARGET"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.DIRECT_MIN_TARGET_METRIC_RECORDS",
+      "label": "DIRECT MIN TARGET METRIC RECORDS",
+      "description": "Minimum target-metric record threshold used by the direct-collection path.",
+      "environment_variables": [
+        "DIRECT_MIN_TARGET_METRIC_RECORDS"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.LLM_FOCUSED_RECOVERY_SPANS_PER_SOURCE",
+      "label": "LLM FOCUSED RECOVERY SPANS PER SOURCE",
+      "description": "Maximum evidence spans selected per source for focused recovery.",
+      "environment_variables": [
+        "LLM_FOCUSED_RECOVERY_SPANS_PER_SOURCE"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.METRIC_ROW_BATCH_SIZE",
+      "label": "METRIC ROW BATCH SIZE",
+      "description": "Number of metric rows grouped into an extraction batch.",
+      "environment_variables": [
+        "METRIC_ROW_BATCH_SIZE"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "llm.extraction.event_source_min_spans",
+      "label": "Event source min spans",
+      "description": "Controls event source min spans in llm / extraction.",
+      "environment_variables": [
+        "LLM_EVENT_SOURCE_MIN_SPANS"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 1,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.focused_recovery_reserved_calls",
+      "label": "Focused recovery reserved calls",
+      "description": "Controls focused recovery reserved calls in llm / extraction.",
+      "environment_variables": [
+        "LLM_FOCUSED_RECOVERY_RESERVED_CALLS"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 40,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.hard_primary_calls",
+      "label": "Hard primary calls",
+      "description": "Controls hard primary calls in llm / extraction.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1099"
+    },
+    {
+      "key": "llm.extraction.high_value_source_min_spans",
+      "label": "High value source min spans",
+      "description": "Controls high value source min spans in llm / extraction.",
+      "environment_variables": [
+        "LLM_HIGH_VALUE_SOURCE_MIN_SPANS"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 2,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.max_domain_call_share",
+      "label": "Max domain call share",
+      "description": "Controls max domain call share in llm / extraction.",
+      "environment_variables": [
+        "LLM_MAX_DOMAIN_CALL_SHARE"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 0.2,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.scheduler.max_concurrency",
+      "label": "Max concurrency",
+      "description": "Maximum concurrently scheduled extraction calls.",
+      "environment_variables": [
+        "LLM_EXTRACTION_MAX_CONCURRENCY"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 4,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.scheduler.mode",
+      "label": "Mode",
+      "description": "Controls mode in llm / extraction / scheduler.",
+      "environment_variables": [
+        "LLM_EXTRACTION_SCHEDULER_MODE"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": "quality_adaptive",
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.scheduler.rolling_yield_window",
+      "label": "Rolling yield window",
+      "description": "Controls rolling yield window in llm / extraction / scheduler.",
+      "environment_variables": [
+        "LLM_EXTRACTION_ROLLING_YIELD_WINDOW"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 40,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.scheduler.safety_max_calls",
+      "label": "Safety max calls",
+      "description": "Hard extraction-call safety limit before further applicable session limits.",
+      "environment_variables": [
+        "LLM_EXTRACTION_SAFETY_MAX_CALLS",
+        "LLM_HARD_PRIMARY_CALLS"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 2400,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.scheduler.soft_checkpoint_calls",
+      "label": "Soft checkpoint calls",
+      "description": "Extraction checkpoint threshold, not the final hard call ceiling.",
+      "environment_variables": [
+        "LLM_EXTRACTION_SOFT_CHECKPOINT_CALLS",
+        "LLM_SOFT_PRIMARY_CALLS"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 400,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.extraction.soft_primary_calls",
+      "label": "Soft primary calls",
+      "description": "Controls soft primary calls in llm / extraction.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1096"
+    },
+    {
+      "key": "llm.focused_recovery.max_calls",
+      "label": "Max calls",
+      "description": "Controls max calls in llm / focused recovery.",
+      "environment_variables": [
+        "LLM_FOCUSED_RECOVERY_MAX_CALLS"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 40,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.focused_recovery.max_sources",
+      "label": "Max sources",
+      "description": "Controls max sources in llm / focused recovery.",
+      "environment_variables": [
+        "LLM_FOCUSED_RECOVERY_MAX_SOURCES"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 30,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "llm.max_chunks",
+      "label": "Max chunks",
+      "description": "Legacy extraction chunk limit. Deprecated in the extraction scheduler; use scheduler checkpoint and safety call controls.",
+      "environment_variables": [
+        "LLM_MAX_CHUNKS"
+      ],
+      "cli_aliases": [
+        "--llm-max-chunks"
+      ],
+      "group": "extraction",
+      "default": 30,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.must_fetch_min_chunks_per_source",
+      "label": "Must fetch min chunks per source",
+      "description": "Controls must fetch min chunks per source in llm.",
+      "environment_variables": [
+        "LLM_MUST_FETCH_MIN_CHUNKS_PER_SOURCE"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 6,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.official_extraction_max_chunks",
+      "label": "Official extraction max chunks",
+      "description": "Controls official extraction max chunks in llm.",
+      "environment_variables": [
+        "LLM_OFFICIAL_EXTRACTION_MAX_CHUNKS"
+      ],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 30,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "universal.recovery_rounds",
+      "label": "Recovery rounds",
+      "description": "Recovery-round limit used by strict evidence mode; adaptive mode uses progress and budget stopping rules.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "extraction",
+      "default": 2,
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "universal.budget_limits.browser",
+      "label": "Browser",
+      "description": "Controls browser in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "src/data_collection_workflow/session_runtime.py and acquisition_budget.py; policy-dependent reference",
+      "default": 20
+    },
+    {
+      "key": "universal.budget_limits.extraction",
+      "label": "Extraction",
+      "description": "Controls extraction in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "src/data_collection_workflow/session_runtime.py and acquisition_budget.py; policy-dependent reference",
+      "default": "Minimum of 2400 and llm.extraction.scheduler.safety_max_calls (strict mode)"
+    },
+    {
+      "key": "universal.budget_limits.fetch",
+      "label": "Fetch",
+      "description": "Controls fetch in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default": 200,
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "universal.budget_limits.fetch_ordinary",
+      "label": "Fetch ordinary",
+      "description": "Controls fetch ordinary in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default": "From content_fetch source limits (strict mode only)",
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "universal.budget_limits.http_requests",
+      "label": "HTTP requests",
+      "description": "Controls http requests in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "src/data_collection_workflow/session_runtime.py and acquisition_budget.py; policy-dependent reference",
+      "default": 1000
+    },
+    {
+      "key": "universal.budget_limits.ocr",
+      "label": "OCR",
+      "description": "Controls ocr in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "src/data_collection_workflow/session_runtime.py and acquisition_budget.py; policy-dependent reference",
+      "default": 100
+    },
+    {
+      "key": "universal.budget_limits.search",
+      "label": "Search",
+      "description": "Controls search in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration",
+      "default": "Derived from search, iterative search, and authority follow-up limits"
+    },
+    {
+      "key": "universal.budget_limits.search_results",
+      "label": "Search results",
+      "description": "Controls search results in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration",
+      "default": "Derived from result and authority follow-up limits"
+    },
+    {
+      "key": "universal.budget_limits.source_targets",
+      "label": "Source targets",
+      "description": "Controls source targets in universal / budget limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "src/data_collection_workflow/session_runtime.py and acquisition_budget.py; policy-dependent reference",
+      "default": 200
+    },
+    {
+      "key": "universal.budget_policy.mode",
+      "label": "Mode",
+      "description": "Adaptive or strict operation-budget policy. Omitted policy uses strict behavior; the interactive generator may explicitly choose adaptive.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default": "strict",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "universal.budget_policy.soft_source_target",
+      "label": "Soft source target",
+      "description": "Soft source checkpoint target for adaptive acquisition; not a hard global source limit.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default": 50,
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "universal.budget_policy.version",
+      "label": "Version",
+      "description": "Version of the selected acquisition budget policy.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default": 2,
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "universal.extraction_reserve",
+      "label": "Extraction reserve",
+      "description": "Extraction calls reserved for recovery, resolved from the session ledger.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default": "From llm.extraction.focused_recovery_reserved_calls (fallback 40)",
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "universal.model_limits.DiseaseIntelligenceProfile",
+      "label": "DiseaseIntelligenceProfile",
+      "description": "Controls diseaseintelligenceprofile in universal / model limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration"
+    },
+    {
+      "key": "universal.model_limits.ExecutableSourcePlan",
+      "label": "ExecutableSourcePlan",
+      "description": "Controls executablesourceplan in universal / model limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration"
+    },
+    {
+      "key": "universal.model_limits.LLMSourceCredibilitySuggestion",
+      "label": "LLMSourceCredibilitySuggestion",
+      "description": "Controls llmsourcecredibilitysuggestion in universal / model limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration"
+    },
+    {
+      "key": "universal.model_limits.SearchIterationPlan",
+      "label": "SearchIterationPlan",
+      "description": "Controls searchiterationplan in universal / model limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration"
+    },
+    {
+      "key": "universal.model_limits.SearchRefinementDecision",
+      "label": "SearchRefinementDecision",
+      "description": "Controls searchrefinementdecision in universal / model limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration"
+    },
+    {
+      "key": "universal.model_limits.SourceCriticAgentOutput",
+      "label": "SourceCriticAgentOutput",
+      "description": "Controls sourcecriticagentoutput in universal / model limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration"
+    },
+    {
+      "key": "universal.model_limits.SourceIdentityAgentOutput",
+      "label": "SourceIdentityAgentOutput",
+      "description": "Controls sourceidentityagentoutput in universal / model limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration"
+    },
+    {
+      "key": "universal.model_limits.preflight",
+      "label": "Preflight",
+      "description": "Controls preflight in universal / model limits.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "budgets",
+      "default_basis": "Runtime ledger / accepted configuration"
+    },
+    {
+      "key": "anomaly_detection.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in anomaly detection.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "review",
+      "default": true,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "anomaly_detection.max_cases_threshold",
+      "label": "Max cases threshold",
+      "description": "Controls max cases threshold in anomaly detection.",
+      "environment_variables": [
+        "ANOMALY_MAX_CASES_THRESHOLD"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": 1000000,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "anomaly_detection.max_deaths_threshold",
+      "label": "Max deaths threshold",
+      "description": "Controls max deaths threshold in anomaly detection.",
+      "environment_variables": [
+        "ANOMALY_MAX_DEATHS_THRESHOLD"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": 100000,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "anomaly_detection.min_prior_records",
+      "label": "Min prior records",
+      "description": "Controls min prior records in anomaly detection.",
+      "environment_variables": [
+        "ANOMALY_MIN_PRIOR_RECORDS"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": 1,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "anomaly_detection.spike_multiplier",
+      "label": "Spike multiplier",
+      "description": "Controls spike multiplier in anomaly detection.",
+      "environment_variables": [
+        "ANOMALY_SPIKE_MULTIPLIER"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": 10,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py"
+    },
+    {
+      "key": "human_review.apply_decisions",
+      "label": "Apply decisions",
+      "description": "Controls apply decisions in human review.",
+      "environment_variables": [
+        "HUMAN_REVIEW_APPLY_DECISIONS"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "human_review.decisions_path",
+      "label": "Decisions path",
+      "description": "Controls decisions path in human review.",
+      "environment_variables": [
+        "HUMAN_REVIEW_DECISIONS_PATH"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": null,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "human_review.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in human review.",
+      "environment_variables": [
+        "HUMAN_REVIEW_ENABLED"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "human_review.require_reviewer_id",
+      "label": "Require reviewer ID",
+      "description": "Controls require reviewer id in human review.",
+      "environment_variables": [
+        "HUMAN_REVIEW_REQUIRE_REVIEWER_ID"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "human_review_decisions_path",
+      "label": "Human review decisions path",
+      "description": "Controls human review decisions path in the workflow profile.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "review",
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1280"
+    },
+    {
+      "key": "llm.source_credibility.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in llm / source credibility.",
+      "environment_variables": [
+        "ENABLE_LLM_SOURCE_CREDIBILITY"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_credibility.max_sources",
+      "label": "Max sources",
+      "description": "Controls max sources in llm / source credibility.",
+      "environment_variables": [
+        "LLM_SOURCE_CREDIBILITY_MAX_SOURCES"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": 6,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_credibility.source_id_allowlist",
+      "label": "Source ID allowlist",
+      "description": "Controls source id allowlist in llm / source credibility.",
+      "environment_variables": [
+        "LLM_SOURCE_CREDIBILITY_SOURCE_ID_ALLOWLIST"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": [],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_critic.max_failures",
+      "label": "Max failures",
+      "description": "Controls max failures in llm / source critic.",
+      "environment_variables": [
+        "LLM_SOURCE_CRITIC_MAX_FAILURES"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1129"
+    },
+    {
+      "key": "llm.source_critic.max_node_seconds",
+      "label": "Max node seconds",
+      "description": "Controls max node seconds in llm / source critic.",
+      "environment_variables": [
+        "LLM_SOURCE_CRITIC_MAX_NODE_SECONDS"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1130"
+    },
+    {
+      "key": "llm.source_critic.max_sources",
+      "label": "Max sources",
+      "description": "Controls max sources in llm / source critic.",
+      "environment_variables": [
+        "LLM_SOURCE_CRITIC_MAX_SOURCES"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": 6,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_critic.review_blocks_fetch",
+      "label": "Review blocks fetch",
+      "description": "Controls review blocks fetch in llm / source critic.",
+      "environment_variables": [
+        "LLM_SOURCE_CRITIC_REVIEW_BLOCKS_FETCH"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_critic_enabled",
+      "label": "Source critic enabled",
+      "description": "Controls source critic enabled in llm.",
+      "environment_variables": [
+        "ENABLE_LLM_SOURCE_CRITIC"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_identity.allow_deterministic_fallback",
+      "label": "Allow deterministic fallback",
+      "description": "Controls allow deterministic fallback in llm / source identity.",
+      "environment_variables": [
+        "LLM_SOURCE_IDENTITY_ALLOW_DETERMINISTIC_FALLBACK"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_identity.enabled",
+      "label": "Enabled",
+      "description": "Controls enabled in llm / source identity.",
+      "environment_variables": [
+        "ENABLE_LLM_SOURCE_IDENTITY"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_identity.max_sources",
+      "label": "Max sources",
+      "description": "Controls max sources in llm / source identity.",
+      "environment_variables": [
+        "LLM_SOURCE_IDENTITY_MAX_SOURCES"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": 30,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_identity.post_fetch",
+      "label": "Post fetch",
+      "description": "Controls post fetch in llm / source identity.",
+      "environment_variables": [
+        "LLM_SOURCE_IDENTITY_POST_FETCH"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "llm.source_identity.require_llm",
+      "label": "Require LLM",
+      "description": "Controls require llm in llm / source identity.",
+      "environment_variables": [
+        "LLM_SOURCE_IDENTITY_REQUIRE_LLM"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "validation.allow_incompatible_validation_records",
+      "label": "Allow incompatible validation records",
+      "description": "Controls allow incompatible validation records in validation.",
+      "environment_variables": [
+        "ALLOW_INCOMPATIBLE_VALIDATION_RECORDS"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "validation.direct_collection_enable_audit_validation",
+      "label": "Direct collection enable audit validation",
+      "description": "Controls direct collection enable audit validation in validation.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "review",
+      "default": false,
+      "default_basis": "src/data_collection_workflow/runtime_profile.py:1300"
+    },
+    {
+      "key": "validation.held_out_records_path",
+      "label": "Held out records path",
+      "description": "Controls held out records path in validation.",
+      "environment_variables": [
+        "VALIDATION_HELD_OUT_RECORDS_PATH"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": null,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "validation.min_independent_validation_sources",
+      "label": "Min independent validation sources",
+      "description": "Controls min independent validation sources in validation.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "review",
+      "default": 1,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "validation.mode",
+      "label": "Mode",
+      "description": "Controls mode in validation.",
+      "environment_variables": [
+        "VALIDATION_MODE"
+      ],
+      "cli_aliases": [],
+      "group": "review",
+      "default": "live_cross_source",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "validation.prefer_authoritative_sources",
+      "label": "Prefer authoritative sources",
+      "description": "Controls prefer authoritative sources in validation.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "review",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "validation.validation_records_path",
+      "label": "Validation records path",
+      "description": "Controls validation records path in validation.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "review",
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "source_sets.collection_source_ids",
+      "label": "Collection source IDs",
+      "description": "Controls collection source ids in source sets.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "sources",
+      "default": [],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_sets.context_source_ids",
+      "label": "Context source IDs",
+      "description": "Controls context source ids in source sets.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "sources",
+      "default": [],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_sets.llm_source_critic_source_ids",
+      "label": "LLM source critic source IDs",
+      "description": "Controls llm source critic source ids in source sets.",
+      "environment_variables": [
+        "LLM_SOURCE_CRITIC_SOURCE_ID_ALLOWLIST"
+      ],
+      "cli_aliases": [],
+      "group": "sources",
+      "default": [],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_sets.source_id_allowlist_enabled",
+      "label": "Source ID allowlist enabled",
+      "description": "Controls source id allowlist enabled in source sets.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "sources",
+      "default": false,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_sets.validation_reserved_source_ids",
+      "label": "Validation reserved source IDs",
+      "description": "Controls validation reserved source ids in source sets.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "sources",
+      "default": [],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "source_sets.workflow_source_ids",
+      "label": "Workflow source IDs",
+      "description": "Controls workflow source ids in source sets.",
+      "environment_variables": [
+        "SOURCE_ID_ALLOWLIST"
+      ],
+      "cli_aliases": [],
+      "group": "sources",
+      "default": [],
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "workflow.seed_source_overlay_path",
+      "label": "Seed source overlay path",
+      "description": "Controls seed source overlay path in workflow.",
+      "environment_variables": [
+        "SEED_SOURCE_OVERLAY_PATH"
+      ],
+      "cli_aliases": [],
+      "group": "sources",
+      "default": null,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "workflow.source_role_policy_overlay_path",
+      "label": "Source role policy overlay path",
+      "description": "Controls source role policy overlay path in workflow.",
+      "environment_variables": [
+        "SOURCE_ROLE_POLICY_OVERLAY_PATH"
+      ],
+      "cli_aliases": [],
+      "group": "sources",
+      "default": null,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "environment.ENABLE_LANGSMITH_TRACE",
+      "label": "ENABLE LANGSMITH TRACE",
+      "description": "Workflow switch for optional LangSmith tracing.",
+      "environment_variables": [
+        "ENABLE_LANGSMITH_TRACE"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.LANGCHAIN_TRACING_V2",
+      "label": "LANGCHAIN TRACING V2",
+      "description": "Legacy tracing integration switch; workflow tracing policy can override it.",
+      "environment_variables": [
+        "LANGCHAIN_TRACING_V2"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.LANGFLOW_DEMO_API_BASE",
+      "label": "LANGFLOW DEMO API BASE",
+      "description": "Base URL for the optional Langflow interface backend.",
+      "environment_variables": [
+        "LANGFLOW_DEMO_API_BASE"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.LANGGRAPH_STUDIO_URL",
+      "label": "LANGGRAPH STUDIO URL",
+      "description": "Address of the optional LangGraph Studio interface.",
+      "environment_variables": [
+        "LANGGRAPH_STUDIO_URL"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.LANGSMITH_APP_BASE_URL",
+      "label": "LANGSMITH APP BASE URL",
+      "description": "Base URL used for links to the tracing interface.",
+      "environment_variables": [
+        "LANGSMITH_APP_BASE_URL"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.LANGSMITH_PROJECT",
+      "label": "LANGSMITH PROJECT",
+      "description": "Project name used by optional LangSmith traces.",
+      "environment_variables": [
+        "LANGSMITH_PROJECT"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "environment.LANGSMITH_TRACING",
+      "label": "LANGSMITH TRACING",
+      "description": "Tracing integration switch; workflow tracing policy can override it.",
+      "environment_variables": [
+        "LANGSMITH_TRACING"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default_basis": "src/data_collection_workflow/environment.py / runtime implementation"
+    },
+    {
+      "key": "output.auto_build_console",
+      "label": "Auto build console",
+      "description": "Controls auto build console in output.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "output",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "output.claim_comparison_storage",
+      "label": "Claim comparison storage",
+      "description": "Controls claim comparison storage in output.",
+      "environment_variables": [
+        "CLAIM_COMPARISON_STORAGE"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default": "meaningful_edges",
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "output.console_output_root",
+      "label": "Console output root",
+      "description": "Controls console output root in output.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "output",
+      "default": "outputs/workflow_console",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "output.package_mode",
+      "label": "Package mode",
+      "description": "Controls package mode in output.",
+      "environment_variables": [
+        "FINAL_PACKAGE_MODE"
+      ],
+      "cli_aliases": [],
+      "group": "output",
+      "default": "compact",
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "output.run_output_dir",
+      "label": "Run output dir",
+      "description": "Controls run output dir in output.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "output",
+      "default": null,
+      "default_basis": "Public runtime implementation and configuration documentation"
+    },
+    {
+      "key": "output.run_output_root",
+      "label": "Run output root",
+      "description": "Configured artifact root. Absolute machine paths are shortened for report display.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--output-dir"
+      ],
+      "group": "output",
+      "default": "outputs",
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "output.session_id",
+      "label": "Session ID",
+      "description": "Explicit output-session identifier; an unset value permits generation of a timestamped identifier.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--session-id"
+      ],
+      "group": "output",
+      "default": null,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "output.sessionized",
+      "label": "Sessionized",
+      "description": "Writes each run to a separate session directory.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "output",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "output.write_latest_alias",
+      "label": "Write latest alias",
+      "description": "Controls write latest alias in output.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "output",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "output.write_latest_console_alias",
+      "label": "Write latest console alias",
+      "description": "Controls write latest console alias in output.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "output",
+      "default": true,
+      "default_basis": "No default declared"
+    },
+    {
+      "key": "studio.no_reload",
+      "label": "No reload",
+      "description": "Disables development auto-reload in the optional local Studio interface.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "output",
+      "default": true,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "studio.port",
+      "label": "Port",
+      "description": "Port for the optional local Studio interface; null uses its default port.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "output",
+      "default": null,
+      "default_basis": "configs/workflow.jsonc"
+    },
+    {
+      "key": "credentials.ANTHROPIC_API_KEY",
+      "label": "ANTHROPIC API KEY",
+      "description": "Credential variable for Anthropic model requests. The secret value is never included in a report.",
+      "environment_variables": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "Credential environment-variable interface"
+    },
+    {
+      "key": "credentials.LANGCHAIN_API_KEY",
+      "label": "LANGCHAIN API KEY",
+      "description": "Legacy credential variable accepted by tracing integrations. The secret value is never included in a report.",
+      "environment_variables": [
+        "LANGCHAIN_API_KEY"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "Credential environment-variable interface"
+    },
+    {
+      "key": "credentials.LANGSMITH_API_KEY",
+      "label": "LANGSMITH API KEY",
+      "description": "Optional credential variable for LangSmith tracing. The secret value is never included in a report.",
+      "environment_variables": [
+        "LANGSMITH_API_KEY"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "Credential environment-variable interface"
+    },
+    {
+      "key": "credentials.OPENAI_API_KEY",
+      "label": "OPENAI API KEY",
+      "description": "Credential variable for OpenAI model requests. The secret value is never included in a report.",
+      "environment_variables": [
+        "OPENAI_API_KEY"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "Credential environment-variable interface"
+    },
+    {
+      "key": "credentials.TAVILY_API_KEY",
+      "label": "TAVILY API KEY",
+      "description": "Credential variable for live Tavily search and extraction. The secret value is never included in a report.",
+      "environment_variables": [
+        "TAVILY_API_KEY"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "Credential environment-variable interface"
+    },
+    {
+      "key": "universal.acquisition.acquisition_paths_file",
+      "label": "Acquisition paths file",
+      "description": "Controls acquisition paths file in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:34"
+    },
+    {
+      "key": "universal.acquisition.chromium_executable",
+      "label": "Chromium executable",
+      "description": "Controls chromium executable in universal / acquisition.",
+      "environment_variables": [
+        "CHROMIUM_EXECUTABLE"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/browser_transport.py:261"
+    },
+    {
+      "key": "universal.acquisition.ocr_staging_directory",
+      "label": "OCR staging directory",
+      "description": "Controls ocr staging directory in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:126"
+    },
+    {
+      "key": "universal.acquisition.playwright_browsers_path",
+      "label": "Playwright browsers path",
+      "description": "Controls playwright browsers path in universal / acquisition.",
+      "environment_variables": [
+        "PLAYWRIGHT_BROWSERS_PATH"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:43"
+    },
+    {
+      "key": "universal.acquisition.preflight_font",
+      "label": "Preflight font",
+      "description": "Controls preflight font in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:759"
+    },
+    {
+      "key": "universal.acquisition.tessdata_argument",
+      "label": "Tessdata argument",
+      "description": "Controls tessdata argument in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:162"
+    },
+    {
+      "key": "universal.acquisition.tessdata_dir",
+      "label": "Tessdata dir",
+      "description": "Controls tessdata dir in universal / acquisition.",
+      "environment_variables": [
+        "TESSDATA_DIR"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:162"
+    },
+    {
+      "key": "universal.acquisition.tesseract_executable",
+      "label": "Tesseract executable",
+      "description": "Controls tesseract executable in universal / acquisition.",
+      "environment_variables": [
+        "TESSERACT_EXECUTABLE"
+      ],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:118"
+    },
+    {
+      "key": "universal.acquisition.tesseract_working_directory",
+      "label": "Tesseract working directory",
+      "description": "Controls tesseract working directory in universal / acquisition.",
+      "environment_variables": [],
+      "cli_aliases": [],
+      "group": "environment",
+      "default_basis": "src/data_collection_workflow/document_acquisition.py:132"
+    },
+    {
+      "key": "cli.all_llm",
+      "label": "All LLM",
+      "description": "One-run switch enabling or disabling the model-assisted stages; individual stage settings are listed separately.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--all-llm"
+      ],
+      "group": "execution",
+      "default": null,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.budget_amendment",
+      "label": "Budget amendment",
+      "description": "File containing an explicit cumulative-budget increase for an eligible resumed session.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--budget-amendment"
+      ],
+      "group": "execution",
+      "default": null,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.case_study_real_mode",
+      "label": "Case study real mode",
+      "description": "Requires live search, live fetch and non-fixture content in readiness diagnostics.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--case-study-real-mode"
+      ],
+      "group": "execution",
+      "default": false,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.config",
+      "label": "Config",
+      "description": "Configuration file selected for this run; absolute machine paths are not exported.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--config"
+      ],
+      "group": "execution",
+      "default": "configs/workflow.jsonc",
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.dashboard",
+      "label": "Dashboard",
+      "description": "Launches the local monitoring dashboard from the interactive collection entry.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--dashboard"
+      ],
+      "group": "execution",
+      "default": true,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.dashboard_port",
+      "label": "Dashboard port",
+      "description": "Port of the optional local monitoring dashboard.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--dashboard-port"
+      ],
+      "group": "execution",
+      "default": 8501,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.live_status",
+      "label": "Live status",
+      "description": "Shows the terminal status panel; runtime event files are independent.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--live-status"
+      ],
+      "group": "execution",
+      "default": true,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.provider_resume",
+      "label": "Provider resume",
+      "description": "File acknowledging a resolved provider account limit for a resumed session.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--provider-resume"
+      ],
+      "group": "execution",
+      "default": null,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.quick_test_mode",
+      "label": "Quick test mode",
+      "description": "Applies reduced budget controls before a run. The resolved budget values remain listed separately.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--quick-test-mode"
+      ],
+      "group": "execution",
+      "default": false,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.resume_session",
+      "label": "Resume session",
+      "description": "Explicit session ID to resume. The saved task, configuration and policy must match.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--resume-session"
+      ],
+      "group": "execution",
+      "default": null,
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    },
+    {
+      "key": "cli.write_run_notebook",
+      "label": "Write run notebook",
+      "description": "Exports a replay notebook after execution.",
+      "environment_variables": [],
+      "cli_aliases": [
+        "--write-run-notebook"
+      ],
+      "group": "execution",
+      "default": "Enabled in interactive collect.py; disabled in configured run_workflow.py",
+      "default_basis": "scripts/run_workflow.py command-line interface"
+    }
+  ]
+}

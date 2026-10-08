@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import sys
 import tempfile
 from copy import deepcopy
@@ -361,9 +360,8 @@ def cmd_collect(args: argparse.Namespace) -> int:
     print(f"output_dir: {_console_text(summary.get('output_dir'))}")
     artifacts = summary.get("artifact_paths") or {}
     for label in (
-        "run_report",
-        "workflow_console_html",
-        "workflow_console_summary_json",
+        "final_report_english",
+        "report_bundle",
     ):
         if artifacts.get(label):
             print(f"{label}: {_console_text(artifacts[label])}")
@@ -528,7 +526,7 @@ def cmd_export(args: argparse.Namespace) -> int:
     if not session_dir.exists():
         print(f"session_dir not found: {_console_text(session_dir)}", file=sys.stderr)
         return 2
-    _, package = _load_session_package(session_dir)
+    summary, package = _load_session_package(session_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     if args.format in {"json", "both"}:
         export_final_data_package(package, output_dir)
@@ -541,9 +539,12 @@ def cmd_export(args: argparse.Namespace) -> int:
         if data not in (None, [], {}):
             _write_export_section(section, data, output_dir, args.format)
 
-    source_console = session_dir / "workflow_console" / "data_collection_workflow_console.html"
-    if source_console.exists():
-        shutil.copy2(source_console, output_dir / "data_collection_workflow_console.html")
+    from .reporting.output_contract import retire_legacy_reading_files
+    from .reporting.unified_report import write_unified_report
+    retire_legacy_reading_files(output_dir)
+    # Reports and their portable data must describe the same current package as
+    # the exports above. Saved settings and evidence belong to the source session.
+    write_unified_report(output_dir, package, summary, source_session_dir=session_dir)
     print(f"export_output_dir: {_console_text(output_dir)}")
     print(f"format: {args.format}")
     return 0

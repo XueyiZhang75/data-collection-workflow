@@ -102,7 +102,7 @@ def test_source_status_exports_and_reports_read_one_manifest(tmp_path):
     assert registry[0]['source_id']=='s'
     assert registry[0]['processing_status']=='budget_deferred'
     assert registry[0]['processing_reason']=='http_requests'
-    assert 'budget-deferred sources: 1' in (tmp_path/'final_report.md').read_text(encoding='utf-8')
+    assert 'budget-deferred sources: 1' in (tmp_path/'workflow_console.html').read_text(encoding='utf-8')
 
 
 def test_finalization_snapshots_live_frontier_when_graph_projection_is_stale(tmp_path,monkeypatch):

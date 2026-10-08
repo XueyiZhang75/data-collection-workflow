@@ -387,6 +387,7 @@ def test_configured_workflow_script_uses_config_without_runtime_confirmations(tm
             str(config_path),
             "--disable-live-fetch",
             "--disable-all-llm",
+            "--write-run-notebook",
             "--output-dir",
             str(tmp_path),
             "--session-id",
@@ -401,9 +402,13 @@ def test_configured_workflow_script_uses_config_without_runtime_confirmations(tm
 
     assert result.returncode == 0, result.stderr
     session_dir = tmp_path / "sessions" / session_id
-    assert (session_dir / "workflow_run_report.md").exists()
+    assert (session_dir / "final_report.html").exists()
+    assert not (session_dir / "workflow_run_report.md").exists()
     assert not list(session_dir.glob("*_chinese.md"))
     assert (session_dir / "workflow_run_summary.json").exists()
+    notebook = json.loads((session_dir / 'workflow_replay_notebook.ipynb').read_text(encoding='utf-8'))
+    links = next(cell['source'] for cell in notebook['cells'] if '## Artifact Links' in cell['source'])
+    assert 'final_report.html' in links and 'session_report.zip' in links
     assert (session_dir / "workflow_console" / "data_collection_workflow_console.html").exists()
     review_items = json.loads(
         (session_dir / "collection" / "human_review_items.json").read_text(

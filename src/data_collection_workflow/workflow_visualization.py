@@ -1504,7 +1504,7 @@ def _index_html(summary: dict, manifest: dict) -> str:
         ("Visualization summary JSON", "workflow_visualization_summary.json"),
         ("Visualization manifest JSON", "workflow_visualization_manifest.json"),
         ("Workflow console", "../workflow_console/data_collection_workflow_console.html"),
-        ("Interpretive report", "../workflow_interpretive_report.md"),
+        ("Final session report", "../final_report.html"),
         ("Human review action guide", "../human_review/review_action_guide.md"),
     ]
     body = f"""

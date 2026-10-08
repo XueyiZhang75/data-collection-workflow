@@ -120,7 +120,7 @@ def test_provider_halt_report_preserves_data_and_distinguishes_partial_collectio
     assert m['counts']['qualified_observations']==1 and m['counts']['candidate_records']==1
     assert manifest.manifest_summary(m)['collection_status']=='partial'
     package['result_manifest']=m;manifest.write_universal_outputs(package,tmp_path)
-    for name in ['final_report.md','workflow_console_summary.json','workflow_console.html']:
+    for name in ['workflow_console_summary.json','workflow_console.html']:
         assert 'provider_account_limit' in (tmp_path/name).read_text(encoding='utf-8')
 
 

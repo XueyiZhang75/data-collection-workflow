@@ -102,6 +102,9 @@ _TOP_LEVEL_FINAL_REPORT_ENGLISH_PATH = (
 _TOP_LEVEL_FINAL_REPORT_FACTS_PATH = (
     _PROJECT_ROOT / "outputs" / "workflow_runs" / "latest_final_report_facts.json"
 )
+_TOP_LEVEL_UNIFIED_REPORT_PATH = (
+    _PROJECT_ROOT / "outputs" / "workflow_runs" / "latest_final_report.html"
+)
 _TOP_LEVEL_WORKFLOW_VISUALIZATION_DIR = (
     _PROJECT_ROOT / "outputs" / "workflow_visualization"
 )
@@ -2025,6 +2028,8 @@ def run_workflow(args: argparse.Namespace) -> dict:
     )
 
     with temporary_workflow_env(env_updates), (universal_context.activate() if universal_context else nullcontext()):
+        from data_collection_workflow.reporting.run_settings import REPORT_ENVIRONMENT_VARIABLES
+        report_environment = {key: get_env(key) for key in REPORT_ENVIRONMENT_VARIABLES if get_env(key) is not None}
         if universal and _llm_enabled(env_updates):
             _preflight_universal_provider(universal_context, provider)
         initial_state["validation_records"] = validation_records
@@ -2558,27 +2563,6 @@ def run_workflow(args: argparse.Namespace) -> dict:
         diagnostics_dir / "workflow_summaries.json",
     )
 
-    report_path = output_dir / "workflow_run_report.md"
-    report = _write_report(
-        report_path,
-        user_request=config.get("user_request") or "",
-        provider=provider,
-        model=model,
-        output_dir=output_dir,
-        result=result,
-        collection_manifest=collection_manifest,
-        validation_manifest=validation_manifest,
-        evaluation_outputs=evaluation_outputs,
-        evaluation_rows=evaluation_rows,
-        evaluation_summary=evaluation_summary,
-        source_split=source_split,
-        live_summary=live_summary,
-        llm_summary=llm_summary,
-    )
-    _TOP_LEVEL_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if bool(output_config.get("write_latest_alias", True)):
-        _TOP_LEVEL_REPORT_PATH.write_text(report, encoding="utf-8")
-
     run_quality_summary = result.get("run_quality_summary") or package.get(
         "run_quality_summary"
     ) or {}
@@ -2792,10 +2776,6 @@ def run_workflow(args: argparse.Namespace) -> dict:
             validation_source_compatibility_summary
         ),
         "artifact_paths": {
-            "run_report": str(report_path),
-            "stable_run_report": str(_TOP_LEVEL_REPORT_PATH)
-            if bool(output_config.get("write_latest_alias", True))
-            else None,
             "collection_manifest": collection_manifest,
             "validation_manifest": validation_manifest,
             "evaluation_outputs": evaluation_outputs,
@@ -2974,12 +2954,6 @@ def run_workflow(args: argparse.Namespace) -> dict:
     summary["artifact_paths"].update(event_writer.artifact_paths)
     summary.update(event_writer.artifact_paths)
     write_json(summary, output_dir / "workflow_run_summary.json")
-    interpretive_paths = _write_interpretive_report_outputs(
-        output_dir,
-        write_latest_alias=bool(output_config.get("write_latest_alias", True)),
-    )
-    summary["artifact_paths"].update(interpretive_paths)
-    write_json(summary, output_dir / "workflow_run_summary.json")
     human_review_workflow_paths = write_human_review_workflow_artifacts(output_dir)
     summary["artifact_paths"].update(human_review_workflow_paths)
     priority_summary_path = Path(
@@ -3019,12 +2993,6 @@ def run_workflow(args: argparse.Namespace) -> dict:
         summary["collection_readiness_summary"] = json.loads(
             readiness_summary_path.read_text(encoding="utf-8")
         )
-    write_json(summary, output_dir / "workflow_run_summary.json")
-    final_report_paths = _write_final_report_outputs(
-        output_dir,
-        write_latest_alias=bool(output_config.get("write_latest_alias", True)),
-    )
-    summary["artifact_paths"].update(final_report_paths)
     write_json(summary, output_dir / "workflow_run_summary.json")
     workflow_visualization_paths = write_workflow_visualization_artifacts(output_dir)
     summary["artifact_paths"].update(workflow_visualization_paths)
@@ -3066,16 +3034,11 @@ def run_workflow(args: argparse.Namespace) -> dict:
                 "missing_link_warning_count", 0
             ),
         }
-    _append_visualization_report_section(report_path, workflow_visualization_paths)
     if bool(output_config.get("write_latest_alias", True)):
         latest_visualization_paths = _write_workflow_visualization_latest_aliases(
             workflow_visualization_paths
         )
         summary["artifact_paths"].update(latest_visualization_paths)
-        _append_visualization_report_section(
-            _TOP_LEVEL_REPORT_PATH,
-            {**workflow_visualization_paths, **latest_visualization_paths},
-        )
     write_json(summary, output_dir / "workflow_run_summary.json")
     if bool(output_config.get("auto_build_console", True)):
         console_dir = workflow_console_output_dir_from_config(
@@ -3101,20 +3064,34 @@ def run_workflow(args: argparse.Namespace) -> dict:
                 latest_console_summary.get("summary_path")
         )
         write_json(summary, output_dir / "workflow_run_summary.json")
-    if bool(getattr(args, "write_run_notebook", False)):
-        notebook_path = write_workflow_replay_notebook(output_dir)
-        summary["artifact_paths"]["workflow_replay_notebook"] = str(notebook_path)
-        summary["workflow_replay_notebook"] = str(notebook_path)
-        write_json(summary, output_dir / "workflow_run_summary.json")
+    from data_collection_workflow.reporting.run_settings import sanitize_configuration
+    from data_collection_workflow.reporting.output_contract import retire_legacy_reading_files, without_legacy_reading_links, write_report_shortcut
+    from data_collection_workflow.reporting.unified_report import write_unified_report
+    write_json(sanitize_configuration(config), output_dir / "run_config.json")
+    summary["run_config_path"] = str(output_dir / "run_config.json")
+    summary["run_status"] = dict(event_writer.run_status)
+    report_state = {**result, "runtime_profile": {"env": report_environment},
+                    "run_status": dict(event_writer.run_status),
+                    "execution_options": {key: getattr(args, key, None) for key in (
+                        "live_status", "write_run_notebook", "resume_session", "provider_resume", "budget_amendment")}}
+    if universal:
+        from data_collection_workflow.result_manifest import write_universal_run_outputs
+        write_universal_run_outputs(package, summary, output_dir, config=config, state=report_state)
+    else:
+        retire_legacy_reading_files(output_dir)
+        summary["artifact_paths"] = without_legacy_reading_links(summary["artifact_paths"])
+        summary["artifact_paths"].update(write_unified_report(output_dir, package, summary, config=config, state=report_state))
+    if bool(output_config.get("write_latest_alias", True)):
+        summary["artifact_paths"]["stable_final_report_english"] = write_report_shortcut(
+            _TOP_LEVEL_UNIFIED_REPORT_PATH, summary["artifact_paths"]["final_report_english"])
+    write_json(summary, output_dir / "workflow_run_summary.json")
     for artifact_key in (
-        "run_report",
+        "final_report_english",
+        "report_bundle",
         "workflow_console_html",
         "workflow_console_summary_json",
         "workflow_visualization_index",
-        "final_report_english",
         "final_report_facts",
-        "interpretive_report_english",
-        "workflow_replay_notebook",
     ):
         artifact_path = summary["artifact_paths"].get(artifact_key)
         if artifact_path:
@@ -3123,9 +3100,12 @@ def run_workflow(args: argparse.Namespace) -> dict:
         "workflow_run_summary",
         output_dir / "workflow_run_summary.json",
     )
-    if universal:
-        from data_collection_workflow.result_manifest import write_universal_run_outputs
-        write_universal_run_outputs(package, summary, output_dir)
+    if bool(getattr(args, "write_run_notebook", False)):
+        notebook_path = write_workflow_replay_notebook(output_dir)
+        summary["artifact_paths"]["workflow_replay_notebook"] = str(notebook_path)
+        summary["workflow_replay_notebook"] = str(notebook_path)
+        write_json(summary, output_dir / "workflow_run_summary.json")
+        event_writer.append_artifact_written("workflow_replay_notebook", notebook_path)
     if bool(output_config.get("write_latest_alias", True)):
         write_json(summary, _TOP_LEVEL_SUMMARY_PATH)
     return summary
@@ -3185,9 +3165,8 @@ def main() -> int:
     print("Data Collection Workflow run completed.")
     print(f"output_dir: {_console_text(summary.get('output_dir'))}")
     artifact_paths = summary.get("artifact_paths") or {}
-    print(f"run_report: {_console_text(artifact_paths.get('run_report'))}")
-    if artifact_paths.get("stable_run_report"):
-        print(f"stable_report: {_console_text(artifact_paths.get('stable_run_report'))}")
+    if artifact_paths.get("report_bundle"):
+        print(f"report_bundle: {_console_text(artifact_paths['report_bundle'])}")
     if artifact_paths.get("final_report_english"):
         print(
             "final_report_english:",

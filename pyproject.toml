@@ -64,7 +64,7 @@ data-collection-workflow = "data_collection_workflow.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"data_collection_workflow" = ["resources/*.json", "resources/**/*.json", "resources/**/*.csv", "resources/**/*.html"]
+"data_collection_workflow" = ["resources/*.json", "resources/*.html", "resources/**/*.json", "resources/**/*.csv", "resources/**/*.html"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]

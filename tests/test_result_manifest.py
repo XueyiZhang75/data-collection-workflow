@@ -24,7 +24,7 @@ def test_outputs_share_manifest_counts_and_no_patient_count_claim(tmp_path):
     assert manifest['quality_status']=='qualified_under_evidence_contract'
     assert exported['result_manifest']==manifest
     assert not (tmp_path/'final_report_chinese.md').exists()
-    assert (tmp_path/'final_report.md').exists()
+    assert not (tmp_path/'final_report.md').exists()
 
 
 def test_manifest_contradiction_refuses_export(tmp_path):
@@ -116,7 +116,10 @@ def test_runner_outputs_overwrite_stale_reports_facts_console_and_printed_counts
     for key, raw_path in summary['artifact_paths'].items():
         if key.startswith(('stable_', 'latest_', 'interpretive_', 'final_report_', 'workflow_console_', 'run_report')):
             assert 'STALE' not in __import__('pathlib').Path(raw_path).read_text(encoding='utf8')
-    for key in ('final_report_facts', 'interpretive_report_summary', 'workflow_console_summary_json'):
+    snapshot = json.loads(__import__('pathlib').Path(summary['artifact_paths']['report_snapshot_json']).read_text())
+    assert snapshot['result_manifest'] == p['result_manifest']
+    assert snapshot['record_counts']['qualified_observations'] == 2
+    for key in ('interpretive_report_summary', 'workflow_console_summary_json'):
         artifact = json.loads(__import__('pathlib').Path(summary['artifact_paths'][key]).read_text())
         assert artifact['result_manifest'] == p['result_manifest']
         assert artifact['final_dataset_count'] == 2
@@ -129,7 +132,9 @@ def test_runner_outputs_overwrite_stale_reports_facts_console_and_printed_counts
     runner.main()
     output = capsys.readouterr().out
     assert 'final_dataset_count: 2' in output
-    assert 'task_result_english:' in output
+    assert 'final_report_english:' in output
+    assert 'report_bundle:' in output
+    assert 'task_result_english:' not in output
 
 
 def test_manifest_alias_counts_match_standalone_and_repeated_runner_exports(monkeypatch, tmp_path):
@@ -180,8 +185,7 @@ def test_shared_manifest_reports_unresolved_acquisition_without_hiding_qualified
     assert manifest['technical_completion'] == 'completed'
     assert manifest['recovery_stop_reason'] == 'round_limit'
     write_universal_outputs(p, tmp_path)
-    for name, label in [('final_report.md', 'Acquisition incomplete'),
-                        ('workflow_console.html', 'Acquisition incomplete')]:
+    for name, label in [('workflow_console.html', 'Acquisition incomplete')]:
         report = (tmp_path / name).read_text(encoding='utf-8')
         assert label in report
         assert 'fetch_ordinary' in report and 'ocr' in report and 'browser' in report
@@ -222,7 +226,7 @@ def test_serialized_manifest_outputs_use_english_for_partial_provider_and_acquis
     for path in output_dir.iterdir():
         if path.suffix in {'.md', '.html', '.json', '.csv'}:
             assert not re.search(r'[\u3400-\u4dbf\u4e00-\u9fff]', path.read_text(encoding='utf-8')), path.name
-    report = (output_dir / 'final_report.md').read_text(encoding='utf-8')
+    report = (output_dir / 'workflow_console.html').read_text(encoding='utf-8')
     assert 'Collection is partial (provider_account_limit)' in report
     assert 'Acquisition incomplete: 1 sources and 1 documents deferred by budget' in report
     assert '1 pages unprocessed' in report
@@ -245,7 +249,8 @@ def test_actual_runner_projection_has_one_english_headline_and_no_chinese_artifa
     assert summary['task_result_summary']['headline']
     assert 'final_report_chinese' not in summary['artifact_paths']
     assert 'final_report_chinese' not in p['artifact_manifest']['files']
-    assert 'Disease collection results' in legacy_path.read_text(encoding='utf-8')
+    assert legacy_path.read_text(encoding='utf-8') == 'Old report'
+    assert Path(summary['artifact_paths']['final_report_english']).name == 'final_report.html'
     for path in Path('run').rglob('*'):
         if path.is_file() and path.suffix in {'.md', '.html', '.json', '.csv'}:
             text = path.read_text(encoding='utf-8')

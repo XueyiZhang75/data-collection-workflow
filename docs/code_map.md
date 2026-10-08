@@ -24,6 +24,10 @@ Evidence mode adds runtime readiness and a recovery controller after the quality
 | `workflow_recovery.py` | Gap identification, action planning, and bounded recovery |
 | `evidence_products.py` | Case, aggregate, context, and candidate products |
 | `result_manifest.py` | Consistent output counts, coverage, and run status |
+| `reporting/unified_report.py` | Single English HTML report, portable data/evidence bundle, and consistent report snapshot |
+| `reporting/source_catalog.py` | Complete source catalogue, processing states, and evidence contributions |
+| `reporting/run_settings.py` | Recorded configuration and effective settings with provenance and credential redaction |
+| `reporting/output_contract.py` | Retirement of duplicate reading reports and links to the latest session report |
 | `provider_failures.py` | Provider stop classification and explicit recovery |
 | `collection_readiness.py` | Run-output completeness and acquisition status |
 | `collection_diagnostics.py` | Collection diagnostics |

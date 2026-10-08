@@ -94,7 +94,7 @@ def test_missing_is_unknown_not_zero_and_unsupported_candidate_is_not_a_lead():
     assert result['answers']['deaths']['value'] is None
 
 
-def test_run_writer_adds_separate_task_report_and_keeps_technical_report(tmp_path):
+def test_run_writer_keeps_task_json_and_uses_single_unified_report(tmp_path):
     row = observation(5442)
     package = {
         'final_dataset': [row], 'aggregate_dataset': [row], 'final_case_dataset': [],
@@ -107,11 +107,11 @@ def test_run_writer_adds_separate_task_report_and_keeps_technical_report(tmp_pat
     task_result = json.loads((tmp_path / 'task_result.json').read_text(encoding='utf-8'))
     assert task_result['answers']['cases_confirmed']['value'] == 5442
     assert 'task_result_chinese' not in artifacts
-    assert '5,442' in (tmp_path / 'task_result.md').read_text(encoding='utf-8')
-    assert 'Budget consumption' in (tmp_path / 'collection' / 'final_report.md').read_text(encoding='utf-8') or \
-           'Qualified observations' in (tmp_path / 'collection' / 'final_report.md').read_text(encoding='utf-8')
+    assert (tmp_path / 'final_report.html').is_file()
+    assert not (tmp_path / 'task_result.md').exists()
+    assert not (tmp_path / 'collection' / 'final_report.md').exists()
     saved = json.loads((tmp_path / 'collection' / 'final_package.json').read_text(encoding='utf-8'))
-    assert saved['artifact_manifest']['files']['task_result_english'] == artifacts['task_result_english']
+    assert saved['artifact_manifest']['files']['final_report_english'] == artifacts['final_report_english']
     assert 'task_result_chinese' not in saved['artifact_manifest']['files']
 
 
@@ -245,17 +245,18 @@ def test_long_report_points_to_actual_collection_csv_location():
     assert 'collection/final_dataset.csv' in text
 
 
-def test_task_result_writer_emits_only_english_report_and_headline(tmp_path):
+def test_task_result_writer_emits_machine_answer_with_english_headline(tmp_path):
     from data_collection_workflow.task_result_report import write_task_result_artifacts
 
     result = report([observation(5442)])
     paths = write_task_result_artifacts(result, tmp_path)
-    assert set(paths) == {'task_result_json', 'task_result_english'}
+    assert set(paths) == {'task_result_json'}
     assert not list(tmp_path.glob('*_chinese.md'))
     saved = json.loads((tmp_path / 'task_result.json').read_text(encoding='utf-8'))
     assert saved['headline'] == 'Confirmed: confirmed cases 5,442.'
     assert 'headline_zh' not in saved and 'headline_en' not in saved
-    text = (tmp_path / 'task_result.md').read_text(encoding='utf-8')
+    assert not (tmp_path / 'task_result.md').exists()
+    text = render_task_result(saved)
     assert '# Collection task results' in text
     assert not any('\u4e00' <= char <= '\u9fff' for char in text + json.dumps(saved, ensure_ascii=False))
 

@@ -81,8 +81,7 @@ def test_source_progress_identical_in_package_reports_and_console(tmp_path):
     write_universal_outputs(package, tmp_path)
     summary = json.loads((tmp_path / 'workflow_console_summary.json').read_text())
     assert summary['source_progress'] == package['result_manifest']['source_progress']
-    for filename, phrase in [('final_report.md', 'Sources contributing qualified observations: 1'),
-                             ('workflow_console.html', 'Sources contributing qualified observations: 1')]:
+    for filename, phrase in [('workflow_console.html', 'Sources contributing qualified observations: 1')]:
         assert phrase in (tmp_path / filename).read_text(encoding='utf-8')
 
 

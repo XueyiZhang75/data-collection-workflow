@@ -1503,8 +1503,8 @@ def _report_payload(result: dict) -> dict:
             "llm_call_succeeded": llm_replay_summary.get("llm_call_succeeded"),
         },
         "key_artifact_paths": {
-            "workflow_interpretive_report.md": "workflow_interpretive_report.md",
-            "workflow_interpretive_report_summary.json": "workflow_interpretive_report_summary.json",
+            "final_report.html": "final_report.html",
+            "session_report.zip": "session_report.zip",
             "workflow_visualization/index.html": "workflow_visualization/index.html",
             "workflow_visualization/workflow_timeline.html": "workflow_visualization/workflow_timeline.html",
             "workflow_visualization/evidence_flow_graph.html": "workflow_visualization/evidence_flow_graph.html",

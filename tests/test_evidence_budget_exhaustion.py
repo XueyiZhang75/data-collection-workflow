@@ -128,7 +128,7 @@ def test_content_node_retains_fetched_evidence_and_exports_after_budget_exhausti
     assert saved['result_manifest']['budget']['used'] == {'fetch': 1, 'fetch_ordinary': 1}
     assert saved['result_manifest']['acquisition']['budget_deferred_document_count'] == 2
     assert saved['result_manifest']['acquisition']['budget_exhausted_causes'] == {'fetch_ordinary': 2}
-    assert 'Acquisition incomplete' in (tmp_path / 'export' / 'final_report.md').read_text(encoding='utf-8')
+    assert 'Acquisition incomplete' in (tmp_path / 'export' / 'workflow_console.html').read_text(encoding='utf-8')
 
 
 def test_completed_response_cache_remains_usable_after_fetch_budget_exhaustion(reports_server, tmp_path):

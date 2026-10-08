@@ -167,25 +167,38 @@ Answer the disease, location, start/end dates, and session-name prompts. Press E
 
 ## Step 6. Open and assess the results
 
-For the named example, open `outputs/sessions/my_first_collection/`. For an automatically named run, use the session path printed in the terminal. Its saved input configuration is under `outputs/generated_configs/`.
+For the named example, open `outputs/sessions/my_first_collection/`. For an automatically named run, use the session path printed in the terminal.
 
-Start with **`task_result.md`** for the task answer, **`final_report.md`** for collection status and limitations, and **`collection/final_dataset.csv`** for the qualified data. Use `result_manifest.json` when you need the detailed machine-readable status.
+Open **`final_report.html`** in a browser. This is the single English report for the session:
+
+1. Read **Task and conclusions** for the requested task, supported answers, their statistical periods, and linked sources. Missing evidence is identified explicitly; it is not reported as zero.
+2. Browse the **Source catalogue** for all discovered sources, including sources that failed retrieval or were excluded. Search, filter, or change pages; expand a source to inspect its publisher, original URL, publication date, processing status, contribution, evidence, and unresolved issues. Publication dates and the periods covered by figures are shown separately.
+3. Check **Unresolved questions**, when present, for gaps that still affect the answer.
+4. Use **Data and evidence** to open the underlying CSV/JSON files and saved evidence passages.
+5. Open **Run information and settings** for timing, model, and all configurable settings. The report distinguishes configured values, recorded effective values, current defaults, inactive controls, and values not recorded for this run. Credentials are redacted.
 
 | Path inside the session | What to read it for |
 | --- | --- |
-| `task_result.md` | Answers supported by the qualified evidence for your task |
-| `final_report.md` | Brief run summary: counts, coverage status, budgets, and limitations |
+| `final_report.html` | Task, conclusions, complete source catalogue, unresolved questions, data links, and run settings |
+| `session_report.zip` | Portable copy of the report with its `data/` and `evidence/` files |
+| `data/report_snapshot.json` | The task answers, result status, counts, and run information used in the report |
+| `data/source_catalog.csv` / `.json` | Complete report source catalogue |
+| `data/run_settings.csv` / `.json` | Settings inventory with recorded values and their provenance |
+| `run_config.json` | Sanitized configuration snapshot for this run; resume uses the original saved configuration |
+| `task_result.json` | Machine-readable task answers in evidence mode |
 | `result_manifest.json` | Data availability, coverage, budget usage, and stopping reason |
-| `collection/final_dataset.csv` | Qualified case and aggregate observations |
+| `collection/final_dataset.csv` | Retained case and aggregate observations; evidence-mode rows have passed evidence qualification |
 | `collection/final_case_dataset.csv` | Qualified individual-case observations |
 | `collection/aggregate_dataset.csv` | Qualified aggregate observations |
-| `collection/candidate_records.csv` | Records still awaiting sufficient evidence or review |
+| `data/candidate_records.csv` | Evidence candidates, or standard-mode records pending review or excluded by run checks |
 | `collection/context_records.csv` | Background or contextual observations |
 | `collection/source_processing_status.csv` | Which sources were retrieved, processed, or contributed evidence |
 
-The task report and data tables also have JSON versions. Other files in `collection/` include compatibility views and review exports; they are not separate independent datasets. In evidence mode, `workflow_run_report.md` and `workflow_interpretive_report.md` repeat the run summary.
+The report's `data/` folder contains the CSV/JSON datasets for sharing; `collection/` retains the detailed machine outputs, compatibility views, and review exports. These views are not independent datasets. Stage diagnostics remain available locally. Normal session execution no longer generates separate `task_result.md`, `final_report.md`, `workflow_run_report*.md`, or `workflow_interpretive_report*.md` reading reports.
 
-The task report lists up to 30 qualified observations with source references; use the CSV files for the full data. The workflow does not automatically produce a final PDF report or an epidemic-curve figure. Its HTML console displays collection status, while the optional dashboard exposes execution details.
+Standard-mode accepted observations are identified as collected observations unless they carry explicit evidence qualification. Its pending-review and excluded records remain available with their original decisions; their presence does not confirm a task total.
+
+To share a result, send **`session_report.zip`**. Extract it before opening `final_report.html`, keeping `data/` and `evidence/` beside the HTML file. No server or network request is needed to read the report; original website links require internet access. The bundle excludes execution logs and build history. The workflow does not automatically produce a final PDF report or an epidemic-curve figure.
 
 A run that stops during setup may not have these final files; use its terminal error and saved session status to diagnose the problem.
 
@@ -200,13 +213,13 @@ An observation row is not necessarily one patient. A completed execution can hav
 
 Generated reports and interface labels use English. Quotations, original source names, and localized search terms retain their source language.
 
-To export the collection data, run summary, manifest, and console to another local directory:
+To export the report, its supporting materials, collection data, and machine-readable run summary to another local directory:
 
 ```bash
 data-collection-workflow export --session-dir outputs/sessions/my_first_collection --output-dir outputs/exports/my_first_collection --format both
 ```
 
-The export includes the collection data, a run summary, and its manifest, but does not copy `task_result.md` or `task_result.json`. Copy those task-answer files separately when sharing a complete result package.
+The export includes `final_report.html`, `session_report.zip`, and the report's supporting `data/` and `evidence/` folders. `--format` selects the collection data export format; the portable report retains both CSV and JSON. The same report is used by command-line collection and export.
 
 ## Step 7. Run a larger task or resume an interrupted session
 

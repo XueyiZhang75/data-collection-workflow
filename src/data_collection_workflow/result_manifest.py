@@ -240,8 +240,6 @@ def write_universal_outputs(package,output_dir):
     paths['source_registry_json'] = str(write_json(package.get('source_registry') or [], out/'source_registry.json'))
     paths['result_manifest']=str(write_json(manifest,out/'result_manifest.json'))
     paths['final_package_json']=str(out/'final_package.json')
-    (out/'final_report.md').write_text(_report(manifest),encoding='utf-8')
-    paths['final_report.md']=str(out/'final_report.md')
     rows=''.join('<tr><th>'+html.escape(k)+'</th><td>'+str(v)+'</td></tr>' for k,v in manifest['counts'].items())
     console = '<!doctype html><meta charset="utf-8"><title>Disease collection results</title><h1>Disease collection results</h1><table>'+rows+'</table><p>'+html.escape(manifest['data_availability'])+'</p><p>Independent release evaluation: '+html.escape(manifest['release_status'])+'</p>'
     provider_notice=_provider_notice(manifest)
@@ -254,7 +252,8 @@ def write_universal_outputs(package,output_dir):
     paths['workflow_console_html'] = str(out/'workflow_console.html')
     paths['workflow_console_summary_json'] = str(write_json(manifest_summary(manifest), out/'workflow_console_summary.json'))
     paths['evidence_products_json'] = str(write_json(package.get('evidence_products') or {},out/'evidence_products.json'))
-    artifact_manifest = _english_artifact_links(package.get('artifact_manifest') or {'files':{}, 'section_counts':{}})
+    from .reporting.output_contract import without_legacy_reading_links
+    artifact_manifest = without_legacy_reading_links(_english_artifact_links(package.get('artifact_manifest') or {'files':{}, 'section_counts':{}}))
     package['artifact_manifest'] = artifact_manifest
     artifact_manifest.setdefault('files', {}).update(paths)
     artifact_manifest.setdefault('section_counts', {}).update(manifest['dataset_counts'])
@@ -262,11 +261,15 @@ def write_universal_outputs(package,output_dir):
     return paths
 
 
-def write_universal_run_outputs(package, summary, output_dir):
-    """Final runner projection: reports, aliases, facts, console and stdout source."""
+def write_universal_run_outputs(package, summary, output_dir, *, config=None, state=None):
+    """Project one coherent result snapshot and the single English reading report."""
     from .export import write_json
     from .task_result_report import build_task_result, write_task_result_artifacts
+    from .reporting.output_contract import report_href, retire_legacy_reading_files, without_legacy_reading_links
+    from .reporting.unified_report import write_unified_report
     out = Path(output_dir)
+    retire_legacy_reading_files(out)
+    summary['artifact_paths'] = without_legacy_reading_links(summary.get('artifact_paths') or {})
     collection = (summary.get('artifact_paths') or {}).get('collection_manifest') or {}
     if isinstance(collection, dict) and collection.get('files'):
         package['artifact_manifest'] = {'files':dict(collection['files']), 'section_counts':dict(collection.get('section_counts') or {})}
@@ -280,14 +283,6 @@ def write_universal_run_outputs(package, summary, output_dir):
     for key in SUMMARY_SECTIONS:
         summary[key] = dict(projection)
     artifacts = summary.setdefault('artifact_paths', {})
-    # Preserve existing console paths until both session and latest aliases are corrected.
-    report_keys = ('run_report', 'stable_run_report', 'final_report', 'stable_final_report',
-                   'interpretive_report', 'stable_interpretive_report', 'final_report_chinese', 'final_report_english',
-                   'stable_final_report_chinese', 'stable_final_report_english', 'interpretive_report_chinese',
-                   'interpretive_report_english', 'stable_interpretive_report_chinese', 'stable_interpretive_report_english')
-    for key in report_keys:
-        if artifacts.get(key):
-            Path(artifacts[key]).write_text(_report(manifest), encoding='utf-8')
     for key in list(artifacts):
         if 'chinese' in key.lower():
             del artifacts[key]
@@ -298,9 +293,11 @@ def write_universal_run_outputs(package, summary, output_dir):
         if artifacts.get(key):
             write_json(projection, artifacts[key])
     console = (out/'collection/workflow_console.html').read_text(encoding='utf-8')
-    for key in ('workflow_console_html', 'latest_workflow_console_html'):
-        if artifacts.get(key):
-            Path(artifacts[key]).write_text(console, encoding='utf-8')
+    console_paths = {out/'collection/workflow_console.html'}
+    console_paths.update(Path(artifacts[key]) for key in ('workflow_console_html', 'latest_workflow_console_html') if artifacts.get(key))
+    for console_path in console_paths:
+        href = html.escape(report_href(console_path, out/'final_report.html'), quote=True)
+        console_path.write_text(console + f'<p><a href="{href}">Open final session report</a></p>', encoding='utf-8')
     artifacts.update({key:value for key,value in paths.items() if key not in artifacts})
     artifacts.update(task_paths)
     artifacts['universal_result_manifest'] = str(write_json(manifest, out/'result_manifest.json'))
@@ -308,5 +305,8 @@ def write_universal_run_outputs(package, summary, output_dir):
         'headline': task_result['headline'],
         'answer_status': {field: answer['status'] for field, answer in task_result['answers'].items()},
     }
+    artifacts.update(write_unified_report(out, package, summary, config=config, state=state))
+    package.setdefault('artifact_manifest', {}).setdefault('files', {}).update(artifacts)
+    write_json(package, out/'collection/final_package.json')
     write_json(summary, out/'workflow_run_summary.json')
     return summary
