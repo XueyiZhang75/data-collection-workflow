@@ -125,7 +125,6 @@ def test_inactive_modes_and_deprecated_settings_remain_explicit(build):
     assert "Inactive" in inventory["human_review.apply_decisions"]["applicability"]
     assert "deprecated" in inventory["llm.max_chunks"]["applicability"].lower()
     assert inventory["llm.max_chunks"]["configured_value"] == 12
-    assert "Reserved" in inventory["source_search.cache_enabled"]["applicability"]
 
 
 def test_does_not_assume_missing_mode_or_switch_is_disabled(build):

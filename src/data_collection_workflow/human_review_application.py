@@ -10,6 +10,7 @@ from data_collection_workflow.environment import get_env
 
 import json
 from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .models import (
@@ -20,8 +21,6 @@ from .models import (
     RejectedHumanReviewDecision,
 )
 from .state import DataCollectionState
-
-_FIXED_APPLIED_AT = "2026-05-25T00:00:00Z"
 
 RECORD_PATCH_FIELDS = {
     "disease",
@@ -90,7 +89,7 @@ ALLOWED_SOURCE_ROLES = {
 
 
 def _applied_at() -> str:
-    return _FIXED_APPLIED_AT
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _require_reviewer_id() -> bool:

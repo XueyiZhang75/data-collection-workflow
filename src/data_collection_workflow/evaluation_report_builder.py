@@ -244,10 +244,8 @@ def build_evaluation_report(
             Counter(row.get("provenance_completeness_status") for row in rows)
         ),
         "workflow_limitations": [
-            "Local test mode is synthetic and not real public health data.",
-            "Broad web search is not implemented.",
-            "Live validation is not implemented in the current workflow.",
-            "No external LLM is used.",
+            "This comparison uses only the supplied collection and held-out reference records; it does not retrieve additional evidence.",
+            "Agreement with a reference record does not establish complete coverage of the requested scope.",
             "Missing collection records can occur when held-out validation sources contain the only extractable data.",
         ],
     }
@@ -766,8 +764,8 @@ def _build_readable_markdown(rows: list[dict], summary: dict) -> str:
         "",
         f"- Reserved source IDs: {', '.join(reserved_ids) if reserved_ids else 'none'}",
         (
-            "- Reserved sources were blocked from collection and used only for "
-            "validation comparison."
+            "- The held-out policy requires reserved sources to stay out of "
+            "collection. The recorded masking compliance is shown below."
         ),
         (
             "- Validation compatibility warnings: "
@@ -804,14 +802,7 @@ def _build_readable_markdown(rows: list[dict], summary: dict) -> str:
             "",
             "## Limitations",
             "",
-            "- Local test mode is synthetic.",
-            "- Broad web search is not implemented.",
-            "- Live validation is not implemented in the current workflow.",
-            "- External LLM use depends on the runtime profile.",
-            (
-                "- Missing collection records can occur when only held-out "
-                "validation sources contain extractable data."
-            ),
+            *(f"- {item}" for item in summary.get("workflow_limitations") or []),
             "",
         ]
     )

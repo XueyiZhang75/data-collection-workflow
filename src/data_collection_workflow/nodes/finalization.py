@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import re
 import hashlib
-from datetime import date
+from datetime import date, datetime, timezone
 
 from ..config import load_final_package_policy
 from ..claim_corroboration import annotate_records_with_claim_corroboration
@@ -62,8 +62,24 @@ from ..workflow_line_list_export import (
 # ---------------------------------------------------------------------------
 
 
-def _fixed_generated_at(policy: FinalPackagePolicy) -> str:
-    return policy.fixed_generated_at
+def _package_generated_at(
+    state: DataCollectionState,
+    policy: FinalPackagePolicy,
+    contains_fixture: bool,
+    llm_used: bool,
+) -> str:
+    """Keep fixed dates only for synthetic offline packages."""
+    search = state.get("source_search_execution_summary") or {}
+    fetch = state.get("content_fetch_summary") or {}
+    live_run = (
+        state.get("pipeline_mode") == "evidence"
+        or llm_used
+        or bool(fetch.get("live_fetch_enabled"))
+        or str(search.get("provider") or "").lower() not in {"", "fixture"}
+    )
+    if contains_fixture and not live_run:
+        return policy.fixed_generated_at
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _safe_list(state: DataCollectionState, key: str) -> list:
@@ -3116,7 +3132,7 @@ def _build_package_metadata(
         "package_name": "data_collection_workflow_final_package",
         "package_version": policy.package_version,
         "package_builder": policy.package_builder,
-        "generated_at": _fixed_generated_at(policy),
+        "generated_at": _package_generated_at(state, policy, contains_fixture, llm_used),
         "disease": spec.get("disease") if isinstance(spec, dict) else None,
         "geography": spec.get("geography") if isinstance(spec, dict) else None,
         "time_window": spec.get("time_window") if isinstance(spec, dict) else None,
@@ -4110,6 +4126,7 @@ def final_data_package_builder(state: DataCollectionState) -> dict:
     result = apply_run_quality_gates(state)
     qualified_state = dict(state)
     qualified_state.update(result)
+    qualified_state["pipeline_mode"] = "evidence"
     qualified_state["normalized_records"] = result["qualified_records"]
     package_result = _build_final_data_package(qualified_state)
     coverage = qualified_coverage(state.get("source_coverage_requirements") or [], result["qualified_records"])

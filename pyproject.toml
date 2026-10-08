@@ -25,11 +25,15 @@ dependencies = [
     "pillow",
     "langgraph-checkpoint-sqlite",
     "pandas",
-    "pytest",
     "rich",
 ]
 
 [project.optional-dependencies]
+test = [
+    "pytest",
+    "reportlab",
+    "fastapi",
+]
 dev = [
     "langgraph-cli[inmem]",
 ]

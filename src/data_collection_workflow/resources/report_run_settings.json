@@ -564,18 +564,6 @@
       "default_basis": "src/data_collection_workflow/runtime_profile.py"
     },
     {
-      "key": "source_search.cache_enabled",
-      "label": "Cache enabled",
-      "description": "Reserved search adapter setting; the search adapter does not implement a cache for this switch.",
-      "environment_variables": [
-        "SEARCH_CACHE_ENABLED"
-      ],
-      "cli_aliases": [],
-      "group": "discovery",
-      "default": true,
-      "default_basis": "configs/workflow.jsonc"
-    },
-    {
       "key": "source_search.combine_with_seed_catalog",
       "label": "Combine with seed catalog",
       "description": "Controls combine with seed catalog in source search.",

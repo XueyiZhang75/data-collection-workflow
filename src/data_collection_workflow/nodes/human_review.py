@@ -8,6 +8,7 @@ views while preserving the original normalized records.
 from __future__ import annotations
 
 from collections import Counter
+from datetime import datetime, timezone
 
 from ..config import load_human_review_policy
 from ..human_review_application import apply_human_review_decisions
@@ -20,16 +21,14 @@ from ..models import (
 from ..run_events import emit_workflow_progress
 from ..state import DataCollectionState, append_trace
 
-_FIXED_REVIEW_TIMESTAMP = "2026-05-25T00:00:00Z"
-
 
 # ---------------------------------------------------------------------------
 # Small helpers
 # ---------------------------------------------------------------------------
 
 
-def _fixed_review_timestamp() -> str:
-    return _FIXED_REVIEW_TIMESTAMP
+def _review_timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _by_id(items: list[dict], key: str) -> dict[str, dict]:
@@ -275,7 +274,7 @@ def _apply_decision(
             updated["notes"] = decision.notes
         if decision.reviewer_id:
             updated["reviewer_id"] = decision.reviewer_id
-        updated["decided_at"] = decision.decided_at or _fixed_review_timestamp()
+        updated["decided_at"] = decision.decided_at or _review_timestamp()
         updated["modified_values"] = dict(decision.modified_values or {})
         updated["decision_source"] = "state.human_review_decisions"
         updated["decision_applied"] = decision.decision != "no_action"

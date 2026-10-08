@@ -352,6 +352,9 @@ def test_readable_evaluation_report_includes_collection_and_validation_preview(t
         reserved_source_ids={"src_reserved"},
     )
 
+    # The readable view must use the same limitations as the machine summary,
+    # including task-specific compatibility findings.
+    summary["workflow_limitations"] = ["The supplied reference covers only March."]
     write_evaluation_outputs(rows, summary, tmp_path)
 
     report = (tmp_path / "readable_evaluation_report.md").read_text(encoding="utf-8")
@@ -362,6 +365,7 @@ def test_readable_evaluation_report_includes_collection_and_validation_preview(t
     assert "human_review_flag=true" in report
     assert "collection_evidence_quote_preview=" in report
     assert "validation_evidence_quote_preview=" in report
+    assert summary["workflow_limitations"][0] in report
 
 
 def test_configured_workflow_script_uses_config_without_runtime_confirmations(tmp_path):

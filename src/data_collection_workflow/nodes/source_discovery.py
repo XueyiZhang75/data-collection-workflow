@@ -239,7 +239,6 @@ class SourceSearchSettings:
     max_total_results: int = 15
     timeout_seconds: float = 15.0
     combine_with_seed_catalog: bool = True
-    cache_enabled: bool = True
     provider_channel_allowlist: list[str] = field(
         default_factory=lambda: list(_DEFAULT_PROVIDER_CHANNEL_ALLOWLIST)
     )
@@ -400,7 +399,6 @@ def _source_search_settings_from_env() -> SourceSearchSettings:
         combine_with_seed_catalog=_env_bool(
             "SEARCH_COMBINE_WITH_SEED_CATALOG", True
         ),
-        cache_enabled=_env_bool("SEARCH_CACHE_ENABLED", True),
         provider_channel_allowlist=_env_csv(
             "SEARCH_PROVIDER_CHANNEL_ALLOWLIST",
             _DEFAULT_PROVIDER_CHANNEL_ALLOWLIST,

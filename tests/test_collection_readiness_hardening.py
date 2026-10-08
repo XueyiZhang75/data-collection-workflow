@@ -12,7 +12,7 @@ from data_collection_workflow.evaluation_report_builder import (
 )
 from data_collection_workflow.geography import resolve_record_geography
 from data_collection_workflow.numeric_semantics import sanitize_case_death_numeric_fields
-from data_collection_workflow.reporting.final_report_renderer import write_final_reports
+from data_collection_workflow.reporting.report_facts import build_report_facts
 from data_collection_workflow.source_identity import lookup_source_identity_registry
 
 
@@ -438,8 +438,6 @@ def test_final_report_displays_collection_readiness_summary(tmp_path):
     session = _session(tmp_path)
     write_collection_readiness_outputs(session, case_study_real_mode=True)
 
-    outputs = write_final_reports(session)
-
-    text = Path(outputs["english_report"]).read_text(encoding="utf-8")
-    assert "Case Study Readiness" in text
-    assert "collection_readiness_status" in text
+    facts = build_report_facts(session)
+    assert facts["collection_readiness"]["collection_readiness_status"]
+    assert facts["collection_readiness"]["case_study_real_mode"] is True

@@ -1,6 +1,6 @@
 import json
 
-from data_collection_workflow.task_result_report import build_task_result, render_task_result
+from data_collection_workflow.task_result_report import build_task_result
 from data_collection_workflow.result_manifest import build_result_manifest, write_universal_run_outputs
 
 
@@ -44,7 +44,7 @@ def test_full_scope_qualified_total_answers_task_with_source():
     assert answer['status'] == 'confirmed'
     assert answer['value'] == 5442
     assert answer['sources'][0]['url'] == 'https://example.org/report'
-    assert '5,442' in render_task_result(result)
+    assert '5,442' in result['headline']
 
 
 def test_partial_snapshot_and_unqualified_year_end_lead_do_not_become_annual_answer():
@@ -58,10 +58,10 @@ def test_partial_snapshot_and_unqualified_year_end_lead_do_not_become_annual_ans
     assert answer['status'] == 'unconfirmed'
     assert answer['value'] is None
     assert answer['candidate_leads'][0]['value'] == 5442
-    text = render_task_result(result)
-    assert 'No total for the requested scope is confirmed' in text
-    assert 'unverified leads' in text
-    assert '3,682' in text and '5,442' in text
+    assert 'No total for the requested scope is confirmed' in result['headline']
+    assert 'Unverified leads' in result['headline']
+    assert result['qualified_observations'][0]['values']['cases_confirmed'] == 3682
+    assert answer['candidate_leads'][0]['value'] == 5442
 
 
 def test_local_subset_average_and_foreign_claim_cannot_answer_country_total():
@@ -138,7 +138,7 @@ def test_year_end_candidate_without_year_in_quote_is_a_lead_and_ranks_above_olde
     leads = result['answers']['cases_confirmed']['candidate_leads']
     assert [lead['value'] for lead in leads[:2]] == [5442, 4400]
     assert result['answers']['cases_confirmed']['value'] is None
-    assert 'over 4,400' in render_task_result(result)
+    assert leads[1]['qualifier'] == 'over'
 
 
 def test_answer_locator_points_to_count_field_not_disease_span():
@@ -236,13 +236,22 @@ def test_generic_numeric_or_age_is_not_confirmed_without_metric_identity():
     result = report([row], task=task)
     assert result['answers']['metric_value']['value'] is None
     assert result['answers']['age']['value'] is None
-    assert 'vaccination coverage' in render_task_result(result)
+    assert result['qualified_observations'][0]['metric_name'] == 'vaccination coverage'
 
 
-def test_long_report_points_to_actual_collection_csv_location():
+def test_report_links_to_complete_dataset_without_truncating_records(tmp_path):
+    import csv
+    from pathlib import Path
+    from data_collection_workflow.reporting import write_unified_report
+
     rows = [observation(i, record_id=f'row-{i}') for i in range(31)]
-    text = render_task_result(report(rows))
-    assert 'collection/final_dataset.csv' in text
+    package = {'final_dataset': rows, 'result_manifest': {'task': TASK}}
+    paths = write_unified_report(tmp_path, package=package)
+    text = Path(paths['final_report_english']).read_text(encoding='utf-8')
+    assert 'data/final_dataset.csv' in text
+    with (tmp_path / 'data/final_dataset.csv').open(encoding='utf-8-sig', newline='') as stream:
+        exported = list(csv.DictReader(stream))
+    assert [row['record_id'] for row in exported] == [row['record_id'] for row in rows]
 
 
 def test_task_result_writer_emits_machine_answer_with_english_headline(tmp_path):
@@ -256,14 +265,11 @@ def test_task_result_writer_emits_machine_answer_with_english_headline(tmp_path)
     assert saved['headline'] == 'Confirmed: confirmed cases 5,442.'
     assert 'headline_zh' not in saved and 'headline_en' not in saved
     assert not (tmp_path / 'task_result.md').exists()
-    text = render_task_result(saved)
-    assert '# Collection task results' in text
-    assert not any('\u4e00' <= char <= '\u9fff' for char in text + json.dumps(saved, ensure_ascii=False))
+    assert not any('\u4e00' <= char <= '\u9fff' for char in json.dumps(saved, ensure_ascii=False))
 
 
 def test_task_result_preserves_original_multilingual_evidence():
     quote = 'Mpox in Sierra Leone: 5,442 confirmed cases in 2025. 原文记录保留。'
     result = report([observation(5442, quote=quote)])
     assert result['answers']['cases_confirmed']['sources'][0]['quote'] == quote
-    assert quote in render_task_result(result)
     assert result['headline'] == 'Confirmed: confirmed cases 5,442.'

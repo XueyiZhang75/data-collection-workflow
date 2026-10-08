@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import re
 
-import pytest
 import sys
 from pathlib import Path
 
@@ -439,118 +438,6 @@ def test_console_displays_source_critic_disease_relevance_and_localized_planning
         assert expected in html
 
 
-def test_markdown_report_says_completed_but_no_accepted_records(tmp_path):
-    from run_workflow import _live_fetch_summary, _llm_stage_summary, _source_split_summary, _write_report
-
-    session = _make_session(tmp_path)
-    package = json.loads((session / "collection" / "final_package.json").read_text(encoding="utf-8"))
-    result = {
-        "collection_trace": package["collection_trace"],
-        "source_registry": package["source_registry"],
-        "normalized_records": [],
-        "human_review_queue": package["human_review_items"],
-        "final_data_package": package,
-        "current_route": "human_review",
-        **package["workflow_summaries"],
-    }
-    report_path = tmp_path / "workflow_run_report.md"
-
-    report = _write_report(
-        report_path,
-        user_request="Collect hantavirus data for Shanghai from 2024 to 2026.",
-        provider="anthropic",
-        model="claude-sonnet-4-6",
-        output_dir=tmp_path,
-        result=result,
-        collection_manifest={
-            "files": {
-                "final_dataset_csv": "collection/final_dataset.csv",
-                "final_dataset_pre_quality_gate_csv": "collection/final_dataset_pre_quality_gate.csv",
-                "quarantined_records_csv": "collection/quarantined_records.csv",
-                "pending_review_records_csv": "collection/pending_review_records.csv",
-                "record_inclusion_decisions_json": "collection/record_inclusion_decisions.json",
-                "final_dataset_post_review_csv": "collection/final_dataset_post_review.csv",
-                "anomaly_results_json": "collection/anomaly_results.json",
-                "human_review_audit_trail_json": "collection/human_review_audit_trail.json",
-                "source_registry_json": "collection/source_registry.json",
-            }
-        },
-        validation_manifest={
-            "validation_source_compatibility_status": "incompatible_validation_source_disabled",
-            "active_validation_record_count": 0,
-            "inactive_validation_record_count": 1,
-            "raw_validation_record_count": 1,
-            "ground_truth_records_csv": "validation/ground_truth_records.csv",
-            "inactive_validation_records_csv": "validation/inactive_validation_records.csv",
-            "validation_source_compatibility_summary_json": "validation/validation_source_compatibility_summary.json",
-        },
-        evaluation_outputs={"evaluation_report_csv": "evaluation/evaluation_report.csv"},
-        evaluation_rows=[],
-        evaluation_summary={},
-        source_split=_source_split_summary(package["source_registry"]),
-        live_summary=_live_fetch_summary({"documents": [], "content_fetch_summary": {"live_fetch_enabled": True}}),
-        llm_summary=_llm_stage_summary(result, "anthropic", "claude-sonnet-4-6"),
-    )
-
-    assert "workflow technically completed" in report
-    assert "no quality-gated accepted records were produced" in report
-    assert "Quality-gated accepted final dataset count: `0`" in report
-    assert "accepted final records" not in report.lower()
-    # Filesystem provenance may contain Unicode; generated report wording is English.
-    assert not re.search(r"[\u3400-\u9fff\uf900-\ufaff]", report.replace(str(tmp_path), "<temporary directory>"))
-
-
-def test_markdown_report_uses_dynamic_final_dataset_and_quarantine_counts(tmp_path):
-    from run_workflow import _live_fetch_summary, _llm_stage_summary, _source_split_summary, _write_report
-
-    accepted = [_record("rec_accepted", location="New Mexico")]
-    accepted[0]["record_final_inclusion_status"] = "accepted"
-    pre_quality = accepted + [_record("rec_quarantined", location="New Mexico")]
-    quarantined = [pre_quality[1]]
-    session = _make_session(
-        tmp_path,
-        disease="hantavirus",
-        location="New Mexico",
-        final_records=accepted,
-        pre_quality_records=pre_quality,
-        quarantined_records=quarantined,
-        run_quality_status="partial_with_quarantined_records",
-    )
-    package = json.loads((session / "collection" / "final_package.json").read_text(encoding="utf-8"))
-    result = {
-        "collection_trace": package["collection_trace"],
-        "source_registry": package["source_registry"],
-        "normalized_records": pre_quality,
-        "human_review_queue": [],
-        "final_data_package": package,
-        "current_route": "final_data_package_builder",
-        **package["workflow_summaries"],
-    }
-
-    report = _write_report(
-        tmp_path / "report.md",
-        user_request="Collect hantavirus data for New Mexico from 2024 to 2026.",
-        provider="anthropic",
-        model="claude-sonnet-4-6",
-        output_dir=tmp_path,
-        result=result,
-        collection_manifest={"files": {}},
-        validation_manifest={"validation_source_compatibility_status": "compatible"},
-        evaluation_outputs={},
-        evaluation_rows=[],
-        evaluation_summary={},
-        source_split=_source_split_summary(package["source_registry"]),
-        live_summary=_live_fetch_summary({"documents": [], "content_fetch_summary": {"live_fetch_enabled": True}}),
-        llm_summary=_llm_stage_summary(result, "anthropic", "claude-sonnet-4-6"),
-    )
-
-    assert "Quality-gated accepted final dataset count: `1`" in report
-    assert "Pre-quality-gate record count: `2`" in report
-    assert "Quarantined record count: `1`" in report
-    assert "Pending review record count: `0`" in report
-    assert "Final dataset post-review count: `1`" in report
-
-
 def test_new_mexico_compatibility_console_can_still_mention_new_mexico(tmp_path):
     accepted = [_record("rec_nm", location="New Mexico")]
     accepted[0]["record_final_inclusion_status"] = "accepted"
@@ -578,40 +465,6 @@ def test_current_console_source_has_no_hantavirus_record_only_wording():
     assert "抽取 HantavirusRecord" not in text
     assert "HantavirusRecord" not in text
     assert "PublicHealthRecord" in text or "generic public-health records" in text
-
-
-@pytest.mark.parametrize("kind", ["interpretive", "final"])
-@pytest.mark.parametrize("write_latest", [False, True])
-def test_report_publishers_accept_english_only_outputs_and_preserve_latest_aliases(tmp_path, monkeypatch, kind, write_latest):
-    import run_workflow as runner
-
-    session = tmp_path / "session"
-    session.mkdir()
-    report = session / ("workflow_interpretive_report.md" if kind == "interpretive" else "final_report.md")
-    report.write_text("# English report\n", encoding="utf-8")
-    metadata = session / "report_metadata.json"
-    metadata.write_text("{}", encoding="utf-8")
-    paths = {"english_report": str(report)}
-    latest = tmp_path / "latest" / report.name
-    if kind == "interpretive":
-        paths["summary_json"] = str(metadata)
-        monkeypatch.setattr(runner, "write_interpretive_reports", lambda output: paths)
-        monkeypatch.setattr(runner, "_TOP_LEVEL_INTERPRETIVE_ENGLISH_PATH", latest)
-        monkeypatch.setattr(runner, "_TOP_LEVEL_INTERPRETIVE_SUMMARY_PATH", latest.with_suffix(".json"))
-        manifest = runner._write_interpretive_report_outputs(session, write_latest_alias=write_latest)
-    else:
-        paths.update(facts_json=str(metadata), diagnostics_json=str(metadata))
-        monkeypatch.setattr(runner, "write_final_reports", lambda output: paths)
-        monkeypatch.setattr(runner, "_TOP_LEVEL_FINAL_REPORT_ENGLISH_PATH", latest)
-        monkeypatch.setattr(runner, "_TOP_LEVEL_FINAL_REPORT_FACTS_PATH", latest.with_suffix(".json"))
-        manifest = runner._write_final_report_outputs(session, write_latest_alias=write_latest)
-
-    assert manifest[f"{kind}_report_english"] == str(report)
-    assert not any("chinese" in key or "chinese" in value for key, value in manifest.items())
-    assert latest.exists() is write_latest
-    if write_latest:
-        assert latest.read_text(encoding="utf-8") == report.read_text(encoding="utf-8")
-        assert manifest[f"stable_{kind}_report_english"] == str(latest)
 
 
 def test_console_generated_labels_and_artifact_links_are_english(tmp_path):

@@ -606,8 +606,7 @@ def _template_text(args: argparse.Namespace) -> str:
     "max_results_per_query": 5,
     "max_total_results": 15,
     "timeout_seconds": 15,
-    "combine_with_seed_catalog": {str(not fixture_search).lower()},
-    "cache_enabled": true
+    "combine_with_seed_catalog": {str(not fixture_search).lower()}
   }},
   "content_fetch": {{
     "fetch_search_derived_sources": {str(live_search or fixture_search).lower()},

@@ -1,7 +1,7 @@
 """Task answers keep evidence quality separate from the period a count covers."""
 import pytest
 
-from data_collection_workflow.task_result_report import build_task_result, render_task_result
+from data_collection_workflow.task_result_report import build_task_result
 
 
 TASK = {'disease': 'measles', 'location': 'Canada', 'start_date': '2025-01-01',
@@ -39,7 +39,7 @@ def test_irregular_qualified_cumulative_is_usable_without_becoming_annual_total(
     assert scoped['period_start'] == '2025-02-03' and scoped['period_end'] == '2025-10-14'
     assert scoped['sources'][0]['locator']['chunk_id'] == 'local-paragraph'
     assert '100' in output['headline'] and 'Latest available' in output['headline']
-    assert '2025-10-14' in render_task_result(output)
+    assert '2025-10-14' in output['headline']
 
 
 def test_next_year_publication_can_support_previous_calendar_year_total():
@@ -58,9 +58,8 @@ def test_explicit_authoritative_closure_is_outbreak_total_not_annual_total():
     assert answer['value'] is None
     assert answer['selected_result']['result_kind'] == 'completed_outbreak_total'
     assert 'Completed outbreak' in output['headline']
-    text = render_task_result(output)
-    assert 'does not establish zero cases outside this outbreak' in text
-    assert '100' in text and '2025-10-14' in text
+    assert 'does not establish zero cases outside this outbreak' in answer['selected_result']['boundary_note']
+    assert '100' in output['headline'] and '2025-10-14' in output['headline']
 
 
 @pytest.mark.parametrize('closure', [
@@ -144,7 +143,7 @@ def test_approximate_qualified_count_keeps_qualifier_and_is_not_exact_annual_tot
     answer = result(row)['answers']['cases_confirmed']
     assert answer['value'] is None
     assert answer['selected_result']['qualifier'] == 'about'
-    assert 'about 100' in render_task_result(result(row))
+    assert 'about 100' in result(row)['headline']
 
 
 def test_verified_closure_can_be_linked_from_same_local_chunk_as_count():
@@ -252,7 +251,7 @@ def test_month_precision_closure_retains_months_instead_of_inventing_days():
     selected = result(row)['answers']['cases_confirmed']['selected_result']
     assert selected['result_kind'] == 'completed_outbreak_total'
     assert selected['period_start'] == '2025-02' and selected['period_end'] == '2025-10'
-    assert '2025-02-01' not in render_task_result(result(row))
+    assert '2025-02-01' not in result(row)['headline']
 
 
 def test_monthly_observation_can_answer_its_own_reporting_interval():
@@ -379,12 +378,11 @@ def test_verified_closure_event_supports_outbreak_total_with_statistical_dates_u
     assert selected['period_start'] is None and selected['period_end'] is None and selected['as_of_date'] is None
     assert selected['closure_date'] == '2025-12-16'
     assert selected['closure_date_source']['derivation']['publication_date'] == '2025-12-17'
-    text = render_task_result(output)
-    assert 'outbreak closed 2025-12-16' in text and 'statistical period unresolved' in text
-    assert 'may include cases before the query window' in text
-    assert 'derived from' in text and 'publication date' in text
-    assert 'None' not in text and '2025-01-09' not in text
-    assert '| outbreak closed 2025-12-16 (derived from source); statistical period unresolved |' in text
+    assert 'outbreak closed 2025-12-16' in output['headline']
+    assert 'statistical period unresolved' in output['headline']
+    assert 'may include cases before the query window' in selected['boundary_note']
+    assert 'None' not in output['headline'] and '2025-01-09' not in output['headline']
+    assert output['qualified_observations'][0]['closure_date_derived'] is True
 
 
 @pytest.mark.parametrize('patch', [
@@ -428,7 +426,6 @@ def test_recovered_same_source_claim_is_not_repeated_as_unverified_in_readable_r
     answer = output['answers']['cases_confirmed']
     assert answer['candidate_leads'][0]['superseded_by_qualified_record_ids'] == ['recovered-one']
     assert 'Unverified leads' not in output['headline']
-    assert 'unverified leads' not in render_task_result(output)
 
 
 def test_closure_sources_identify_the_accepted_declaration_not_the_entire_chunk():

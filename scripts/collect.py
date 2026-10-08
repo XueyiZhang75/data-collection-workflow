@@ -190,7 +190,6 @@ def _real_run_config(
         "max_total_results": 400,
         "timeout_seconds": 60,
         "combine_with_seed_catalog": True,
-        "cache_enabled": True,
         "provider_channel_allowlist": [
             "web_search",
             "official_site_search",

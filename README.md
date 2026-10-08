@@ -44,6 +44,8 @@ python -m pip install -e .
 cp .env.example .env
 ```
 
+For the dependency versions verified on Windows 11 with Python 3.12.2, see [Tested installation environment](docs/tested_environment.md).
+
 Keep this terminal open and run the remaining commands from the project root. If you open a new terminal, return to this directory and activate `.venv` again. Keep the source checkout: the command-line runner uses its `scripts/` and `configs/` directories.
 
 Confirm the command is available:
@@ -155,6 +157,8 @@ Answer the disease, location, start/end dates, and session-name prompts. Press E
 
 **Optional preview:** add `--print-config-only` to either command to display the task, model, and budgets without starting collection or creating a session. Remove that flag when you are ready to run. Previewing is optional; it does not validate the account or install missing browser/OCR tools.
 
+For a measured example of a previous session's budget limits, actual usage, and elapsed time, see [Recorded runtime example](docs/runtime_example.md).
+
 ## Step 5. Open and assess the results
 
 For the named example, open `outputs/sessions/my_first_collection/`. For an automatically named run, use the session path printed in the terminal.
@@ -183,6 +187,8 @@ Open **`final_report.html`** in a browser. This is the single English report for
 | `data/candidate_records.csv` | Evidence candidates, or standard-mode records pending review or excluded by run checks |
 | `collection/context_records.csv` | Background or contextual observations |
 | `collection/source_processing_status.csv` | Which sources were retrieved, processed, or contributed evidence |
+
+See [Output fields and format examples](docs/outputs.md) for column meanings, units, missing values, date precision, and short CSV/JSON illustrations.
 
 The report's `data/` folder contains the CSV/JSON datasets for sharing; `collection/` retains the detailed machine outputs, compatibility views, and review exports. These views are not independent datasets. Stage diagnostics remain available locally. Normal session execution no longer generates separate `task_result.md`, `final_report.md`, `workflow_run_report*.md`, or `workflow_interpretive_report*.md` reading reports.
 
@@ -266,14 +272,16 @@ scripts/                      Terminal entry points and optional interfaces
 configs/workflow.jsonc        Blank task configuration template
 integrations/langflow/        Optional visual interface components
 tests/                        Test code and fixed inputs used to check software behavior
-docs/                         Configuration, runtime setup, and code map
+constraints/                  Python dependency versions for the tested installation
+docs/                         Setup, configuration, output fields, runtime example, and code map
 ```
 
 `session_runtime.py` implements session storage and resumption; it is application code. The actual session state, raw documents, caches, and checkpoints are generated in each local output directory. Local task files in `configs/local/`, machine settings in `.runtime/`, `.env`, `outputs/`, and test-report/cache directories are ignored by Git.
 
-Developers can run the software tests with:
+Developers can install the test dependencies and run the software tests with:
 
 ```bash
+python -m pip install -e ".[test]"
 python -m pytest
 ```
 

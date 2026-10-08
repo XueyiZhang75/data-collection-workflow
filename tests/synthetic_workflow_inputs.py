@@ -59,7 +59,7 @@ def write_workflow_config(
         "source_search": {"enabled": search_enabled, "mode": "fixture" if search_enabled else "disabled",
             "provider": "fixture", "fixture_path": str(search_path), "max_queries": 3,
             "max_results_per_query": 5, "max_total_results": 15, "combine_with_seed_catalog": False,
-            "cache_enabled": False, "iterative": {"enabled": False}, "authority_gap_retry": {"enabled": False}},
+            "iterative": {"enabled": False}, "authority_gap_retry": {"enabled": False}},
         "content_fetch": {"fetch_search_derived_sources": fetch_enabled, "max_search_derived_sources": 1,
             "max_total_sources": 2, "min_credibility_score": 0.55, "allow_needs_review": False,
             "allowed_final_roles": ["collection", "collection_support", "context"],

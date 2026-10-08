@@ -4,7 +4,6 @@ import csv
 import json
 from pathlib import Path
 
-from data_collection_workflow.reporting.final_report_renderer import write_final_reports
 from data_collection_workflow.reporting.report_facts import build_report_facts
 
 
@@ -195,115 +194,15 @@ def _make_session(
 
 def test_final_report_counts_accepted_records_when_present(tmp_path):
     session = _make_session(tmp_path, final_records=[_record()])
-
-    paths = write_final_reports(session)
     facts = build_report_facts(session)
-    text = Path(paths["english_report"]).read_text(encoding="utf-8")
-
     assert facts["executive_summary"]["accepted_records_count"] == 1
-    assert "accepted_records_count" in text
-    assert "rec_accepted_1" in text
-    assert "Two confirmed hantavirus cases were reported" in text
-
-
-def test_final_writer_emits_only_english_report_and_diagnostics(tmp_path):
-    session = _make_session(tmp_path, final_records=[_record()])
-    paths = write_final_reports(session)
-    assert set(paths) == {'english_report', 'facts_json', 'diagnostics_json'}
-    assert not list(session.rglob('*_chinese.md'))
-    facts = json.loads(Path(paths['facts_json']).read_text(encoding='utf-8'))
-    assert not any('chinese' in name for name in facts['diagnostics']['legacy_reports_treated_as_diagnostics'])
-    system_output = Path(paths['english_report']).read_text(encoding='utf-8') + json.dumps(facts, ensure_ascii=False)
-    # Rendered filesystem paths may be truncated and contain non-English names.
-    for directory in (tmp_path, *tmp_path.parents):
-        for prefix in (str(directory), directory.as_posix()):
-            system_output = system_output.replace(prefix, '<test-dir>')
-            system_output = system_output.replace(json.dumps(prefix, ensure_ascii=False)[1:-1], '<test-dir>')
-    assert not any('\u4e00' <= char <= '\u9fff' for char in system_output)
 
 
 def test_final_report_preserves_original_multilingual_evidence(tmp_path):
     quote = 'Two confirmed hantavirus cases were reported. 原文记录保留。'
     session = _make_session(tmp_path, final_records=[_record(evidence_quote=quote)])
-    paths = write_final_reports(session)
-    assert quote in Path(paths['english_report']).read_text(encoding='utf-8')
-    facts = json.loads(Path(paths['facts_json']).read_text(encoding='utf-8'))
+    facts = build_report_facts(session)
     assert facts['final_statistics']['accepted_primary_dataset'][0]['evidence_quote'] == quote
-
-
-def test_final_report_exposes_readable_evidence_sections_in_english(tmp_path):
-    reviewable = _record(
-        record_id="rec_reviewable",
-        cases_confirmed=12,
-        cases_probable=1,
-        deaths=3,
-        record_final_inclusion_status="pending_human_review",
-        quality_gate_reasons=["official single-source outbreak candidate requires review"],
-    )
-    session = _make_session(
-        tmp_path,
-        final_records=[],
-        pre_quality_records=[reviewable],
-        pending_records=[reviewable],
-        quarantined_records=[],
-        run_quality_status="no_primary_case_dataset_records",
-    )
-    _write_json(
-        session / "collection" / "evidence_product_dataset.json",
-        [
-            {
-                "evidence_id": "evidence_rec_reviewable",
-                "source_id": "src_known",
-                "source_url": "https://example.test/vdh-weekly",
-                "source_product_type": "event_outbreak_report",
-                "evidence_role": "aggregate_event_evidence",
-                "candidate_type": "aggregate_event_candidate",
-                "observation_type": "outbreak_summary",
-                "location": "Virginia",
-                "date_or_period": "2025 week 09",
-                "case_status": "outbreak_summary",
-                "case_count": 13,
-                "death_count": 3,
-                "confidence": "reviewable",
-                "quality_status": "pending_human_review",
-                "review_reason": "official single-source outbreak candidate requires review",
-                "evidence_quote": "Thirteen cases and three deaths were reported.",
-            }
-        ],
-    )
-    _write_json(
-        session / "collection" / "case_evidence_bundles.json",
-        [
-            {
-                "case_evidence_bundle_id": "case_bundle_0001",
-                "bundle_type": "aggregate_event",
-                "supporting_source_count": 1,
-                "verified_authority_source_count": 1,
-                "best_evidence_quote": "Thirteen cases and three deaths were reported.",
-                "main_blocking_reason": "pending_human_review",
-                "recommended_review_action": "review_aggregate_event_evidence",
-                "source_urls": ["https://example.test/vdh-weekly"],
-            }
-        ],
-    )
-
-    paths = write_final_reports(session)
-    english = Path(paths["english_report"]).read_text(encoding="utf-8")
-
-    for heading in (
-        "Run Summary",
-        "Reviewable Evidence Matrix",
-        "Source Registry Profile",
-        "Fetch Manifest",
-        "Record Provenance",
-        "Failure Funnel",
-    ):
-        assert heading in english
-    assert "reviewable evidence is useful output, not failure" in english
-    assert "# Final Public Health Data Collection Report" in english
-    assert "Ã" not in english
-    assert "æœ" not in english
-    assert "Ã¦" not in english
 
 
 def test_final_report_uses_untruncated_export_reviewable_total_and_shows_page_size(
@@ -343,17 +242,10 @@ def test_final_report_uses_untruncated_export_reviewable_total_and_shows_page_si
             for row in [*pending, quarantined]
         ],
     )
-
     facts = build_report_facts(session)
-    text = Path(write_final_reports(session)["english_report"]).read_text(
-        encoding="utf-8"
-    )
-
     assert facts["executive_summary"]["reviewable_records_count"] == 35
     assert facts["readable_outputs"]["reviewable_evidence_total_count"] == 35
     assert len(facts["readable_outputs"]["reviewable_evidence_matrix"]) == 30
-    assert "| reviewable_evidence | 35 |" in text
-    assert "showing 30 of 35" in text
 
 
 def test_final_report_surfaces_source_to_evidence_and_disease_local_summaries(tmp_path):
@@ -414,17 +306,12 @@ def test_final_report_surfaces_source_to_evidence_and_disease_local_summaries(tm
             }
         ],
     )
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
-    assert "Source-to-Evidence Funnel" in text
-    assert "parsed_target_source_no_record_extracted" in text
-    assert "High-Confidence Sources With No Extracted Record" in text
-    assert "src_sante" in text
-    assert "Disease-Local Rejection Counts" in text
-    assert "local_evidence_disease_mismatch" in text
-    assert "Case-Field Completeness Summary" in text
-    assert "missing_key_fields" in text
+    facts = build_report_facts(session)
+    outputs = facts['readable_outputs']
+    assert outputs['source_to_evidence_funnel']['source_to_evidence_status_counts']['parsed_target_source_no_record_extracted'] == 1
+    assert outputs['high_confidence_sources_no_record'][0]['source_id'] == 'src_sante'
+    assert outputs['disease_local_rejection_counts']['local_evidence_disease_mismatch'] == 1
+    assert outputs['case_field_completeness_summary']['missing_key_fields_top']['age'] == 1
 
 
 def test_final_report_surfaces_exact_page_empty_recovery_and_case_span_coverage(
@@ -549,13 +436,11 @@ def test_final_report_surfaces_exact_page_empty_recovery_and_case_span_coverage(
             },
         ],
     )
-
     facts = build_report_facts(session)
     outputs = facts["readable_outputs"]
     exact = outputs["high_confidence_exact_page_recall"]
     recovery = outputs["llm_empty_output_recovery"]
     spans = outputs["case_span_extraction_coverage"]
-
     assert exact["recall_target_count"] == 3
     assert exact["event_page_found_count"] == 1
     assert exact["domain_found_event_page_missing_count"] == 1
@@ -572,13 +457,6 @@ def test_final_report_surfaces_exact_page_empty_recovery_and_case_span_coverage(
     assert spans["candidate_rows"] == 2
     assert spans["rows_with_case_span_evidence"] == 1
     assert spans["rows_with_field_provenance"] == 1
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(
-        encoding="utf-8"
-    )
-    assert "High-Confidence Exact-Page Recall" in text
-    assert "LLM Empty-Output Recovery" in text
-    assert "Case-Span Extraction Coverage" in text
 
 
 def test_final_report_distinguishes_official_single_source_not_cross_validated(tmp_path):
@@ -605,19 +483,12 @@ def test_final_report_distinguishes_official_single_source_not_cross_validated(t
             "conflicting_claim_count": 0,
         },
     )
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
     facts = build_report_facts(session)
-
     assert (
         facts["quality_and_trustworthiness"]["source_corroboration_status"][
             "official_single_source_not_cross_validated"
         ]
         == 1
-    )
-    assert (
-        "Source-backed primary records exist, but cross-source validation is incomplete."
-        in text
     )
 
 
@@ -647,16 +518,11 @@ def test_final_report_exposes_primary_and_task_aware_dataset_counts(tmp_path):
     )
     _write_json(session / "collection" / "non_primary_observations.json", [observation])
     _write_json(session / "collection" / "reviewable_dataset.json", [observation])
-
     facts = build_report_facts(session)
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
     assert facts["executive_summary"]["accepted_primary_case_records_count"] == 1
     assert facts["executive_summary"]["task_aware_observation_records_count"] == 1
     assert facts["collection_funnel"]["accepted_primary_case_records"] == 1
     assert facts["collection_funnel"]["accepted_task_aware_observations"] == 1
-    assert "accepted_primary_case_records_count" in text
-    assert "task_aware_observation_records_count" in text
 
 
 def test_final_report_empty_final_dataset_with_pre_quality_records_is_quality_gate_not_program_failure(tmp_path):
@@ -667,13 +533,9 @@ def test_final_report_empty_final_dataset_with_pre_quality_records_is_quality_ga
         raw_records=[_record(record_id="rec_candidate")],
         run_quality_status="failed_quality_gate",
     )
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
-    assert "failed_quality_gate" in text
-    assert "program failed" not in text.lower()
-    assert "suitable_as_final_epidemiological_dataset" in text
-    assert "| suitable_as_final_epidemiological_dataset | no |" in text
+    facts = build_report_facts(session)
+    assert facts['executive_summary']['real_collection_status'] == 'failed_quality_gate'
+    assert facts['executive_summary']['suitable_as_final_epidemiological_dataset'] == 'no'
 
 
 def test_final_report_distinguishes_non_primary_observations_only(tmp_path):
@@ -700,14 +562,10 @@ def test_final_report_distinguishes_non_primary_observations_only(tmp_path):
         [observation],
     )
     _write_json(session / "collection" / "non_primary_observations.json", [observation])
-
     facts = build_report_facts(session)
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
     assert facts["executive_summary"]["real_collection_status"] == (
         "non_primary_observations_only"
     )
-    assert "non_primary_observations_only" in text
 
 
 def test_final_report_no_raw_records_reports_no_records_extracted(tmp_path):
@@ -718,10 +576,8 @@ def test_final_report_no_raw_records_reports_no_records_extracted(tmp_path):
         raw_records=[],
         run_quality_status="no_records_extracted",
     )
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
-    assert "no_records_extracted" in text
+    facts = build_report_facts(session)
+    assert facts['executive_summary']['real_collection_status'] == 'no_records_extracted'
 
 
 def test_final_report_validation_limited_does_not_claim_validated(tmp_path):
@@ -731,14 +587,9 @@ def test_final_report_validation_limited_does_not_claim_validated(tmp_path):
         run_quality_status="validation_limited_no_compatible_source",
         write_evaluation=False,
     )
-
     facts = build_report_facts(session)
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
     assert facts["validation_readiness"]["evaluation_rows_count"] == "not_available"
-    assert "| evaluation_rows_count | not_available |" in text
-    assert "| ready_for_benchmark_comparison | no |" in text
-    assert "validated dataset" not in text.lower()
+    assert facts['validation_readiness']['ready_for_benchmark_comparison'] == 'no'
 
 
 def test_final_report_displays_publisher_unknown_count(tmp_path):
@@ -758,11 +609,8 @@ def test_final_report_displays_publisher_unknown_count(tmp_path):
             "source_type_counts": {"unknown": 1},
         },
     )
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
-    assert "publisher_unknown_count" in text
-    assert "| publisher_unknown_count | 1 |" in text
+    facts = build_report_facts(session)
+    assert facts['data_source_summary']['publisher_unknown_count'] == 1
 
 
 def test_final_report_pending_review_records_are_not_counted_as_accepted(tmp_path):
@@ -778,14 +626,10 @@ def test_final_report_pending_review_records_are_not_counted_as_accepted(tmp_pat
         pre_quality_records=[_record(record_id="rec_accepted_1", cases_confirmed=2), pending],
         pending_records=[pending],
     )
-
     facts = build_report_facts(session)
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
     assert facts["executive_summary"]["accepted_records_count"] == 1
     assert facts["executive_summary"]["pending_review_records_count"] == 1
     assert all(row["record_id"] != "rec_pending_99" for row in facts["final_statistics"]["accepted_primary_dataset"])
-    assert "| accepted_records_count | 2 |" not in text
 
 
 def test_final_report_shows_quarantine_reasons(tmp_path):
@@ -801,11 +645,8 @@ def test_final_report_shows_quarantine_reasons(tmp_path):
         ],
         run_quality_status="partial_with_quarantined_records",
     )
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
-    assert "main_quarantine_reasons" in text
-    assert "numeric claim lacks evidence" in text
+    facts = build_report_facts(session)
+    assert facts['quality_and_trustworthiness']['main_quarantine_reasons']['numeric claim lacks evidence'] == 1
 
 
 def test_final_report_does_not_aggregate_mixed_statistical_count_types(tmp_path):
@@ -816,11 +657,10 @@ def test_final_report_does_not_aggregate_mixed_statistical_count_types(tmp_path)
             _record(record_id="rec_cumulative", cases_confirmed=10, statistical_count_type="cumulative"),
         ],
     )
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
-    assert "not aggregated because count types are not comparable" in text
-    assert "aggregate_cases | 12" not in text
+    facts = build_report_facts(session)
+    aggregation = facts['final_statistics']['aggregation']
+    assert aggregation['status'] == 'not aggregated because count types are not comparable'
+    assert aggregation['aggregate_cases'] == 'not_available'
 
 
 def test_final_report_counts_match_source_artifacts(tmp_path):
@@ -834,9 +674,7 @@ def test_final_report_counts_match_source_artifacts(tmp_path):
         quarantined_records=[quarantined],
         raw_records=[_record(record_id="raw_1"), _record(record_id="raw_2")],
     )
-
     facts = build_report_facts(session)
-
     assert facts["collection_funnel"]["raw_records"] == 2
     assert facts["collection_funnel"]["pre_quality_records"] == 3
     assert facts["collection_funnel"]["accepted_records"] == 1
@@ -860,9 +698,7 @@ def test_final_report_recomputes_final_reviewable_and_quarantine_from_package_st
     stale_final_rows = [accepted, _record(record_id="stale_duplicate")]
     _write_json(session / "collection" / "final_dataset.json", stale_final_rows)
     _write_json(session / "diagnostics" / "final_dataset.json", stale_final_rows)
-
     facts = build_report_facts(session)
-
     assert facts["executive_summary"]["accepted_records_count"] == 1
     assert facts["executive_summary"]["final_case_records_count"] == 1
     assert facts["executive_summary"]["reviewable_records_count"] == 2
@@ -887,9 +723,7 @@ def test_final_report_separates_all_accepted_records_from_final_case_records(tmp
     package["primary_case_dataset"] = [primary]
     package["final_case_dataset"] = [primary]
     _write_json(package_path, package)
-
     facts = build_report_facts(session)
-
     assert facts["executive_summary"]["accepted_records_count"] == 2
     assert facts["executive_summary"]["accepted_primary_case_records_count"] == 1
     assert facts["executive_summary"]["final_case_records_count"] == 1
@@ -910,13 +744,13 @@ def test_final_report_does_not_invent_source_url_or_evidence_quote(tmp_path):
         source_registry=[_source(canonical_url="")],
         write_evaluation=False,
     )
-
-    text = Path(write_final_reports(session)["english_report"]).read_text(encoding="utf-8")
-
-    assert "rec_missing_provenance" in text
-    assert "https://" not in text
-    assert "missing_source_url" in text
-    assert "missing_evidence_quote" in text
+    facts = build_report_facts(session)
+    row = facts['final_statistics']['accepted_primary_dataset'][0]
+    assert row['record_id'] == 'rec_missing_provenance'
+    assert row['source_url'] == 'not_available'
+    assert row['evidence_quote'] == 'not_available'
+    assert 'missing_source_url' in json.dumps(facts['final_statistics']['provenance_warnings'])
+    assert 'missing_evidence_quote' in json.dumps(facts['final_statistics']['provenance_warnings'])
 
 
 def test_final_report_counts_data_source_role_as_collection_allowed_and_uses_document_count_fallback(tmp_path):
@@ -926,9 +760,7 @@ def test_final_report_counts_data_source_role_as_collection_allowed_and_uses_doc
             _source(source_id="src_data", source_role="data_source", ready_for_content_fetch=True)
         ],
     )
-
     facts = build_report_facts(session)
-
     assert facts["collection_funnel"]["collection_allowed_sources"] == 1
     assert facts["data_source_summary"]["fetched_source_count"] == 1
 
@@ -938,9 +770,7 @@ def test_final_report_zero_row_evaluation_file_reports_zero_rows_not_missing(tmp
     evaluation_path = session / "evaluation" / "evaluation_report.csv"
     evaluation_path.parent.mkdir(parents=True, exist_ok=True)
     evaluation_path.write_text("evaluation_row_id,record_id\n", encoding="utf-8")
-
     facts = build_report_facts(session)
-
     assert facts["validation_readiness"]["evaluation_rows_count"] == 0
     assert facts["validation_readiness"]["reason_if_not_ready"] == (
         "evaluation_report.csv has zero rows"
@@ -959,23 +789,8 @@ def test_final_report_masking_checker_rows_do_not_claim_open_run_was_masked(tmp_
             }
         ],
     )
-
     facts = build_report_facts(session)
-
     assert (
         facts["validation_readiness"]["github_benchmark_visible_or_masked"]
         == "masking_checked_no_leakage"
     )
-
-
-def test_runner_writes_final_report_outputs(tmp_path):
-    from scripts.run_workflow import _write_final_report_outputs
-
-    session = _make_session(tmp_path)
-
-    paths = _write_final_report_outputs(session, write_latest_alias=False)
-
-    assert Path(paths["final_report_english"]).exists()
-    assert "final_report_chinese" not in paths
-    assert Path(paths["final_report_facts"]).exists()
-    assert Path(paths["final_report_diagnostics"]).exists()

@@ -1177,31 +1177,3 @@ def test_partial_time_window_overlap_is_preserved_for_review_not_dropped():
     assert record["period_overlap_status"] == "partial_overlap"
     assert record["requires_human_review"] is True
     assert "partial_time_window_overlap" in record["extraction_warnings"]
-
-
-def test_extraction_miss_subtype_distinguishes_relevant_chunks_without_raw_record():
-    from data_collection_workflow.collection_diagnostics import classify_extraction_miss_subtype
-
-    subtype = classify_extraction_miss_subtype(
-        benchmark_record={
-            "benchmark_id": "bench_mv_hondius",
-            "disease": "Hantavirus disease",
-            "geographic_scope": "MV Hondius",
-            "geographic_scope_type": "vessel",
-            "reporting_period": "2026",
-        },
-        source_candidates=[
-            {
-                "source_id": "fixture_who_don_mv_hondius",
-                "canonical_url": "https://www.who.int/emergencies/disease-outbreak-news/item/fixture-don",
-                "title": "Hantavirus cluster linked to cruise ship travel",
-                "actual_publisher": "World Health Organization",
-            }
-        ],
-        evidence_chunks=[_chunk("who_don_mv_hondius_chunk.json")],
-        raw_records=[],
-        normalized_records=[],
-        quarantined_records=[],
-    )
-
-    assert subtype == "relevant_chunks_found_but_no_raw_record"

@@ -12,6 +12,7 @@ import re
 import sys
 import threading
 import time
+import zipfile
 from copy import deepcopy
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -26,12 +27,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VISUAL_CONTRACT_VERSION = "workflow-ui/2"
 
 SUMMARY_ARTIFACT_KEYS = {
-    "run_report",
+    "final_report_english",
+    "report_bundle",
     "workflow_console_html",
     "workflow_console_summary_json",
     "workflow_visualization_index",
     "workflow_visualization_summary",
-    "interpretive_report_english",
     "workflow_replay_notebook",
 }
 
@@ -434,16 +435,17 @@ def format_result_location_text(snapshot: dict[str, Any]) -> str:
     if snapshot.get("error"):
         lines.append(f"Error: {snapshot['error']}")
 
+    unavailable = "not generated" if snapshot.get("status") in TERMINAL_STATUSES else "pending"
     for label, key in (
+        ("Final report", "final_report_english"),
+        ("Report bundle", "report_bundle"),
         ("Workflow console", "workflow_console_html"),
         ("Workflow visualization", "workflow_visualization_index"),
-        ("Interpretive report", "interpretive_report_english"),
-        ("Run report", "run_report"),
         ("Final dataset CSV", "final_dataset_csv"),
         ("Final dataset JSON", "final_dataset_json"),
         ("Final package JSON", "final_package_json"),
     ):
-        lines.append(f"{label}: {artifact_urls.get(key) or 'pending'}")
+        lines.append(f"{label}: {artifact_urls.get(key) or unavailable}")
     return "\n".join(lines)
 
 
@@ -1031,7 +1033,7 @@ def create_app(
 
     try:
         from fastapi import FastAPI, HTTPException, Request
-        from fastapi.responses import FileResponse
+        from fastapi.responses import FileResponse, Response
     except ImportError as exc:  # pragma: no cover - depends on optional extra.
         raise RuntimeError(
             "FastAPI is required for the Langflow demo API. "
@@ -1243,6 +1245,29 @@ def create_app(
         except ArtifactAccessError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return FileResponse(path)
+
+    @app.get("/runs/{session_id}/artifacts/{group}/{filename}")
+    def get_report_material(session_id: str, group: str, filename: str) -> Any:
+        # Relative links in final_report.html resolve under artifacts/. Read
+        # only its portable bundle, never arbitrary session files or folders.
+        media_types = {".csv": "text/csv", ".json": "application/json", ".txt": "text/plain"}
+        if (group not in {"data", "evidence"}
+                or not re.fullmatch(r"[A-Za-z0-9_.-]+", filename)
+                or filename in {".", ".."}
+                or Path(filename).suffix not in media_types):
+            raise HTTPException(status_code=404, detail="Report material is not available")
+        try:
+            record = run_registry.get(session_id)
+            session_dir = _session_dir_from_record_or_default(record, session_id)
+        except KeyError:
+            session_dir = PROJECT_ROOT / "outputs" / "sessions" / session_id
+        try:
+            bundle = resolve_artifact_path(session_dir, "report_bundle")
+            with zipfile.ZipFile(bundle) as archive:
+                content = archive.read(f"{group}/{filename}")
+        except (ArtifactAccessError, KeyError, OSError, RuntimeError, zipfile.BadZipFile) as exc:
+            raise HTTPException(status_code=404, detail="Report material is not available") from exc
+        return Response(content=content, media_type=media_types[Path(filename).suffix])
 
     return app
 

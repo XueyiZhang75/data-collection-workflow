@@ -26,8 +26,8 @@ def coerce_wait_for_completion(value: Any) -> bool:
 
 
 REPORT_KEYS = (
-    "run_report",
-    "interpretive_report_english",
+    "final_report_english",
+    "report_bundle",
     "final_dataset_csv",
     "final_dataset_json",
     "final_package_json",

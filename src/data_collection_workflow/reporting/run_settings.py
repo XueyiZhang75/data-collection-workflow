@@ -235,8 +235,6 @@ def _applicability(key, effective):
     mode = effective.get("pipeline_mode", _MISSING)
     if key in {"llm.max_chunks", "llm.extraction.soft_primary_calls", "llm.extraction.hard_primary_calls"}:
         return "Legacy compatibility setting (deprecated); scheduler limits take precedence"
-    if key == "source_search.cache_enabled":
-        return "Reserved setting; the search adapter does not implement caching"
     if key.startswith("credentials.") or _secret_key(key):
         return "Credential name only; value never exported"
     if key.startswith("studio.") or key.startswith("environment.LANGFLOW"):

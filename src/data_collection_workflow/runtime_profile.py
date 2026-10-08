@@ -175,7 +175,6 @@ ENV_KEYS = [
     "SEARCH_MAX_TOTAL_RESULTS",
     "SEARCH_TIMEOUT_SECONDS",
     "SEARCH_COMBINE_WITH_SEED_CATALOG",
-    "SEARCH_CACHE_ENABLED",
     "SEARCH_PROVIDER_CHANNEL_ALLOWLIST",
     "ENABLE_ITERATIVE_SOURCE_DISCOVERY",
     "ITERATIVE_SEARCH_MAX_ITERATIONS",
@@ -270,7 +269,6 @@ def workflow_run_env(
     search_max_total_results: int = 15,
     search_timeout_seconds: float = 15.0,
     search_combine_with_seed_catalog: bool = False,
-    search_cache_enabled: bool = True,
     search_provider_channel_allowlist: list[str] | None = None,
     iterative_source_discovery: bool = False,
     iterative_search_max_iterations: int = 3,
@@ -494,7 +492,6 @@ def workflow_run_env(
         "SEARCH_COMBINE_WITH_SEED_CATALOG": (
             "true" if search_combine_with_seed_catalog else "false"
         ),
-        "SEARCH_CACHE_ENABLED": "true" if search_cache_enabled else "false",
         "SEARCH_PROVIDER_CHANNEL_ALLOWLIST": ",".join(
             search_provider_channel_allowlist
             or DEFAULT_SEARCH_PROVIDER_CHANNEL_ALLOWLIST
@@ -644,7 +641,6 @@ def default_workflow_run_config() -> dict:
             "max_total_results": 64,
             "timeout_seconds": 15,
             "combine_with_seed_catalog": False,
-            "cache_enabled": True,
             "provider_channel_allowlist": list(
                 DEFAULT_SEARCH_PROVIDER_CHANNEL_ALLOWLIST
             ),
@@ -1175,7 +1171,6 @@ def workflow_run_env_from_config(config: dict) -> dict[str, str]:
         search_combine_with_seed_catalog=bool(
             source_search.get("combine_with_seed_catalog", False)
         ),
-        search_cache_enabled=bool(source_search.get("cache_enabled", True)),
         search_provider_channel_allowlist=source_search.get(
             "provider_channel_allowlist"
         )

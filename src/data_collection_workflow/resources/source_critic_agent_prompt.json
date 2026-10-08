@@ -16,8 +16,8 @@
     "Only propose source role and assessment fields.",
     "Held-out validation policy is enforced deterministically outside the model.",
     "Context-only policy is enforced deterministically outside the model.",
-    "Be conservative about news sources that cite WHO, CDC, ECDC, PAHO, or other reserved authorities.",
-    "Flag semantic leakage when a collection source appears to cite a reserved authority.",
+    "Treat sources as held out only when their IDs or domains are explicitly reserved in the supplied source_role_policy_summary, or when source_entry carries an explicit validation-reserved role. Do not infer reserved status from an institution's name or authority.",
+    "Flag semantic leakage only when the provided metadata indicates that a collection source relies on an explicitly reserved source under this active policy. Empty reserved lists create no global publisher holdouts; citations to official authorities alone are not evidence of leakage.",
     "Flag sources as context-only when they provide disease background but not data.",
     "Recommend human review when role, credibility, or leakage is ambiguous.",
     "Do not include hidden reasoning or chain-of-thought."

@@ -67,6 +67,22 @@ def _all_planned_query_text(plan: dict) -> str:
     ).lower()
 
 
+def test_deterministic_and_model_plans_describe_pending_execution_without_missing_feature_claim(monkeypatch):
+    from data_collection_workflow.models import ExecutableSourcePlan
+    from data_collection_workflow.nodes.task_scope import _merge_llm_executable_plan
+
+    monkeypatch.setenv("ENABLE_LLM_SOURCE_PLANNING", "false")
+    monkeypatch.setenv("ENABLE_LLM_DISEASE_INTELLIGENCE", "false")
+    state = _run_to_executable_plan(_state_for("measles", "Canada"))
+    deterministic = ExecutableSourcePlan(**state["agentic_source_plan"])
+    model_plan = _merge_llm_executable_plan({}, deterministic)
+    for plan in (deterministic, model_plan):
+        assert plan.execution_status == "planned_not_executed"
+        assert plan.planned_queries
+        assert all(query.execution_status == "planned_not_executed" for query in plan.planned_queries)
+        assert not any("not_implemented" in warning or "stage4" in warning for warning in plan.warnings)
+
+
 def _run_full_graph_from_example_config(config_path: Path) -> dict:
     from data_collection_workflow.graph import build_graph
     from data_collection_workflow.workflow_run_config import (

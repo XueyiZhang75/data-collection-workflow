@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 import sys
 from pathlib import Path
 
@@ -131,6 +132,34 @@ def _critic_output(
         "review_required": review_required,
         "warnings": [],
     }
+
+
+@pytest.mark.parametrize("mode", ["direct_collection", "masked_validation"])
+def test_critic_prompt_uses_only_active_holdouts_and_preserves_explicit_source_roles(monkeypatch, mode):
+    from data_collection_workflow.agents.source_critic_agent import assess_source_with_llm
+    from data_collection_workflow import llm_clients
+
+    monkeypatch.setenv("PIPELINE_MODE", "evidence")
+    captured = {}
+
+    def capture_call(**kwargs):
+        captured.update(kwargs)
+        return _critic_output("source_1")
+
+    monkeypatch.setattr(llm_clients, "run_structured_llm_json", capture_call)
+    source = _entry("source_1", source_role_final="validation_reserved")
+    policy = {"validation_reserved_domains": ["who.int"], "validation_reserved_source_ids": ["source_1"]}
+    assess_source_with_llm(source, {"disease": "measles", "collection_mode": mode}, {}, policy)
+    payload = json.loads(captured["user_prompt"])
+    actual_policy = payload["source_role_policy_summary"]
+    assert actual_policy["validation_reserved_domains"] == ([] if mode == "direct_collection" else ["who.int"])
+    assert actual_policy["validation_reserved_source_ids"] == ([] if mode == "direct_collection" else ["source_1"])
+    assert payload["source_entry"]["source_role_final"] == "validation_reserved"
+    assert policy["validation_reserved_domains"] == ["who.int"]
+    prompt = captured["system_prompt"]
+    assert "WHO, CDC, ECDC, PAHO, or other reserved authorities" not in prompt
+    assert "source_role_policy_summary" in prompt
+    assert "source_entry" in prompt
 
 
 def _run_critic(monkeypatch, entries: list[dict], outputs: dict[str, dict] | None = None):

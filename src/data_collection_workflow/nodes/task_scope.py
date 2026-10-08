@@ -1187,7 +1187,7 @@ def _planned_source_categories(
                 ),
                 "why_relevant": category.description,
                 "risk_notes": [
-                    "planned_only_not_executed_stage4",
+                    "planned_only_not_executed",
                     "requires_later_search_result_screening",
                 ],
             }
@@ -1695,8 +1695,7 @@ def _deterministic_executable_source_plan(
         target_fields,
     )
     warnings = [
-        "source_plan_created_not_executed_stage4",
-        "source_discovery_execution_not_implemented_stage4",
+        "source_plan_created_not_executed",
         *(extra_warnings or []),
     ]
     if localized_hints and localized_hints.get("enabled"):
@@ -1938,8 +1937,7 @@ def _merge_llm_executable_plan(
     )
     merged["warnings"] = _unique_preserve_order(
         [
-            "source_plan_created_not_executed_stage4",
-            "source_discovery_execution_not_implemented_stage4",
+            "source_plan_created_not_executed",
             *(
                 ["localized_source_planning_hints_preserved_after_llm_plan"]
                 if any(

@@ -72,9 +72,6 @@
     // false = only search-derived candidates are returned when search is enabled.
     "combine_with_seed_catalog": false,
 
-    // Reserved cache setting; this search adapter does not implement a cache.
-    "cache_enabled": true,
-
     // Planned query provider_channel values allowed to execute.
     // manual_user_url is excluded because raw URLs are not search-provider results.
     "provider_channel_allowlist": [
