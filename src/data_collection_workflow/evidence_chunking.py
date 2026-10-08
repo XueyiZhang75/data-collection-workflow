@@ -351,13 +351,9 @@ def source_unit_for_quote(doc, chunk, start, end):
         return start,end
     if chunk.get('row_id') or chunk.get('structured_data_kind') == 'json_record':
         return left,right
-    boundary = left
-    for separator in re.finditer(r'(?<=[.!?;])\s+',text[left:right]):
-        stop = left + separator.start()
-        if boundary <= start < end <= stop:
-            return boundary,stop
-        boundary = left + separator.end()
-    return (boundary,right) if boundary <= start < end <= right else (start,end)
+    from .source_assertions import sentence_bounds
+    local_start, local_end = sentence_bounds(text[left:right], start-left, end-left, semicolons=True)
+    return left+local_start, left+local_end
 
 
 _JSON_SCOPE_KEYS = {'disease','disease_standard_name','country','subnational_location','locality','geographic_scope',
@@ -505,9 +501,14 @@ def exact_chunk_specs(doc):
             limit = max(80, MAX_QUOTE_CHARS - context_length)
             stop = min(end,start + limit)
             if stop < end:
-                boundary = max(text.rfind('. ', start, stop), text.rfind('\n',start,stop))
+                from .source_assertions import sentence_spans
+                # Look just beyond the limit so "Jan. 9" is recognized as one
+                # date even when its abbreviation lands at the chunk boundary.
+                boundaries = [start+right for _,right in sentence_spans(text[start:min(end,stop+12)])
+                              if start+right <= stop]
+                boundary = max(boundaries + [text.rfind('\n',start,stop)])
                 if boundary > start:
-                    stop = boundary + (1 if text[boundary] == '.' else 0)
+                    stop = boundary
             while stop > start and text[stop-1].isspace():
                 stop -= 1
             if stop <= start:

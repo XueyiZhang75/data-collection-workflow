@@ -4008,11 +4008,20 @@ def apply_run_quality_gates(state: dict) -> dict:
         # Review may change a value, so corrected rows must be qualified afresh.
         reviewed = {str(r.get("record_id")): r for r in state.get("final_dataset_post_review") or []}
         records = [reviewed.get(str(r.get("record_id")), r) for r in records]
+        input_ids = {str(r.get("record_id")) for r in records}
+        # A recovered observation has its own ID. Preserve a user's correction
+        # to that observation instead of recreating its old value from the parent.
+        records.extend(row for key, row in reviewed.items() if key not in input_ids
+                       and str(row.get("recovered_from_record_id")) in input_ids)
         groups = qualify_records(records, contract=contract, evidence_index=build_evidence_index(state))
         excluded = {str(r.get("record_id")) for r in state.get("records_excluded_by_human_review") or []}
+        def excluded_by_review(row):
+            return any(str(value) in excluded for value in
+                       (row.get("record_id"), row.get("recovered_from_record_id"))
+                       if value is not None)
         for key in ("qualified_records", "qualified_case_records", "qualified_aggregate_records", "qualified_context_records"):
-            groups[key] = [r for r in groups[key] if str(r.get("record_id")) not in excluded]
-        final = [r for r in groups["qualified_records"] if r["product_kind"] in {"case_level", "aggregate"} and str(r.get("record_id")) not in excluded]
+            groups[key] = [r for r in groups[key] if not excluded_by_review(r)]
+        final = [r for r in groups["qualified_records"] if r["product_kind"] in {"case_level", "aggregate"} and not excluded_by_review(r)]
         summary = {"quality_gate_method":"evidence", "qualified_record_count":len(final), "candidate_record_count":len(groups["candidate_records"]), "run_quality_status":"qualified_evidence_available" if final else "no_qualified_evidence"}
         return {**groups, "final_dataset_pre_quality_gate":records, "final_dataset":final,
                 "final_dataset_post_review":final, "quarantined_records":groups["candidate_records"],

@@ -18,6 +18,36 @@ _BOUNDED = re.compile(r"(?:at least|more than|over|at most|fewer than|less than|
                       r"plus de|au moins|moins de|au plus|environ|pr[e\u00e8]s de)\s*$", re.I)
 
 
+def sentence_spans(text, *, semicolons=False, paragraphs=False):
+    """Yield literal sentence offsets without splitting an abbreviated month.
+
+    The exception is deliberately narrow: an explicit month abbreviation must
+    be followed by a day. Other full stops remain evidence boundaries.
+    """
+    separator = r'(?<=[.!?])\s+'
+    if semicolons:
+        separator += r'|;\s*'
+    if paragraphs:
+        separator += r'|\n\s*\n'
+    start = 0
+    for match in re.finditer(separator, text):
+        if (re.search(r'\b(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.$',
+                      text[max(0, match.start()-6):match.start()], re.I)
+                and re.match(r'\d{1,2}(?:\b|st\b|nd\b|rd\b|th\b)', text[match.end():], re.I)):
+            continue
+        end = match.start() + (1 if text[match.start():match.start()+1] == ';' else 0)
+        if start < end:
+            yield start, end
+        start = match.end()
+    if start < len(text):
+        yield start, len(text)
+
+
+def sentence_bounds(text, start, end, **options):
+    return next(((left, right) for left, right in sentence_spans(text, **options)
+                 if left <= start < end <= right), (start, end))
+
+
 @dataclass(frozen=True)
 class TextProjection:
     text: str
@@ -260,9 +290,7 @@ def count_mentions(text):
                 field = case_bucket(match.group())
             else:
                 field = kind
-            sentence_left = max((m.end() for m in re.finditer(r"(?<=[.!?])\s+", normalized[:left])), default=0)
-            following = re.search(r"(?<=[.!?])\s+", normalized[right:])
-            sentence_right = right + following.start() if following else len(normalized)
+            sentence_left, sentence_right = sentence_bounds(normalized, left, right)
             start, end = projection.original_span(left, right)
             s_start, s_end = projection.original_span(sentence_left, sentence_right)
             result.append({"field": field, "value": number_value(match.group("number")),
@@ -321,8 +349,24 @@ def _date_parts(token):
 
 def _metadata_date(text, start):
     prefix = text[max(0, start - 65):start]
-    return bool(re.search(r"\b(?:published|publication|updated|posted|accessed|copyright|"
+    return bool(re.search(r"\b(?:publish|published|publication|updated|posted|accessed|copyright|"
                           r"publie|publication|mis a jour)\s*(?:(?:online|on|le|date)\s*)?[:\-]?\s*$", prefix, re.I))
+
+
+def publication_dates(text):
+    """Return explicitly labelled publication dates, never observation dates."""
+    projection = analysis_projection(text, fold=True)
+    result = []
+    for match in _DATE.finditer(projection.text):
+        parts = _date_parts(match.group())
+        prefix = projection.text[max(0, match.start()-65):match.start()]
+        if (not parts or any(part is None for part in parts) or not re.search(
+                r'\b(?:publish|published|publication|publie)\s*(?:(?:online|on|le|date)\s*)?[:\-]?\s*$', prefix)):
+            continue
+        start, end = projection.original_span(match.start(), match.end())
+        result.append({'value':date(*parts).isoformat(), 'quote':text[start:end],
+                       'char_start':start, 'char_end':end})
+    return result
 
 
 def _source_intervals(text):
@@ -440,8 +484,9 @@ def typed_date_support(name, value, text):
                 continue
             # A report date belongs to this reporting predicate, not another
             # sentence, a publication label, or a clinical event in the report.
-            before = re.split(r"(?<=[.!?;])\s+|\n", folded[:match.start()])[-1]
-            after = re.split(r"(?<=[.!?;])\s+|\n", folded[match.end():])[0]
+            left, right = sentence_bounds(folded, match.start(), match.end(), semicolons=True)
+            before = folded[left:match.start()].split('\n')[-1]
+            after = folded[match.end():right].split('\n')[0]
             direct = r"\b(?:reported|report date|date reported|date de signalement|date de notification)\s*(?:(?:on|le)\s+|[:=]\s*)?" + weekday + r"$"
             if re.search(direct, before):
                 return True
