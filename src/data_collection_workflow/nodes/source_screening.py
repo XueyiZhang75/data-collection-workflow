@@ -382,12 +382,38 @@ def _source_reporting_date_fit(texts: list[str], state: dict) -> str:
     return "mismatch"
 
 
+def _source_statement_text(value: str) -> str:
+    """Keep rendered source words, never link destinations or language menus."""
+    value = re.sub(r'!?\[([^\]\n]*)\]\(https?://[^\s)]*(?:\s+"[^"]*")?\)', r'\1', value)
+    value = re.sub(r'https?://[^\s<>]+', ' ', value)
+    value = re.sub(r'^\s*(?:French|English|Fran\u00e7ais|Anglais)\s*\([^)]+\)\s*$',
+                   ' ', value, flags=re.IGNORECASE | re.MULTILINE)
+    return value
+
+
+def _exclude_foreign_only_source(entry: dict) -> dict:
+    """Keep the audit entry while forbidding collection of foreign-only content."""
+    reason = 'source observations explicitly concern another country without target geography evidence'
+    return {**entry, 'target_verification_status': 'geography_mismatch',
+            'target_verification_reason': reason, 'screening_reason': reason,
+            'final_screening_reason': reason,
+            'target_fit_status': 'excluded', 'triage_role': 'excluded',
+            'source_role': 'irrelevant_source', 'source_role_fit': 'irrelevant_source',
+            'source_role_final': 'excluded', 'screening_decision': 'exclude',
+            'final_screening_decision': 'exclude', 'status': 'excluded',
+            'ready_for_content_fetch': False, 'requires_human_review': False,
+            'blocked_from_fetch': True, 'blocked_from_fetch_reason': 'geography_mismatch',
+            'fetch_purpose': None}
+
+
 def _source_positive_target_verification(entry: dict, state: dict) -> dict:
     from ..disease_identity import disease_names
+    from ..geography import CANADIAN_PROVINCES, US_STATES, explicit_country_matches
     task = _task_for_screening(state)
     # These are source statements. Publisher, URL, query and classifier hints
     # cannot establish the disease, place or observation period being reported.
-    texts = [str(entry.get(key) or "") for key in ("title", "name", "source_title", "snippet")]
+    texts = [_source_statement_text(str(entry.get(key) or ""))
+             for key in ("title", "name", "source_title", "snippet")]
     text = " ".join(texts)
     def contains(value, source_text=text):
         return bool(value and re.search(r"(?<!\w)" + re.escape(str(value)) + r"(?!\w)", source_text, re.IGNORECASE))
@@ -398,6 +424,9 @@ def _source_positive_target_verification(entry: dict, state: dict) -> dict:
     us_target = location.casefold() in {"united states", "united states of america", "usa", "u.s.a.", "us", "u.s."}
     if us_target:
         place_names = ["United States", "United States of America", "USA", "U.S.A.", "U.S."]
+    target_countries = {key for _, key in explicit_country_matches(location)}
+    if target_countries == {"canada"}:
+        place_names += [*CANADIAN_PROVINCES, "Qu\u00e9bec"]
     place_match = any(contains(name) for name in place_names) or (us_target and re.search(r"(?<!\w)US(?!\w)", text))
     geography_fit = "match" if place_match else "candidate"
     def reporting_date_fit(source_texts):
@@ -413,11 +442,54 @@ def _source_positive_target_verification(entry: dict, state: dict) -> dict:
     # Separate source observations cannot supply different parts of one match.
     # Preserve initials such as U.S. while splitting sentences and report items.
     statements = [part for value in texts
-                  for part in re.split(r"(?<!\b[A-Za-z])\.(?:\s+|$)|[!?;\n]+", value) if part.strip()]
+                  for part in re.split(r"(?<!\b[A-Za-z])\.(?:\s+|$)|[!?;|\n]+", value) if part.strip()]
+    # An explicitly foreign-only observation is outside a single-country task.
+    # Unknown geography remains unresolved; publisher nationality is never used.
+    observation = re.compile(r'\b(?:cases?|deaths?|patients?|surveillance|outbreaks?|'
+                             r'incidence|cas|d\u00e9c\u00e8s|casos)\b', re.IGNORECASE)
+    def state_observation(statement):
+        definite, ambiguous = False, False
+        for name in US_STATES:
+            for match in re.finditer(r'\b' + re.escape(name) + r'\b', statement, re.I):
+                before, after = statement[:match.start()], statement[match.end():]
+                if re.search(r'\b(?:university|hospital|institute|ministry)\s+(?:of\s+)?$', before, re.I):
+                    continue
+                country_label = (re.search(r'\bcountry\s+of\s+$', before, re.I)
+                                 or re.match(r'\s*\(country\)', after, re.I))
+                if country_label:
+                    continue
+                explicit_state = bool(re.search(r'\bstate\s+of\s+$', before, re.I))
+                bound = (explicit_state or re.search(r'\b(?:in|across|throughout)\s+$', before, re.I)
+                         or re.match(r'\s+(?:has\s+|have\s+)?(?:report|confirm|record)\w*\b', after, re.I))
+                if not bound:
+                    continue
+                if name == 'georgia' and not explicit_state:
+                    ambiguous = True
+                else:
+                    definite = True
+        return definite, ambiguous
+    foreign_observation = False
+    possible_domestic_state = False
+    for statement in statements:
+        if not (observation.search(statement) or any(contains(name, statement) for name in names)):
+            continue
+        countries = {key for _, key in explicit_country_matches(statement)}
+        domestic_state, ambiguous_state = state_observation(statement)
+        if domestic_state:
+            countries.add('united states')
+            if us_target:
+                place_match = True
+                geography_fit = 'match'
+        possible_domestic_state |= bool(us_target and ambiguous_state)
+        foreign_observation |= bool(len(target_countries) == 1 and countries
+                                    and not countries & target_countries)
+    if not place_match and not possible_domestic_state and foreign_observation:
+        geography_fit = 'mismatch'
     associated_target = any(
         any(contains(name, statement) for name in names)
         and (any(contains(name, statement) for name in place_names)
-             or (us_target and re.search(r"(?<!\w)US(?!\w)", statement)))
+             or (us_target and (re.search(r"(?<!\w)US(?!\w)", statement)
+                                or state_observation(statement)[0])))
         and reporting_date_fit([statement]) == "match"
         for statement in statements
     )
@@ -430,6 +502,8 @@ def _source_positive_target_verification(entry: dict, state: dict) -> dict:
         result.update(target_verification_status="unrelated_disease", disease_fit="mismatch",
                       target_verification_reason="source disease identity is incompatible with the task disease",
                       triage_role="context_only", source_role="context_source", screening_decision="include_for_context_fetch")
+    elif geography_fit == "mismatch":
+        result = _exclude_foreign_only_source(result)
     elif date_fit == "mismatch":
         result.update(target_verification_status="temporal_mismatch",
                       target_verification_reason="explicit source reporting period does not overlap task window",
@@ -536,6 +610,8 @@ def assess_source_task_fit(entry: dict, state: dict, document: dict | None = Non
         elif not boundary and result["triage_role"] == "context_only":
             result.update(source_role_final="context", final_screening_decision="include_for_context_fetch",
                           fetch_purpose="context_grounding")
+    if result.get('blocked_from_fetch_reason') == 'geography_mismatch':
+        result = _exclude_foreign_only_source(result)
     return result
 
 
@@ -611,6 +687,8 @@ def _apply_direct_triage_verification(
             "task_fit_content_hash", "task_fit_assessment_version")})
         updated["target_fit_status"] = ("verified_target" if verification["target_verification_status"] == "verified_target"
                                          else verification["triage_role"])
+        if verification['target_verification_status'] == 'geography_mismatch':
+            return _exclude_foreign_only_source(updated), triage
         flags = list(updated.get("screening_flags") or result.screening_flags or [])
         provisional = "ambiguous_source_role" in flags
         provisional_block = provisional and updated.get("blocked_from_fetch_reason") in {None, "irrelevant_source", "ambiguous_source_role"}
@@ -2521,6 +2599,8 @@ def source_critic_and_uncertainty_routing(state: DataCollectionState) -> dict:
         new_entry = _reapply_source_critic_fetch_block(new_entry)
         new_entry = apply_source_identity_routing_guardrails(new_entry)
         new_entry = annotate_source_coverage([new_entry], state)[0][0]
+        if entry.get('blocked_from_fetch_reason') == 'geography_mismatch':
+            new_entry = _exclude_foreign_only_source(new_entry)
         credibility_assessments.append(credibility_assessment)
         new_entry = _preserve_historical_metadata_only_routing(new_entry)
         validated = SourceRegistryEntry(**new_entry).model_dump()

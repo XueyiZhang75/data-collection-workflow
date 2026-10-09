@@ -1098,6 +1098,7 @@ class RecordNormalizationPolicy(BaseModel):
     virus_or_syndrome_aliases: dict[str, str]
     case_definition_aliases: dict[str, str]
     allowed_source_types: list[str]
+    source_type_aliases: dict[str, str] = Field(default_factory=dict)
     date_normalization: dict
     normalization_statuses: list[str]
     review_triggers: list[str]

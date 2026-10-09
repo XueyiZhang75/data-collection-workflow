@@ -32,7 +32,7 @@ SOURCE_TYPES = {
     'official_public_health_agency': 'Public health agency',
     'structured_database': 'Database / data platform',
     'background_fact_sheet': 'Background information / fact sheet',
-    'academic_or_peer_reviewed_source': 'Academic literature',
+    'academic_or_peer_reviewed_source': 'Academic or peer-reviewed source (identity unverified)',
     'peer_reviewed_literature': 'Academic literature', 'news_media': 'News media',
     'news_and_situation_report': 'News / situation report', 'social_media': 'Social media',
     'secondary_aggregator': 'Republishing / aggregation platform',
@@ -42,6 +42,7 @@ PROCESSING_LABELS = {
     'records_collected': 'Collected observations recorded',
     'budget_deferred': 'Deferred by budget limit', 'evidence_contributed': 'Read; records extracted',
     'readable': 'Read', 'extracted_without_evidence': 'Read; extraction attempted',
+    'extraction_failed': 'Extraction failed',
     'acquisition_failed': 'Retrieval failed', 'acquisition_incomplete': 'Retrieval incomplete',
     'screening_excluded': 'Excluded by screening', 'awaiting_extraction': 'Read; awaiting extraction',
     'not_attempted': 'Not yet retrieved', 'acquisition_in_progress': 'Retrieval in progress',
@@ -54,8 +55,17 @@ PROCESSING_REASONS = {
     'qualified': 'This source contributes currently qualified observations.',
     'candidate_only': 'Candidate records were retained; they do not support the final conclusion.',
     'context_only': 'This source contributes context records.',
-    'no_output_observation': 'Extraction produced no observation records.',
-    'no_extracted_evidence': 'Readable content was retrieved, but no records were produced.',
+    'no_output_observation': 'An extraction attempt was recorded, but no observation records are available; the attempt outcome was not recorded.',
+    'no_extracted_evidence': 'Readable content was retrieved; no extracted observations or extraction outcomes were recorded.',
+    'empty_output_recorded': 'Extraction completed with no observation records.',
+    'extracted_observations_not_in_output': 'Observations were extracted, but none appear in the current output datasets; inspect their validation and evidence decisions.',
+    'case_span_not_detected': 'Extraction returned no records; no case-bearing span was detected.',
+    'legitimate_no_record_context': 'Extraction returned no records from context-only material.',
+    'navigation_or_boilerplate': 'The passage contains navigation or boilerplate; extraction returned no records.',
+    'llm_empty_strong_signal': 'Extraction returned no records despite a possible case signal; the passage needs review.',
+    'focused_retry_empty': 'The focused extraction attempt returned no observation records.',
+    'extraction_attempt_failed': 'An extraction attempt failed; this is separate from a completed empty result.',
+    'extraction_skipped_without_attempt': 'Extraction was skipped; no extraction attempt was recorded.',
     'unprocessed_evidence_chunks': 'Some text passages are awaiting extraction.',
     'acquisition_incomplete': 'Retrieval did not complete.',
     'http_error': 'The HTTP request failed.', 'blocked': 'Access to the page was restricted.',
@@ -141,6 +151,9 @@ def _processing(progress):
     code = progress.get('processing_status') or 'unknown'
     raw_reason = str(progress.get('processing_reason') or '')
     reason = PROCESSING_REASONS.get(raw_reason)
+    reason_parts = raw_reason.split('; ')
+    if not reason and all(part in PROCESSING_REASONS for part in reason_parts):
+        reason = ' '.join(PROCESSING_REASONS[part] for part in reason_parts)
     if raw_reason.startswith('no_extraction_eligible_spans'):
         reason = 'Text screening found no target-data passages eligible for extraction.'
     elif raw_reason.startswith('llm_source_critic_block_fetch'):
@@ -148,12 +161,15 @@ def _processing(progress):
     if not reason:
         reason = {
             'acquisition_failed': 'Retrieval failed; the original reason is retained in the source catalogue.',
+            'extraction_failed': 'Extraction failed; the original reason is retained in the source catalogue.',
             'budget_deferred': 'Processing was deferred because a budget limit was reached.',
             'screening_excluded': 'The source was excluded during screening.',
         }.get(code, 'The processing status was recorded; the original reason is retained in the source catalogue.')
     acquisition = progress.get('acquisition_status') or 'unknown'
     return {'code': code, 'label': PROCESSING_LABELS.get(code, 'Processing status not recorded'),
             'reason': reason, 'raw_reason': raw_reason, 'acquisition_status': acquisition,
+            'extraction_outcome': progress.get('extraction_outcome', 'not_recorded'),
+            'extraction_outcome_counts': progress.get('extraction_outcome_counts') or {},
             'readable': acquisition == 'readable',
             'prior_acquisition_failures': progress.get('prior_acquisition_failures', 0)}
 
@@ -199,6 +215,25 @@ def _publication(entries, documents):
 
 def _record_detail(record, role, ids, chunks):
     qualification = record.get('evidence_qualification') or {}
+    notes = []
+    actions = deepcopy(record.get('evidence_normalization_actions') or [])
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        field = str(action.get('field') or 'field').replace('_', ' ')
+        original = action.get('original_value')
+        if action.get('reason') == 'unsupported_optional_field_set_aside':
+            notes.append(f'The unsupported optional {field} value ({original}) was set aside; '
+                         'the original candidate and its evidence remain available.')
+        elif action.get('reason') == 'publication_date_is_not_observation_date':
+            notes.append(f'The {field} value ({original}) describes publication, not the observation period; '
+                         'it is retained in the original-value audit.')
+    if qualification.get('task_temporal_relation') == 'overlaps_task_boundary':
+        notes.append('The source observation period overlaps the requested period boundary; '
+                     'the original count and period are retained and the count is not split or prorated.')
+    if qualification.get('temporal_extent') == 'year_label_only':
+        notes.append('The source identifies a year but does not establish a complete annual total '
+                     'or a statistical cutoff within that year.')
     fields = []
     for item in qualification.get('field_evidence') or []:
         if not item.get('supported'):
@@ -214,6 +249,10 @@ def _record_detail(record, role, ids, chunks):
     return {'record_id': record.get('record_id'), 'source_id': record.get('source_id'),
             'status': 'qualified', 'product_kind': ('context' if role == 'context' else qualification.get('product_kind')),
             'reasons': list(qualification.get('reasons') or []), 'evidence_quote': record.get('evidence_quote') or '',
+            'reason_labels': notes, 'evidence_normalization_actions': actions,
+            'recovered_from_record_id': record.get('recovered_from_record_id'),
+            'task_temporal_relation': qualification.get('task_temporal_relation'),
+            'temporal_extent': qualification.get('temporal_extent'),
             'supported_fields': fields, 'closure_evidence': deepcopy(qualification.get('closure_evidence') or [])}
 
 
@@ -245,11 +284,13 @@ def _periods(details):
 def _candidate_reason_labels(reasons):
     labels = {
         'missing_observation_period': 'The observation period could not be confirmed.',
+        'unresolved_observation_period': 'The observation period is unknown or could not be resolved from the source.',
         'missing_geography': 'The geographic scope could not be confirmed.',
         'contract_mismatch': 'The extracted time or location does not match the task requirements.',
         'unbound_observation_scope': 'The numeric value is not reliably linked to its observation scope.',
         'ambiguous_span': 'The location of the supporting text is ambiguous.',
         'unresolvable_or_nonlocal_span': 'The supporting text could not be reliably located.',
+        'invalid_explicit_span': 'The supplied evidence offsets do not identify the cited passage in the source text.',
         'unbound_field_value': 'Some extracted field values lack support from the corresponding source text.',
         'low_ocr_confidence_candidate': 'OCR confidence is insufficient; the original document requires review.',
     }

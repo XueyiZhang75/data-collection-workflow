@@ -128,8 +128,41 @@ def _local_span(record, entry, index):
         spans = normalized_quote_spans(text, quote)
     if isinstance(chunk.get('char_start'), int):
         spans = [(left,right) for left,right in spans if quote_within_chunk(doc, chunk, left, right, contexts)]
+    if any(key in entry for key in ('char_start', 'char_end')):
+        located = [(left, right) for left, right in spans if all(
+            type(entry[key]) is int and entry[key] == position
+            for key, position in (('char_start', left), ('char_end', right)) if key in entry)]
+        if not located:
+            return '', doc['content_hash'], {}, 'invalid_explicit_span'
+        spans = located
+    # Resolve repeated short field quotes only inside an independently located
+    # observation/row anchor. A whole page or a non-unique anchor cannot choose
+    # between separate observations, even when their dates or values coincide.
+    if len(spans) > 1 and not any(key in entry for key in ('char_start', 'char_end')):
+        anchor = str(record.get('case_span_quote') or chunk.get('row_quote') or '')
+        anchors = normalized_quote_spans(text, anchor) if anchor else []
+        anchors = [(left, right) for left, right in anchors
+                   if quote_within_chunk(doc, chunk, left, right, contexts)]
+        if len(anchors) == 1:
+            left, right = anchors[0]
+            located = [(a, b) for a, b in spans if left <= a < b <= right]
+            if len(located) == 1:
+                spans = located
+        if len(spans) > 1 and entry.get('_field_name') in {'disease', 'disease_standard_name'}:
+            # An exact disease-only structural heading belongs to this table
+            # chunk. Prefer its nearest verified occurrence to a duplicate word
+            # in the page title. This rule never resolves dates or counts.
+            headings = [scope for scope in contexts if scope.get('role') == 'heading'
+                        and scope.get('quote', '').strip() == quote.strip()
+                        and same_disease_name(quote, record.get('disease'))]
+            if headings:
+                heading = max(headings, key=lambda scope: scope['char_start'])
+                located = [(left, right) for left, right in spans
+                           if heading['char_start'] <= left < right <= heading['char_end']]
+                if len(located) == 1:
+                    spans = located
     if len(spans) != 1:
-        expected = entry.get('char_start', chunk.get('char_start'))
+        expected = entry.get('char_start')
         located = [(left,right) for left,right in spans if left == expected]
         if len(located) == 1:
             spans = located
@@ -297,7 +330,13 @@ def _patient_local_text(text, record):
 
 def _valid_calendar_value(name, value):
     token = str(value).strip()
-    # Reporting periods can retain year/month precision; event dates cannot.
+    # Observed month precision is retained as a month, never padded into a day.
+    if name != 'reporting_period' and re.fullmatch(r'\d{4}-\d{2}', token):
+        try:
+            date.fromisoformat(token + '-01')
+        except ValueError:
+            return False
+        return True
     if name == 'reporting_period':
         if re.fullmatch(r'\d{4}(?:-\d{2})?', token):
             token += '-01-01' if len(token) == 4 else '-01'
@@ -321,7 +360,13 @@ def _valid_calendar_value(name, value):
     return True
 
 
-def _role_bound_occurrence(name, value, text):
+def _role_bound_occurrence(name, value, text, *, allow_aliases=True):
+    if name == 'country' and allow_aliases:
+        from .geography import explicit_country_key, explicit_country_matches
+        aliases = [literal for literal, canonical in explicit_country_matches(text)
+                   if canonical == explicit_country_key(value) and literal.casefold() != str(value).casefold()]
+        if any(_role_bound_occurrence(name, literal, text, allow_aliases=False) for literal in aliases):
+            return True
     if name in _DATES:
         typed = typed_date_support(name, value, text)
         if typed is not None:
@@ -714,6 +759,27 @@ def _count_semantics_support(semantics, text, record):
     return True
 
 
+def _record_statistical_scope(text, record):
+    from .geography import explicit_statistical_scope
+    from .source_assertions import count_mentions
+    if '|' in text:
+        return explicit_statistical_scope(text.splitlines()[-1], country=record.get('country'))
+    expected = {(field, record[field]) for field in _COUNT_LABELS if _present(record.get(field))}
+    canonical = _canonical_metric(record.get('metric_name'), record.get('disease'))
+    if canonical and _present(record.get('metric_value')):
+        expected.add((canonical, record['metric_value']))
+    scopes = []
+    for left, right in sentence_spans(text):
+        statement = text[left:right]
+        if any((item['field'], item['value']) in expected for item in count_mentions(statement)):
+            scopes.append(explicit_statistical_scope(statement, country=record.get('country')))
+    # A neighboring province's different statistic cannot change this record's
+    # scope. Multiple same-valued statements remain ambiguous at numeric checks.
+    if scopes and all(scope and scope == scopes[0] for scope in scopes):
+        return scopes[0]
+    return {}
+
+
 def _supports(name, value, text, record):
     text = analysis_projection(text).text
     if not _present(value):
@@ -725,6 +791,12 @@ def _supports(name, value, text, record):
         return False
     if name != 'patient_links':
         text = _patient_local_text(text,record)
+    from .evidence_table_scope import table_observation_scope_support
+    temporal = table_observation_scope_support(name, value, text, record)
+    if temporal is False:
+        return False
+    if name in _DATES + ('count_semantics', 'statistical_count_type') and temporal is True:
+        return True
     table_scope = _table_scope_fields(text)
     if name in table_scope:
         if name in {'disease','disease_standard_name'}:
@@ -777,8 +849,13 @@ def _supports(name, value, text, record):
         return _clinical_support(name,value,text)
     if name == 'geographic_scope_type':
         scope = record.get('geographic_scope')
-        geographic_field = {'country':'country','national':'country','subnational':'subnational_location','local':'locality','locality':'locality'}.get(str(value))
-        return bool(geographic_field and scope and scope == record.get(geographic_field) and _contains(text,scope))
+        geographic_field = {'country':'country','national':'country','subnational':'subnational_location',
+                            'province':'subnational_location','state':'subnational_location',
+                            'local':'locality','locality':'locality'}.get(str(value))
+        from .geography import explicit_country_key
+        same_scope = (explicit_country_key(scope) == explicit_country_key(record.get('country'))
+                      if geographic_field == 'country' else str(scope).casefold() == str(record.get(geographic_field)).casefold())
+        return bool(geographic_field and scope and same_scope and _supports('geographic_scope',scope,text,record))
     if name == 'patient_links':
         identity = next((record.get(k) for k in _IDENTITY_FIELDS if record.get(k)),None)
         return bool(identity and isinstance(value,list) and value and
@@ -803,6 +880,9 @@ def _supports(name, value, text, record):
         return _count_semantics_support(str(value), text, record)
     if name in {'count_semantics','statistical_count_type'} and str(value) == 'annual':
         period = str(record.get('reporting_period') or '')
+        explicit_year = re.fullmatch(r'(?:full|calendar)\s+year\s+(\d{4})', period, re.I)
+        if explicit_year:
+            period = explicit_year[1]
         return annual_period_support(period, text)
     if name in {'count_semantics','statistical_count_type'} and str(value) in {'unspecified','unknown'}:
         return True
@@ -811,6 +891,12 @@ def _supports(name, value, text, record):
     if name == 'metric_category':
         return str(value) in _metric_families({k:v for k,v in record.items() if k != 'metric_category'})
     if name in _NUMERIC:
+        observed_scope = _record_statistical_scope(text, record)
+        if observed_scope:
+            actual = str(observed_scope['subnational_location']).casefold()
+            if (str(record.get('subnational_location') or '').casefold() != actual or
+                    (record.get('geographic_scope') and str(record['geographic_scope']).casefold() != actual)):
+                return False
         if record.get('_validated_table_grid'):
             return _grid_numeric_support(name,value,record)
         single_column = record.get('_validated_single_column')
@@ -842,6 +928,15 @@ def _supports(name, value, text, record):
             lines = text.splitlines()
             first_table = next(i for i,line in enumerate(lines) if '|' in line)
             context = '\n'.join(lines[:first_table])
+            # A metric/value row can contain a complete count assertion rather
+            # than a bare number. Keep its own label and value together; never
+            # reinterpret an ordinary geography or date column as this format.
+            last_cells = [cell.strip() for cell in lines[-1].strip('|').split('|')]
+            if (len(last_cells) == 2 and
+                    re.search(r'\b(?:cases?|deaths?|hospitalizations?)\b', last_cells[0], re.I) and
+                    re.search(NUMBER_TOKEN + r'\s+(?:confirmed\s+and\s+probable\s+)?(?:cases?|deaths?|hospitalizations?)\b', last_cells[1], re.I)):
+                local = '\n'.join((context, last_cells[0] + ': ' + last_cells[1]))
+                return _supports(name, value, local, record)
             headings = None
             binding_fields = ['disease'] + [k for k in _GEO + _DATES if _present(record.get(k))]
             for line in lines[first_table:]:
@@ -872,6 +967,12 @@ def _supports(name, value, text, record):
         statement_text = text[len(bound_scope)+1:] if bound_scope and text.startswith(bound_scope+'\n') else text
         from .geography import explicit_country_matches, explicit_country_key
         for sentence in _count_statements(statement_text,label,record):
+            observed_scope = _record_statistical_scope(sentence, {**record, metric_field: value})
+            if observed_scope:
+                actual = str(observed_scope['subnational_location']).casefold()
+                if (str(record.get('subnational_location') or '').casefold() != actual or
+                        (record.get('geographic_scope') and str(record['geographic_scope']).casefold() != actual)):
+                    continue
             country_mentions = list(explicit_country_matches(sentence))
             local_countries = {canonical for name,canonical in country_mentions
                                if _role_bound_occurrence('country',name,sentence)}
@@ -906,6 +1007,15 @@ def _supports(name, value, text, record):
                     for field in ('reporting_period','period_start_date','period_end_date','metric_period_start','metric_period_end')
                     if _present(record.get(field))):
                 continue
+            explicit_observation_fields = ('reporting_period', 'as_of_date', 'period_start_date',
+                'period_end_date', 'metric_period_start', 'metric_period_end', 'date_onset', 'date_confirmation')
+            if observation_years and not any(_present(record.get(field)) for field in explicit_observation_fields):
+                # A reporting event can occur later than the measured cases.
+                # Its date must not hide an explicit prior observation year.
+                reported_years = {str(record[field])[:4] for field in ('date_reported', 'report_date')
+                                  if _present(record.get(field))}
+                if reported_years - observation_years:
+                    continue
             local = '\n'.join((bound_scope,sentence)) if bound_scope else sentence
             binding_fields = ['disease'] + [k for k in _GEO + _DATES if _present(record.get(k))]
             from .disease_relevance import build_disease_relevance_context
@@ -927,6 +1037,27 @@ def _supports(name, value, text, record):
                 continue
             if re.search(number + r'\s+case\s+(?:investigation|report|study|series|definition|management|history)\b', sentence, re.I):
                 continue
+            from .source_assertions import count_mentions
+            if metric_field and metric_field.startswith('cases_'):
+                # Only these two omissions extend the ordinary count grammar:
+                # a combined case class, or a class inheriting "cases" from
+                # its immediately attached parent. Discovery's broad phrase
+                # matcher cannot certify arbitrary intervening nouns/diseases.
+                class_label = r'(?:confirmed|probable|suspected|confirm[e\u00e9]s?|probables?|suspects?)'
+                combined = class_label + r'(?:\s*(?:and|et|/|\+)\s*' + class_label + r')+'
+                disease_label = ('(?:' + '|'.join(re.escape(alias) for alias in
+                    disease_names(record.get('disease'))) + r')\s+') if record.get('disease') else ''
+                case_object = '(?:' + disease_label + r')?(?:cases?|cas)'
+                parent_phrase = NUMBER_TOKEN + r'\s+(?:' + class_label + r'\s+)?' + case_object
+                combined_phrase = NUMBER_TOKEN + r'\s+' + combined + r'\s+' + case_object
+                for item in count_mentions(sentence):
+                    if (item['field'] != metric_field or item['value'] != value or item['bounded'] or
+                            not _affirmative_assertion(sentence, item['char_start'], item['char_end'])):
+                        continue
+                    parent = item.get('inherited_case_parent_span')
+                    if ((parent and re.fullmatch(parent_phrase, parent, re.I)) or
+                            re.fullmatch(combined_phrase, item['span'], re.I)):
+                        return True
             patterns = (r'(?P<count>'+number+r')\s+(?:'+label+r')', r'(?:'+label+r')\s*:\s*(?P<count>'+number+r')')
             if any(_affirmative_assertion(sentence,m.start(),m.end())
                    and numeric_span_is_complete(sentence,m.start('count'),m.end('count'))
@@ -941,6 +1072,18 @@ def _supports(name, value, text, record):
         return any(_contains(text,alias) for alias in disease_names(value))
     if name == 'virus_or_syndrome' and same_disease_name(value, record.get('disease')):
         return any(_contains(text, alias) for alias in disease_names(value))
+    if name in {'country', 'geographic_scope'}:
+        from .geography import explicit_country_key
+        observed_scope = _record_statistical_scope(text, record)
+        if observed_scope:
+            if name == 'geographic_scope':
+                return str(value).casefold() == str(observed_scope['geographic_scope']).casefold()
+            if (explicit_country_key(value) == explicit_country_key(observed_scope['country'])
+                    and str(record.get('subnational_location') or '').casefold() ==
+                    str(observed_scope['subnational_location']).casefold()):
+                return True
+        if name == 'geographic_scope' and str(record.get('geographic_scope_type')) in {'country', 'national'}:
+            return _role_bound_occurrence('country', value, text)
     if name in _DATES or name in _GEO:
         return _role_bound_occurrence(name,value,text)
     return _contains(text,value)
@@ -977,7 +1120,7 @@ def assess_record_evidence(record, *, contract, evidence_index):
         entry = provenance.get(name) or {}
         if not isinstance(entry, dict):
             entry = {}
-        text, digest, locator, error = _local_span(record,entry,evidence_index)
+        text, digest, locator, error = _local_span(record,{**entry, '_field_name': name},evidence_index)
         bound_scope = '\n'.join(s['quote'] for s in locator.get('bound_context_spans') or [] if s.get('role') in {'heading','table_caption','table_note'})
         source_record = {**record, '_validated_bound_scope':bound_scope}
         if not error:
@@ -1033,7 +1176,7 @@ def assess_record_evidence(record, *, contract, evidence_index):
             closure['quote'], True, ''))
     record_scope = contract.get('record_scope') if isinstance(contract.get('record_scope'),dict) else contract
     scoped_record = {**record, '_validated_outbreak_closure_date':closure['value'] if closure else None}
-    reasons.extend(_constraint_reasons(scoped_record, record_scope))
+    reasons.extend(_constraint_reasons(scoped_record, record_scope, allow_overlap=True))
     status = 'candidate' if reasons else 'qualified'
     if not numeric and not identity and reasons:
         kind = ProductKind.UNRESOLVED
@@ -1122,6 +1265,18 @@ def qualify_records(records, *, contract, evidence_index):
         record = prepare_record_evidence(record, evidence_index=evidence_index)
         q = assess_record_evidence(record,contract=contract,evidence_index=evidence_index)
         qualification = q.to_dict()
+        year = str(record.get('reporting_period') or '')
+        if q.status == 'qualified' and re.fullmatch(r'\d{4}', year) and not any(
+                record.get(key) for key in ('metric_period_start', 'metric_period_end',
+                                            'period_start_date', 'period_end_date')):
+            quotes = [item.quote for item in q.field_evidence if item.supported and item.field in _NUMERIC]
+            annual = any(annual_period_support(year, quote) and re.search(
+                r'\b(?:full|entire|calendar)\s+year\s+(?:of\s+)?' + year + r'\b', quote, re.I)
+                for quote in quotes)
+            qualification['temporal_extent'] = 'explicit_annual_period' if annual else 'year_label_only'
+        record_scope = contract.get('record_scope') if isinstance(contract.get('record_scope'), dict) else contract
+        if q.status == 'qualified' and all(_period(record)) and _constraint_reasons(record, record_scope):
+            qualification['task_temporal_relation'] = 'overlaps_task_boundary'
         if any(entry.field == 'outbreak_closure_date' and entry.supported for entry in q.field_evidence):
             qualification['temporal_basis'] = 'outbreak_closure_event'
         from .outbreak_closure import closure_context_evidence
@@ -1137,6 +1292,10 @@ def qualify_records(records, *, contract, evidence_index):
         elif q.product_kind == ProductKind.UNRESOLVED:
             groups['unresolved_records'].append(row)
         if q.status == 'candidate' and not record.get('recovered_from_record_id'):
+            recovered = _recover_independent_fields(record, q, contract=contract, evidence_index=evidence_index)
+            if recovered and recovered['record_id'] not in existing:
+                pending.append(recovered)
+                existing.add(recovered['record_id'])
             recovered = recover_closed_outbreak_observation(record, evidence_index=evidence_index)
             if recovered and recovered['record_id'] not in existing:
                 # Only a separately qualifying view is emitted. Failed repair
@@ -1146,6 +1305,45 @@ def qualify_records(records, *, contract, evidence_index):
                     pending.append(recovered)
                     existing.add(recovered['record_id'])
     return groups
+
+
+def _recover_independent_fields(record, qualification, *, contract, evidence_index):
+    """Emit a rechecked view with unsupported optional descriptors set aside.
+
+    The original candidate remains available. Scope, counts, precision, dates,
+    identities and evidence-integrity failures can never be erased to pass.
+    """
+    optional = {'virus_or_syndrome', 'pathogen_or_syndrome', 'age', 'gender',
+                'nationality', 'outcome', 'symptoms', 'hospitalized',
+                'intensive_care', 'isolated', 'occupation_or_role',
+                'confirmation_method', 'accession_id'}
+    failed = [item for item in qualification.field_evidence if not item.supported]
+    if (not failed or any(item.field not in optional or item.reason != 'unbound_field_value'
+                          for item in failed)):
+        return None
+    if set(qualification.reasons) != {f'{item.field}:{item.reason}' for item in failed}:
+        return None
+    row = dict(record)
+    provenance = dict(_provenance(row))
+    actions = list(row.get('evidence_normalization_actions') or [])
+    for item in failed:
+        actions.append({'field': item.field, 'original_value': item.value,
+                        'original_provenance': provenance.get(item.field),
+                        'reason': 'unsupported_optional_field_set_aside',
+                        'document_hash': item.document_hash, 'locator': item.locator,
+                        'quote': item.quote})
+        row[item.field] = None
+        provenance.pop(item.field, None)
+    row['field_provenance_json'] = (json.dumps(provenance, ensure_ascii=False)
+        if isinstance(record.get('field_provenance_json'), str) else provenance)
+    row['evidence_normalization_actions'] = actions
+    row['recovered_from_record_id'] = record.get('record_id')
+    signature = json.dumps([record.get('record_id'), actions], sort_keys=True, default=str)
+    row['record_id'] = 'rec_supported_' + hashlib.sha256(signature.encode()).hexdigest()[:24]
+    row.pop('evidence_qualification', None)
+    if assess_record_evidence(row, contract=contract, evidence_index=evidence_index).status != 'qualified':
+        return None
+    return row
 
 
 def qualified_coverage(requirements, records):
@@ -1172,6 +1370,15 @@ def qualified_coverage(requirements, records):
                 continue
             matched.append(record.get("record_id"))
             left,right = _period(record)
+            if q.get('temporal_extent') == 'year_label_only':
+                left = right = None
+            # A month-precision event/as-of date is an uncertain point within
+            # that month, not proof of observations throughout the month.
+            if not record.get('reporting_period') and not any(record.get(k) for k in
+                    ('metric_period_start', 'period_start_date', 'event_start_date')):
+                if any(re.fullmatch(r'\d{4}-\d{2}', str(record.get(k) or '')) for k in
+                       ('as_of_date', 'date_onset', 'date_confirmation', 'date_reported', 'report_date')):
+                    left = right = None
             # A source-bound as-of cutoff bounds observed coverage, not admission.
             # Publication/report dates never supply this limit.
             if right and record.get('as_of_date'):
@@ -1214,6 +1421,9 @@ def _period_label_bounds(label):
     from .source_assertions import _DATE, _INTERVAL, _date_parts, _fold, date_intervals
 
     token = str(label).strip()
+    explicit_year = re.fullmatch(r'(?:full|calendar)\s+year\s+(\d{4})', token, re.I)
+    if explicit_year:
+        token = explicit_year[1]
     try:
         if re.fullmatch(r"\d{4}", token):
             return date(int(token), 1, 1), date(int(token), 12, 31)
@@ -1253,6 +1463,8 @@ def _period(record):
         # A stated observation period cannot borrow a different reporting year.
         return _period_label_bounds(period)
     anchor = next((record.get(k) for k in ('as_of_date','date_onset','date_confirmation','date_reported','report_date') if record.get(k)), None)
+    if re.fullmatch(r'\d{4}-\d{2}', str(anchor or '')):
+        return _period_label_bounds(anchor)
     try:
         value = date.fromisoformat(str(anchor))
         return value, value
@@ -1311,7 +1523,7 @@ def _contract_location_matches(record, target):
     return False
 
 
-def _constraint_reasons(record, contract):
+def _constraint_reasons(record, contract, *, allow_overlap=False):
     from .geography import explicit_country_key
     reasons = []
     for metric in contract.get('required_metric_fields') or []:
@@ -1340,24 +1552,32 @@ def _constraint_reasons(record, contract):
             start = end = date.fromisoformat(record['_validated_outbreak_closure_date'])
         except ValueError:
             pass
-    if contract.get('year') is not None and (not start or not end or str(start.year) != str(contract['year']) or str(end.year) != str(contract['year'])):
+    year_matches = (start and end and (str(start.year) <= str(contract.get('year')) <= str(end.year)
+                    if allow_overlap else str(start.year) == str(end.year) == str(contract.get('year'))))
+    if contract.get('year') is not None and not year_matches:
         reasons.append('year:contract_mismatch')
     if contract.get('week') is not None and not any(contract.get(k) for k in ('period_start','reporting_period_start')):
         reasons.append('week:unresolved_constraint')
     for key in ('task','structured_task','scope','task_scope','time_window'):
         if isinstance(contract.get(key),dict):
-            reasons.extend(_constraint_reasons(record,contract[key]))
+            reasons.extend(_constraint_reasons(record,contract[key], allow_overlap=allow_overlap))
     for key in ('start_date','task_period_start','period_start','reporting_period_start','metric_period_start'):
         if _present(contract.get(key)):
             try:
-                if start is None or start < date.fromisoformat(str(contract[key])):
+                boundary = date.fromisoformat(str(contract[key]))
+                if allow_overlap and (start is None or end is None):
+                    reasons.append(key+':unresolved_observation_period')
+                elif (end if allow_overlap else start) is None or (end if allow_overlap else start) < boundary:
                     reasons.append(key+':contract_mismatch')
             except ValueError:
                 reasons.append(key+':unresolved_constraint')
     for key in ('end_date','task_period_end','period_end','reporting_period_end','metric_period_end'):
         if _present(contract.get(key)):
             try:
-                if end is None or end > date.fromisoformat(str(contract[key])):
+                boundary = date.fromisoformat(str(contract[key]))
+                if allow_overlap and (start is None or end is None):
+                    reasons.append(key+':unresolved_observation_period')
+                elif (start if allow_overlap else end) is None or (start if allow_overlap else end) > boundary:
                     reasons.append(key+':contract_mismatch')
             except ValueError:
                 reasons.append(key+':unresolved_constraint')
@@ -1366,6 +1586,6 @@ def _constraint_reasons(record, contract):
             if not _metric_families(record).intersection(set(contract[key])):
                 reasons.append(key+':contract_mismatch')
     requirements = contract.get('requirements') or []
-    if requirements and not any(not _constraint_reasons(record,r) for r in requirements):
+    if requirements and not any(not _constraint_reasons(record,r, allow_overlap=allow_overlap) for r in requirements):
         reasons.append('requirements:no_matching_evidence_scope')
     return reasons

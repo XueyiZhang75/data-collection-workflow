@@ -8,7 +8,7 @@ import pytest
 from data_collection_workflow.evidence_qualification import build_evidence_index, qualify_records
 
 
-def _state(text="France reported 12 confirmed measles cases during 2024.", **fields):
+def _state(text="France reported 12 confirmed measles cases over the full year 2024.", **fields):
     digest = hashlib.sha256(text.encode()).hexdigest()
     record = dict(record_id="r", source_id="s", chunk_id="c", disease="measles",
                   country="France", reporting_period="2024", cases_confirmed=12, **fields)

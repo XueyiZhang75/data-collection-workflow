@@ -44,7 +44,7 @@ def test_backlog_cannot_starve_affordable_discovery(tmp_path):
 
 
 def evidence_state():
-    text='Measles in France: 12 confirmed cases during 2024.'
+    text='Measles in France: 12 confirmed cases over the full year 2024.'
     digest=hashlib.sha256(text.encode()).hexdigest()
     return {'structured_task':{'disease':'measles','location':'France'},
             'source_coverage_requirements':[{'requirement_id':'annual','disease':'measles','country':'France','reporting_period':'2024'}],

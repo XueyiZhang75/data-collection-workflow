@@ -285,3 +285,71 @@ def explicit_country_matches(text):
         if re.search(r'\b(?:state|province|city|district|county)\s+of\s*$',text[max(0,match.start()-50):match.start()],re.I):
             continue
         yield name, names[key]
+
+
+CANADIAN_PROVINCES = (
+    "Alberta", "British Columbia", "Manitoba", "New Brunswick",
+    "Newfoundland and Labrador", "Northwest Territories", "Nova Scotia",
+    "Nunavut", "Ontario", "Prince Edward Island", "Quebec", "Saskatchewan", "Yukon",
+)
+
+
+def explicit_statistical_scope(text, *, country=None):
+    """Bind a named province to its count; parent country needs source evidence.
+
+    A travel origin, institution, or list of contributing provinces does not
+    establish the statistical scope. No task or publisher metadata is used.
+    """
+    from .source_assertions import count_mentions, sentence_spans
+    if country and explicit_country_key(country) != explicit_country_key("Canada"):
+        return {}
+    matches = []
+    for canonical in CANADIAN_PROVINCES:
+        label = r"Qu[e\u00e9]bec" if canonical == "Quebec" else re.escape(canonical)
+        for match in re.finditer(r"(?<!\w)" + label + r"(?!\w)", text, re.I):
+            # A row label binds the row's values independently of document scope.
+            row = text.strip().strip("|").strip()
+            cells = [cell.strip() for cell in row.split("|")]
+            if (len(cells) > 1 and re.fullmatch(label, cells[0], re.I)
+                    and any(re.search(r"\d", cell) for cell in cells[1:])):
+                matches.append((canonical, match.group()))
+                continue
+            left, right = next(((a, b) for a, b in sentence_spans(text)
+                                if a <= match.start() < b), (0, len(text)))
+            sentence = text[left:right]
+            if not count_mentions(sentence):
+                continue
+            named_provinces = {name for name in CANADIAN_PROVINCES
+                               if re.search(r"(?<!\w)" + (r"Qu[e\u00e9]bec" if name == "Quebec" else re.escape(name)) + r"(?!\w)", sentence, re.I)}
+            if len(named_provinces) > 1:
+                continue
+            before, after = text[left:match.start()], text[match.end():right]
+            inclusion = re.search(r",\s*(?:including|of\s+which|dont|y\s+compris)\b", before, re.I)
+            if inclusion and count_mentions(before[:inclusion.start()]):
+                continue
+            actor_location = re.search(r"\b(?:University|Hospital|Ministry|Department|Government|Laboratory|Agency|Institute|Office|Center|Centre)\b[^.!?;]*\b(?:in|of)\s*$", before, re.I)
+            if actor_location and re.match(r"\s+(?:reported|reports|recorded|identified|confirmed|published)\b", after, re.I):
+                continue
+            if re.search(r"\b(?:travel(?:led|ed)?|visited|return(?:ed)?|imported|exposed|exposure)\b[^.!?;]*$", before, re.I):
+                continue
+            if re.search(r"\b(?:University|Hospital|Ministry|Department|Government)\s+of\s+$", before, re.I):
+                continue
+            if re.match(r"\s+(?:Health|University|Hospital|Ministry|government)\b", after, re.I):
+                continue
+            local = bool(re.search(r"\b(?:in|across|within)\s+(?:the province of\s+)?$", before, re.I)
+                         or re.match(r"\s+(?:reported|reports|recorded|recording|had|has|identified|confirmed)\b", after, re.I))
+            if local:
+                matches.append((canonical, match.group()))
+    if len({name for name, _ in matches}) != 1:
+        return {}
+    canonical, literal = matches[0]
+    parent = {key for _, key in explicit_country_matches(text)}
+    result = {"country": None, "subnational_location": literal,
+              "geographic_scope": literal, "geographic_scope_type": "subnational",
+              "location_type": "subnational", "geography_text_span": literal,
+              "geography_inference_method": "explicit_province_scope",
+              "geography_inference_warning": False}
+    if parent == {explicit_country_key("Canada")}:
+        result["country"] = "Canada"
+        result["geography_inference_method"] = "explicit_province_parent_hierarchy"
+    return result

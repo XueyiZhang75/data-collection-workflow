@@ -205,11 +205,13 @@ def _same_report_series(parent_url, next_url):
 
 _UTILITY_ACTION = re.compile(
     r'\b(?:(?:give|send|submit|provide)\s+(?:us\s+)?feedback|tell us what you think|'
+    r'report\s+(?:(?:a|an|the)\s+)?(?:technical\s+)?(?:issue|problem|bug)|'
     r'(?:take|complete|answer)\s+(?:our |the |a )?survey|share (?:this|the|on|via)|'
     r'(?:find|search|look up)\s+(?:this |the |a )?(?:reference|citation)|google scholar)\b', re.I)
 _UTILITY_PATH = re.compile(
     r'(?:^|/)(?:feedback|surveys?|share|sharing|login|sign[-_]?in|privacy|cookies?|'
-    r'subscribe|contact|scholar_lookup|citation[-_]?lookup)(?:/|$)', re.I)
+    r'subscribe|contact(?:[-_]?us|[-_]?support)?|help(?:centre|center)?|comments?|'
+    r'scholar_lookup|citation[-_]?lookup)(?:/|$)', re.I)
 
 
 def _utility_link(url, link, kind):
@@ -468,11 +470,18 @@ def resource_source_entry(candidate, *, parent, depth, state=None):
     host = urlsplit(url).hostname or ''
     identity = lookup_source_identity_registry(host) or {}
     provenance = candidate.get('provenance') or {}
-    # The nearest heading and this anchor's own row/sentence are discovery
-    # evidence. Broader parent titles, publisher identity and URLs are not.
-    snippets = [str(provenance.get('heading') or '').strip(),
-                str(provenance.get('anchor_context') if 'anchor_context' in provenance
-                    else provenance.get('context') or '').strip()]
+    # A bounded attachment/product relationship can bind its local heading.
+    # A disease-only article link has no such relationship: a parent heading
+    # cannot turn that separate article into a Canadian observation report.
+    reasons = set(candidate.get('selection_reasons') or [])
+    bound_resource = bool(reasons & {'scoped_data_availability_link',
+        'scoped_task_attachment', 'scoped_task_product',
+        'explicit_report_series_version', 'same_report_series_pagination'})
+    snippets = ([str(provenance.get('heading') or '').strip(),
+                 str(provenance.get('anchor_context') if 'anchor_context' in provenance
+                     else provenance.get('context') or '').strip()]
+                if bound_resource else [str(provenance.get(key) or '').strip()
+                                        for key in ('text', 'title', 'aria_label')])
     result = {
         'source_id': 'resource_' + hashlib.sha256(url.encode()).hexdigest()[:16],
         'url': url, 'canonical_url': url, 'domain': host,

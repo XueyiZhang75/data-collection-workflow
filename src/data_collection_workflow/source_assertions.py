@@ -160,7 +160,16 @@ def numeric_span_is_complete(text, start, end):
     return not re.match(_GROUP_SEPARATOR + r"+\d", text[end:])
 
 
+def combined_case_definition(text):
+    """Return the literal combined case-class label for a single numerator."""
+    labels = r"(?:confirmed|probable|suspected|confirm[e\u00e9]s?|probables?|suspects?)"
+    match = re.search(r"\b" + labels + r"(?:\s*(?:and|et|/|\+)\s*" + labels + r")+\b", text, re.I)
+    return match.group() if match else None
+
+
 def case_bucket(text):
+    if combined_case_definition(text):
+        return "cases_unspecified"
     if re.search(r"\b(?:confirmed|confirm[e\u00e9]s?|laboratory|laboratoire)\b", text, re.I):
         return "cases_confirmed"
     if re.search(r"\bprobables?\b", text, re.I):
@@ -216,7 +225,10 @@ def contextual_number_role(text, start, end):
 
 # Explicit counted objects, not page topics. A disease vaccination article can
 # contain both disease cases and adverse-event cases with different numerators.
-_CASE_OBJECT_MODIFIER = r"(?:(?:confirmed|suspected|reported|serious|severe|new|total)\s+)*"
+_CASE_OBJECT_MODIFIER = (
+    r"(?:(?:confirmed|probable|suspected)(?:\s*(?:and|or|/|\+)\s*"
+    r"(?:confirmed|probable|suspected))*\s+|(?:reported|serious|severe|new|total)\s+)*"
+)
 _ADVERSE_OBJECT = r"(?:(?:serious|severe)\s+)?adverse\s+(?:events?|reactions?|effects?)"
 _NON_DISEASE_CASE_LABEL = (
     _CASE_OBJECT_MODIFIER + r"(?:cases?\s+of\s+" + _ADVERSE_OBJECT +
@@ -273,6 +285,8 @@ def count_mentions(text):
     for kind, pattern in patterns:
         for match in pattern.finditer(normalized):
             left, right = match.span()
+            if re.search(r"\n\s*\n", normalized[left:right]):
+                continue
             if contextual_number_role(normalized, *match.span("number")):
                 continue
             if left and (normalized[left - 1].isalnum() or normalized[left - 1] in ".,"):
@@ -297,6 +311,29 @@ def count_mentions(text):
                 "span": text[start:end], "sentence": text[s_start:s_end],
                 "char_start": start, "char_end": end,
                 "bounded": bounded_count(normalized, left, left + len(match.group("number")))})
+    # An immediately attached parenthesis may omit the repeated object
+    # "cases". The explicit parent case phrase supplies that object; a death
+    # or test total never does, nor does "confirmed deaths" within the bracket.
+    inherited = []
+    classification = re.compile(
+        r"(?<!\w)(?P<number>" + NUMBER_TOKEN + r")\s+"
+        r"(?P<label>confirmed|probable|suspected|confirm[e\u00e9]s?|probables?|suspects?)"
+        r"(?:\s+(?:cases?|cas))?(?=\s*(?:[,;]|and\b|et\b|$))", re.I)
+    for parent in result:
+        if not parent["field"].startswith("cases_"):
+            continue
+        bracket = re.match(r"\s*\((?P<body>[^()]*)\)", text[parent["char_end"]:])
+        if not bracket:
+            continue
+        offset = parent["char_end"] + bracket.start("body")
+        for match in classification.finditer(bracket["body"]):
+            start, end = offset + match.start(), offset + match.end()
+            inherited.append({"field": case_bucket(match["label"]),
+                "value": number_value(match["number"]), "span": text[start:end],
+                "sentence": parent["sentence"], "char_start": start, "char_end": end,
+                "inherited_case_parent_span": parent["span"],
+                "bounded": bounded_count(text, start, start + len(match["number"]))})
+    result.extend(inherited)
     return result
 
 
@@ -457,13 +494,14 @@ def typed_date_support(name, value, text):
         if requested:
             return bool(source_periods and any(period in source_periods for period in requested))
         return None
-    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", token):
+    month_precision = bool(re.fullmatch(r"\d{4}-\d{2}", token))
+    if not month_precision and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", token):
         return None
     try:
-        expected = date.fromisoformat(token)
+        expected = date.fromisoformat(token + '-01' if month_precision else token)
     except ValueError:
         return False
-    target = (expected.year, expected.month, expected.day)
+    target = (expected.year, expected.month, None if month_precision else expected.day)
     if name in {"metric_period_start", "period_start_date"} and source_periods:
         return any(first == target for first, _ in source_periods)
     if name in {"metric_period_end", "period_end_date"} and source_periods:
@@ -487,16 +525,17 @@ def typed_date_support(name, value, text):
             left, right = sentence_bounds(folded, match.start(), match.end(), semicolons=True)
             before = folded[left:match.start()].split('\n')[-1]
             after = folded[match.end():right].split('\n')[0]
-            direct = r"\b(?:reported|report date|date reported|date de signalement|date de notification)\s*(?:(?:on|le)\s+|[:=]\s*)?" + weekday + r"$"
+            preposition = r'(?:in|during|en)' if month_precision else r'(?:on|le)'
+            direct = r"\b(?:reported|report date|date reported|date de signalement|date de notification)\s*(?:" + preposition + r"\s+|[:=]\s*)?" + weekday + r"$"
             if re.search(direct, before):
                 return True
-            if not re.search(r"\b(?:on|le)\s+" + weekday + r"$", before):
+            if not re.search(r"\b" + preposition + r"\s+" + weekday + r"$", before):
                 continue
             verbs = list(re.finditer(report_verb, before))
             if verbs and not re.search(competing_role, before[verbs[-1].end():]):
                 return True
             following_report = re.search(report_verb, after)
-            if (re.fullmatch(r"\s*(?:on|le)\s+" + weekday, before) and following_report
+            if (re.fullmatch(r"\s*" + preposition + r"\s+" + weekday, before) and following_report
                     and not re.search(competing_role, after[:following_report.start()])):
                 return True
         return False

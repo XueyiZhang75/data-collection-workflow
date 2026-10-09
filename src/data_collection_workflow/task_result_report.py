@@ -111,6 +111,8 @@ def _location_matches(row, task, *, exact):
 
 
 def _full_period(row, task):
+    if (row.get('evidence_qualification') or {}).get('temporal_extent') == 'year_label_only':
+        return False
     start, end = str(task.get('start_date') or ''), str(task.get('end_date') or '')
     if not start or not end:
         return False
@@ -535,6 +537,9 @@ def _supported_results(records, task, field):
         else:
             kind = 'reported_period'
             note = 'This value applies only to the stated reporting period; it is not a cumulative or full-period total.'
+        if (row.get('evidence_qualification') or {}).get('temporal_extent') == 'year_label_only':
+            window = {**window, 'period_start': None, 'period_end': window.get('as_of_date')}
+            note += ' The source supplies a year label but does not establish coverage of the entire calendar year.'
         results.append({'result_kind': kind, 'value': _value(row, field), 'qualifier': qualifier,
                         'record_id': row.get('record_id'), 'recovered_from_record_id': row.get('recovered_from_record_id'),
                         'scope': row.get('geographic_scope') or row.get('country'),
@@ -544,13 +549,14 @@ def _supported_results(records, task, field):
                         'closure_date_source': anchor if closure_sources else None,
                         'sources': closure_sources or [source], 'boundary_note': note})
     results.sort(key=lambda item: (item['result_kind'] == 'full_period_total',
-                                 _period_bounds(item['closure_date'] if item['temporal_basis'] == 'outbreak_closure_event'
-                                                else item['period_end'])[1],
+                                 (_period_bounds(item['closure_date'] if item['temporal_basis'] == 'outbreak_closure_event'
+                                                else item['period_end']) or (date.min, date.min))[1],
                                  _period_bounds(item['period_start'])[0] if item['period_start'] else date.min,
                                  item['result_kind'] == 'completed_outbreak_total'), reverse=True)
     selected = results[0] if results else None
     comparable = [item for item in results if selected and all(item[key] == selected[key] for key in
-                  ('result_kind', 'period_start', 'period_end', 'scope', 'closure_date'))]
+                  ('result_kind', 'period_start', 'period_end', 'scope', 'closure_date'))
+                  and (item['period_end'] is not None or item['period'] == selected['period'])]
     conflict = len({(item['value'], item['qualifier']) for item in comparable}) > 1
     return results, None if conflict else selected, conflict
 

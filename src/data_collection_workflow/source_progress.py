@@ -3,7 +3,7 @@
 Discovery counts describe candidates, not relevant-source recall. Qualification
 comes from the shared evidence assessor; this module never reclassifies facts.
 """
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 
 def _readable(doc):
@@ -51,6 +51,61 @@ def unresolved_source_documents(documents, source_groups):
     return result
 
 
+def _chunk_skip_reason(chunk):
+    from .nodes.extraction import extraction_skip_reason
+    return ("no_target_data" if chunk.get("contains_target_data") is False else
+            "disease_not_eligible" if chunk.get("extraction_eligible_for_task_disease") is False else
+            "disease_relevance_unconfirmed" if chunk.get("disease_relevance_status") not in
+            {None, "", "target_disease_match"} else extraction_skip_reason(chunk))
+
+
+def _recorded_extraction_chunks(package, state, chunks):
+    """Attach saved diagnostics without reopening the runtime or changing input."""
+    summary = state.get('structured_extraction_summary')
+    if summary is None:
+        summary = package.get('structured_extraction_summary') or {}
+    failed = set(map(str, summary.get('failed_chunk_ids') or []))
+    current_failure_inventory = isinstance(summary.get('failed_chunk_ids'), (list, tuple, set))
+    empty = {str(row.get('chunk_id')): row for row in summary.get('llm_empty_output_diagnostics') or []
+             if isinstance(row, dict) and row.get('chunk_id')}
+    observed = {str(row.get('chunk_id') or row.get('supporting_chunk_id') or row.get('evidence_chunk_id'))
+                for container in (package, state)
+                for name in ('raw_records', 'final_dataset', 'candidate_records', 'context_records')
+                for row in container.get(name) or [] if isinstance(row, dict)}
+    result = {}
+    for key, original in chunks.items():
+        row = dict(original)
+        if key in failed:
+            row.update(extraction_status='failed', extraction_reason='extraction_attempt_failed')
+        elif key in observed and (row.get('extraction_status') != 'failed' or current_failure_inventory):
+            row.update(extraction_status='completed', extraction_reason='extracted_observations_not_in_output')
+        elif key in empty and (row.get('extraction_status') not in {'completed', 'failed'} or
+                              (row.get('extraction_status') == 'failed' and current_failure_inventory)):
+            row.update(extraction_status='attempted_empty',
+                       extraction_reason=empty[key].get('reason') or 'empty_output_recorded')
+        result[key] = row
+    return result
+
+
+def _extraction_outcome_counts(chunks, attempted):
+    from .evidence_qualification import evidence_qualification_enabled
+    evidence_mode = evidence_qualification_enabled()
+    counts = Counter()
+    for chunk in chunks:
+        status = chunk.get('extraction_status')
+        if status in {'failed', 'completed', 'attempted_empty'}:
+            outcome = {'attempted_empty': 'empty'}.get(status, status)
+        elif str(chunk.get('chunk_id')) in attempted:
+            # An attempt ID alone does not establish successful empty output.
+            outcome = 'attempted_unknown'
+        elif status == 'skipped' or (evidence_mode and _chunk_skip_reason(chunk)):
+            outcome = 'skipped'
+        else:
+            outcome = 'pending'
+        counts[outcome] += 1
+    return dict(counts)
+
+
 def _processing_projection(group, docs, jobs, chunks, attempted, evidence):
     unresolved = unresolved_source_documents(docs, [{"source_ids": sorted(group["ids"]), "canonical_urls": sorted(group["urls"])}])
     complete = [doc for doc in docs if _readable(doc) and not doc.get("acquisition_incomplete")
@@ -72,15 +127,11 @@ def _processing_projection(group, docs, jobs, chunks, attempted, evidence):
         evidence = evidence_qualification_enabled()
         eligible, skipped = chunks, set()
         if evidence:
-            from .nodes.extraction import extraction_skip_reason
             eligible = []
             for chunk in chunks:
                 # Match the recovery planner's task flags before the common
                 # gate; no document index or full-text reconstruction is needed.
-                reason = ("no_target_data" if chunk.get("contains_target_data") is False else
-                          "disease_not_eligible" if chunk.get("extraction_eligible_for_task_disease") is False else
-                          "disease_relevance_unconfirmed" if chunk.get("disease_relevance_status") not in
-                          {None, "", "target_disease_match"} else extraction_skip_reason(chunk))
+                reason = _chunk_skip_reason(chunk)
                 if reason:
                     skipped.add(reason)
                 else:
@@ -89,6 +140,16 @@ def _processing_projection(group, docs, jobs, chunks, attempted, evidence):
                    and chunk.get("extraction_status") not in {"completed", "skipped", "attempted_empty", "failed"}]
         if pending:
             return "awaiting_extraction", "unprocessed_evidence_chunks"
+        failed = [chunk for chunk in chunks if chunk.get('extraction_status') == 'failed']
+        if failed:
+            return 'extraction_failed', '; '.join(sorted({str(chunk.get('extraction_reason') or
+                                                             'extraction_attempt_failed') for chunk in failed}))
+        empty = [chunk for chunk in chunks if chunk.get('extraction_status') == 'attempted_empty']
+        if empty:
+            return 'extracted_without_evidence', '; '.join(sorted({str(chunk.get('extraction_reason') or
+                                                                     'empty_output_recorded') for chunk in empty}))
+        if any(chunk.get('extraction_reason') == 'extracted_observations_not_in_output' for chunk in chunks):
+            return 'extracted_without_evidence', 'extracted_observations_not_in_output'
         if evidence and chunks and not eligible:
             return "readable", "no_extraction_eligible_spans: " + ", ".join(sorted(skipped))
         if evidence and eligible and not any(str(chunk.get("chunk_id")) in attempted or
@@ -123,6 +184,7 @@ def build_source_progress(package, state):
     documents = list(state.get('documents') or package.get('documents') or [])
     chunks = {str(row.get('chunk_id') or row.get('evidence_span_id')): row
               for row in state.get('evidence_chunks') or package.get('evidence_chunks') or []}
+    chunks = _recorded_extraction_chunks(package, state, chunks)
     # Collapse canonical URLs and explicit source ID aliases, including chains.
     parents = {}
     def find(key):
@@ -196,12 +258,16 @@ def build_source_progress(package, state):
         q, c, context = (sorted(records[kind][key]) for kind in ('qualified', 'candidate', 'context'))
         evidence = 'qualified' if q else 'candidate_only' if c else 'context_only' if context else 'none'
         group_chunks = [chunk for chunk in chunks.values() if str(chunk.get('source_id')) in group['ids']]
+        outcome_counts = _extraction_outcome_counts(group_chunks, attempted)
+        outcome = next((name for name in ('failed', 'pending', 'empty', 'attempted_unknown', 'completed', 'skipped')
+                        if outcome_counts.get(name)), 'not_recorded')
         status, reason = _processing_projection(group, docs, jobs_by_group[key], group_chunks, attempted, evidence)
         acquisition = 'readable' if readable else 'failed_or_unreadable' if status == 'acquisition_failed' else 'not_fetched'
         prior_failures = sum(not _readable(doc) and not _budget_deferred(doc) for doc in docs)
         rows.append({'source_ids': sorted(group['ids']), 'canonical_url': min(group['urls'], default=''),
                      'canonical_urls': sorted(group['urls']),
                      'evidence_status': evidence, 'processing_status': status, 'processing_reason': reason,
+                     'extraction_outcome': outcome, 'extraction_outcome_counts': outcome_counts,
                      'prior_acquisition_failures': prior_failures,
                      'qualified_record_ids': q, 'candidate_record_ids': c, 'context_record_ids': context,
                      'coverage_requirement_ids': sorted({str(requirement['requirement_id']) for requirement in requirements
@@ -217,6 +283,11 @@ def build_source_progress(package, state):
             'screening_excluded_sources': sum(row['processing_status'] == 'screening_excluded' for row in rows),
             'not_attempted_sources': sum(row['processing_status'] == 'not_attempted' for row in rows),
             'awaiting_extraction_sources': sum(row['processing_status'] == 'awaiting_extraction' for row in rows),
+            'extraction_empty_sources': sum(bool(row['extraction_outcome_counts'].get('empty')) for row in rows),
+            'extraction_failed_sources': sum(bool(row['extraction_outcome_counts'].get('failed')) for row in rows),
+            'extraction_skipped_sources': sum(row['extraction_outcome'] == 'skipped' for row in rows),
+            'missing_extraction_evidence_sources': sum(row['extraction_outcome'] in {'not_recorded', 'attempted_unknown'}
+                                                      and row['acquisition_status'] == 'readable' for row in rows),
             'acquisition_incomplete_sources': sum(row['processing_status'] == 'acquisition_incomplete' for row in rows),
             'qualified_evidence_sources': sum(row['evidence_status'] == 'qualified' for row in rows),
             'candidate_only_sources': sum(row['evidence_status'] == 'candidate_only' for row in rows),
@@ -247,5 +318,9 @@ def source_progress_notice(manifest):
             f"budget-deferred sources: {progress.get('budget_deferred_sources', 0)}; "
             f"screening-excluded sources: {progress.get('screening_excluded_sources', 0)}; "
             f"awaiting extraction: {progress.get('awaiting_extraction_sources', 0)}; "
+            f"recorded empty extraction results: {progress.get('extraction_empty_sources', 0)}; "
+            f"extraction failures: {progress.get('extraction_failed_sources', 0)}; "
+            f"extraction skipped: {progress.get('extraction_skipped_sources', 0)}; "
+            f"readable sources with unrecorded extraction outcomes: {progress.get('missing_extraction_evidence_sources', 0)}; "
             f"acquisition incomplete: {progress.get('acquisition_incomplete_sources', 0)}. "
             'Discovery counts are not task-match counts or source recall; screening labels and actual evidence contribution are separate.')

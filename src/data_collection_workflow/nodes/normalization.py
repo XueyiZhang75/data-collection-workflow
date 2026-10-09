@@ -453,6 +453,16 @@ def _normalize_source_type(
     for allowed in policy.allowed_source_types:
         if allowed.lower() == lowered:
             return allowed, ["normalized_source_type_case"], []
+    # A category alias standardizes a supplied label; it does not verify the
+    # source's identity. In particular, academic-or-peer-reviewed is ambiguous.
+    if lowered == "unknown":
+        return "unknown", [], ["unknown_source_type"]
+    if lowered == "academic_or_peer_reviewed_source":
+        return "academic_or_peer_reviewed_source", [], ["unverified_source_type_identity"]
+    aliases = {key.lower(): target for key, target in policy.source_type_aliases.items()}
+    canonical = aliases.get(lowered)
+    if canonical in policy.allowed_source_types:
+        return canonical, ["normalized_source_type_alias"], []
     return raw, [], ["unrecognized_source_type"]
 
 
@@ -668,8 +678,17 @@ def _normalize_record(
     if evidence_qualification_enabled():
         # Preserve observation facts and precision before legacy inference.
         # Qualification, not normalization, decides whether a fact is supported.
+        explicit_country = _blank_to_none(record.get("country"))
+        canonical_country = normalized.get("country")
         for key in ("case_definition", "country", "subnational_location", "locality", "geographic_scope", "reporting_period", "as_of_date", "event_start_date", "event_end_date", "metric_period_start", "metric_period_end"):
             normalized[key] = record.get(key)
+        # Normalize case without changing an established short/long country
+        # spelling in exported evidence records or introducing an inferred parent.
+        if (explicit_country and "normalized_country_alias" in c_actions and
+                explicit_country.casefold() == str(canonical_country).casefold()):
+            normalized["country"] = canonical_country
+        if not record.get("geographic_scope_type"):
+            normalized["geographic_scope_type"] = None
 
     # 11. Pydantic validation produces a clean canonical dict.
     validated_dict = PublicHealthRecord(**normalized).model_dump()
@@ -738,7 +757,8 @@ def record_normalization(state: DataCollectionState) -> dict:
         "normalized_case_definition",
         "inferred_case_definition_from_case_fields",
     }
-    source_type_warning_set = {"missing_source_type", "unrecognized_source_type"}
+    source_type_warning_set = {"missing_source_type", "unrecognized_source_type",
+                               "unknown_source_type", "unverified_source_type_identity"}
 
     for record in validated_records:
         compatibility = assess_record_disease_compatibility(
@@ -874,6 +894,10 @@ def record_normalization(state: DataCollectionState) -> dict:
         "virus_or_syndrome_normalized_count": virus_normalized_count,
         "case_definition_normalized_count": case_def_normalized_count,
         "source_type_warning_count": source_type_warning_count,
+        "source_type_identity_warning_count": (
+            warning_counter["unknown_source_type"] + warning_counter["unverified_source_type_identity"]
+        ),
+        "source_type_unrecognized_count": warning_counter["unrecognized_source_type"],
         "generic_record_count": generic_record_count,
         "legacy_hantavirus_record_count": legacy_hantavirus_record_count,
         "disease_counts": dict(disease_counter),

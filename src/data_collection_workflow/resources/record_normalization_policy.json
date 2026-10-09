@@ -14,6 +14,15 @@
     "United Kingdom": "United Kingdom",
     "England": "United Kingdom",
     "China": "China",
+    "Canada": "Canada",
+    "Brazil": "Brazil",
+    "South Africa": "South Africa",
+    "Mexico": "Mexico",
+    "Georgia": "Georgia",
+    "Jersey": "Jersey",
+    "Romania": "Romania",
+    "Israel": "Israel",
+    "Japan": "Japan",
     "Chile": "Chile",
     "Argentina": "Argentina",
     "Germany": "Germany",
@@ -97,6 +106,13 @@
     "structured_database",
     "news_and_situation_report"
   ],
+  "source_type_aliases": {
+    "WHO_DON": "international_organization_report",
+    "PAHO_outbreak_update": "international_organization_report",
+    "international_public_health_agency": "international_organization_report",
+    "national_public_health_agency": "official_public_health_agency",
+    "official_public_health_outbreak_page": "official_public_health_agency"
+  },
   "date_normalization": {
     "allowed_output_formats": [
       "YYYY",
@@ -140,6 +156,8 @@
     "missing_country_after_normalization",
     "invalid_negative_numeric_value",
     "unrecognized_source_type",
+    "unknown_source_type",
+    "unverified_source_type_identity",
     "non_country_geography_used_as_country"
   ]
 }

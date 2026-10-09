@@ -1470,8 +1470,11 @@ def _official_dates(text: str, title: str, context: dict | None = None) -> dict:
 def _official_geography(text: str, title: str, context: dict | None = None) -> dict:
     combined = f"{title}\n{text}"
     if get_env("PIPELINE_MODE") == "evidence":
-        from ..geography import explicit_country_matches
+        from ..geography import explicit_country_matches, explicit_statistical_scope
         from ..evidence_qualification import _role_bound_occurrence
+        local_scope = explicit_statistical_scope(text)
+        if local_scope:
+            return local_scope
         local_countries = [(name,key) for name,key in explicit_country_matches(text)
                            if _role_bound_occurrence("country",name,text)]
         keys = {key for _,key in local_countries}
@@ -1941,8 +1944,8 @@ def _official_literal_reporting_period(text: str) -> str | None:
     return periods[0] if len(set(periods)) == 1 else None
 
 
-def _verified_rule_headings(chunk: dict, context: dict | None) -> list[dict]:
-    """Return only parser-bound headings from this exact document and chunk."""
+def _verified_rule_context(chunk: dict, context: dict | None) -> list[dict]:
+    """Return parser-bound context from this exact document and chunk."""
     from ..evidence_chunking import validate_bound_context, quote_within_chunk
     spans = chunk.get("bound_context_spans") or []
     if not spans:
@@ -1960,7 +1963,11 @@ def _verified_rule_headings(chunk: dict, context: dict | None) -> list[dict]:
     if not (isinstance(left,int) and isinstance(right,int) and
             quote_within_chunk(doc,chunk,left,right,[]) and validate_bound_context(doc,chunk,spans)):
         return []
-    return [span for span in spans if span.get("role") == "heading"]
+    return spans
+
+
+def _verified_rule_headings(chunk: dict, context: dict | None) -> list[dict]:
+    return [span for span in _verified_rule_context(chunk, context) if span.get("role") == "heading"]
 
 
 def _official_outbreak_record_from_chunk(
@@ -2025,6 +2032,12 @@ def _official_outbreak_record_from_chunk(
     geography = _official_geography(local_evidence if universal else text, "" if universal else title, context)
     if universal and not geography.get("associated_countries") and not geography.get("geographic_scope"):
         geography = _official_geography(heading_text,"",context)
+    if universal and geography.get("geographic_scope_type") == "subnational" and not geography.get("country"):
+        from ..geography import explicit_country_key
+        parent = _official_geography(heading_text, "", context)
+        if parent.get("country") and explicit_country_key(parent["country"]) == "canada":
+            geography["country"] = "Canada"
+            geography["geography_inference_method"] = "explicit_province_parent_hierarchy"
     if universal and len(geography.get("associated_countries") or []) > 1:
         # A list of countries is not a binding from the selected count to one.
         geography = {"associated_countries": geography["associated_countries"]}
@@ -2070,6 +2083,8 @@ def _official_outbreak_record_from_chunk(
     case_values = {field:None for field in ("cases_confirmed","cases_probable","cases_suspected","cases_unspecified")}
     case_values[case_field] = cases_unspecified
     deaths = death_mention.get("value") if death_mention else None
+    from ..source_assertions import combined_case_definition
+    combined_definition = combined_case_definition(case_mention.get("span") or "") if universal and case_mention else None
     line_list_details = _official_line_list_details(local_evidence if universal else text)
     case_span_quote = str(chunk.get("case_span_quote") or (local_evidence if universal else text)).strip()
     case_span_id = chunk.get("case_span_id")
@@ -2121,6 +2136,8 @@ def _official_outbreak_record_from_chunk(
         travel_or_vessel_context=line_list_details.get("travel_or_vessel_context")
         or geography.get("travel_or_vessel_context"),
         geography_text_span=geography.get("geography_text_span"),
+        geography_inference_method=geography.get("geography_inference_method"),
+        geography_inference_warning=bool(geography.get("geography_inference_warning")),
         date_reported=dates.get("date_reported"),
         event_start_date=dates.get("event_start_date"),
         event_end_date=dates.get("event_end_date"),
@@ -2140,7 +2157,7 @@ def _official_outbreak_record_from_chunk(
         cases_suspected=case_values["cases_suspected"],
         cases_unspecified=case_values["cases_unspecified"],
         deaths=deaths,
-        case_definition=None if universal else "unspecified",
+        case_definition=combined_definition if universal else "unspecified",
         age=line_list_details.get("age"),
         gender=line_list_details.get("gender"),
         nationality=line_list_details.get("nationality"),
@@ -3325,6 +3342,10 @@ def _core_metric_payloads_from_chunk(
 def _classify_table_column(header_lower: str) -> str | None:
     if not header_lower:
         return None
+    if get_env("PIPELINE_MODE") == "evidence":
+        from ..source_assertions import combined_case_definition
+        if re.search(r"\bcases?\b", header_lower) and combined_case_definition(header_lower):
+            return "cases_unspecified"
     if "confirmed case" in header_lower or header_lower == "confirmed":
         return "cases_confirmed"
     if "probable case" in header_lower or header_lower == "probable":
@@ -3771,6 +3792,45 @@ def _apply_extraction_semantic_guardrails(
     )
     out["statistical_count_type"] = sct
     existing_warnings.extend(w_s)
+
+    if get_env("PIPELINE_MODE") == "evidence" and chunk_text:
+        from ..geography import explicit_statistical_scope
+        from ..source_assertions import count_mentions
+        from ..source_assertions import normalized_quote_spans
+        supplied_quote = out.get("case_span_quote") or out.get("evidence_quote")
+        scope_input = chunk_text
+        if supplied_quote:
+            spans = normalized_quote_spans(chunk_text, str(supplied_quote))
+            scope_input = chunk_text[spans[0][0]:spans[0][1]] if len(spans) == 1 else ""
+        mentions = count_mentions(chunk_text)
+        scope_mentions = count_mentions(scope_input)
+        selected_sentences = {m["sentence"] for m in scope_mentions
+                              if out.get(m["field"]) == m["value"]}
+        scope_text = next(iter(selected_sentences)) if len(selected_sentences) == 1 else ""
+        if not scope_mentions and chunk and chunk.get("row_id") is not None:
+            scope_text = scope_input
+        scope = explicit_statistical_scope(scope_text, country=out.get("country"))
+        if scope:
+            out.update({key: value for key, value in scope.items() if key != "country" or value is not None})
+        # A confirmed death is not a confirmed case. Only clear contradictory
+        # local death labels permit repair; ordinary unsupported claims stay
+        # available for the evidence assessor to reject.
+        case_mentions = [m for m in mentions if m["field"].startswith("cases_")]
+        death_values = {m["value"] for m in mentions if m["field"] == "deaths"}
+        if (not case_mentions and re.search(r"\bfirst\s+(?:[\w-]+\s+){0,3}case\b", chunk_text, re.I)):
+            # An ordinal event identifies the first known case; it does not
+            # assert the total number of cases in its enclosing month or year.
+            for field in ("cases_confirmed", "cases_probable", "cases_suspected", "cases_unspecified"):
+                if out.get(field) == 1:
+                    out[field] = None
+                    existing_warnings.append("first_case_event_not_aggregate_total")
+            if re.search(r"\bcases?\b", str(out.get("metric_name") or ""), re.I) and out.get("metric_value") == 1:
+                out["metric_value"] = None
+        if death_values and not case_mentions and not re.search(r"\bcases?\b", chunk_text, re.I):
+            for field in ("cases_confirmed", "cases_probable", "cases_suspected", "cases_unspecified"):
+                if out.get(field) is not None and out[field] in death_values:
+                    out[field] = None
+                    existing_warnings.append("death_count_not_case_count")
 
     out, w_g = _standardize_geographic_scope(out)
     existing_warnings.extend(w_g)
@@ -5866,6 +5926,11 @@ def _apply_metric_column_semantics(
             semantic_warnings.append(warning)
     out["semantic_warnings"] = semantic_warnings
 
+    if get_env("PIPELINE_MODE") == "evidence":
+        # Relative column names classify a value, but cannot manufacture dates
+        # by shifting report metadata or assuming an unstated cutoff.
+        return out
+
     if period_type == "previous_period":
         previous_start, previous_end = _previous_period_from_source(chunk, context)
         if previous_start and previous_end:
@@ -6088,6 +6153,71 @@ def _bind_universal_field_provenance(cleaned, chunk, row_metadata, chunk_id, quo
     return result
 
 
+def _bind_evidence_table_column(cleaned, chunk, context):
+    """Bind one numerator to a verified column and its own observation week."""
+    from ..source_assertions import number_value, observation_dates
+    spans = _verified_rule_context(chunk, context)
+    headers = [span["quote"] for span in spans if span.get("role") == "table_header"]
+    if len(headers) != 1:
+        return cleaned
+    labels = _pipe_table_cells(headers[0])
+    cells = _pipe_table_cells(str(chunk.get("row_quote") or chunk.get("text") or ""))
+    if len(labels) != len(cells):
+        return cleaned
+    selected = set()
+    fields = ("cases_confirmed", "cases_probable", "cases_suspected", "cases_unspecified", "deaths", "metric_value")
+    for field in fields:
+        value = cleaned.get(field)
+        if value is None:
+            continue
+        candidates = []
+        for index, (label, cell) in enumerate(zip(labels, cells)):
+            if index == 0 or number_value(cell) != value:
+                continue
+            classified = _classify_table_column(label.lower())
+            if classified in {"date_reported", "country", "subnational_location"}:
+                continue
+            if re.search(r"\b(?:week|date|age)\b", label, re.I) and not re.search(r"\b(?:cases?|deaths?|tests?)\b", label, re.I):
+                continue
+            if classified and field != "metric_value" and classified != field:
+                continue
+            candidates.append(index)
+        if len(candidates) != 1:
+            return cleaned
+        selected.add(candidates[0])
+    if len(selected) != 1:
+        return cleaned
+    index = selected.pop()
+    out = dict(cleaned)
+    out["source_column_label"] = labels[index]
+    row_week = None
+    if re.search(r"\bweek\b", labels[0], re.I) and re.fullmatch(r"\d{1,2}", cells[0]):
+        row_week = int(cells[0])
+    column_week = re.search(r"\bweek\s+(\d{1,2})\b", labels[index], re.I)
+    week = row_week if row_week is not None else int(column_week[1]) if column_week else None
+    if week is None:
+        return out
+    # Row observation time outranks publication/report time. A named observation
+    # column may share a matching report week, never a different week's dates.
+    for field in ("date_reported", "date_anchor", "report_date", "as_of_date",
+                  "metric_period_start", "metric_period_end", "metric_period_label"):
+        out[field] = None
+    out["reporting_period"] = f"Week {week}"
+    out["metric_period_source"] = "verified_row_week" if row_week is not None else "verified_column_week"
+    if row_week is None:
+        for span in reversed(spans):
+            quote = span["quote"]
+            stated_weeks = {int(m) for m in re.findall(r"\bweek\s+(\d{1,2})\b", quote, re.I)}
+            if span.get("role") == "heading" and stated_weeks == {week}:
+                dates = observation_dates(quote)
+                if dates.get("metric_period_start") and dates.get("metric_period_end"):
+                    out["metric_period_start"] = dates["metric_period_start"]
+                    out["metric_period_end"] = dates["metric_period_end"]
+                    out["reporting_period"] += " (" + dates["reporting_period"] + ")"
+                    break
+    return out
+
+
 def _build_record_from_llm_output(
     llm_record: LLMExtractedRecord,
     chunk: dict,
@@ -6145,7 +6275,8 @@ def _build_record_from_llm_output(
                 warnings.append(warning)
         cleaned["semantic_warnings"] = warnings
     if (
-        row_metadata
+        not universal
+        and row_metadata
         and not cleaned.get("metric_period_start")
         and row_metadata.get("reporting_period_start")
     ):
@@ -6164,6 +6295,8 @@ def _build_record_from_llm_output(
         return value if value not in (None, "") else chunk.get(key)
 
     cleaned = _apply_metric_column_semantics(cleaned, row_metadata, chunk, context)
+    if universal:
+        cleaned = _bind_evidence_table_column(cleaned, chunk, context)
 
     evidence_quote = text
     supporting_chunk_id = chunk.get("chunk_id")
@@ -6449,6 +6582,8 @@ def _build_record_from_llm_output(
         aggregation_level=cleaned.get("aggregation_level"),
         geographic_scope=cleaned.get("geographic_scope"),
         geographic_scope_type=cleaned.get("geographic_scope_type"),
+        geography_inference_method=cleaned.get("geography_inference_method"),
+        geography_inference_warning=bool(cleaned.get("geography_inference_warning")),
         population_scope=cleaned.get("population_scope"),
         source_section=cleaned.get("source_section"),
         semantic_warnings=list(cleaned.get("semantic_warnings") or []),
@@ -8818,6 +8953,7 @@ def structured_extraction(state: DataCollectionState) -> dict:
         attempted_ids.update(det_stats.get("attempted_chunk_ids") or [])
     if runtime:
         attempted_ids.update(runtime.ledger.attempted_chunk_ids())
+        summary["failed_chunk_ids"] = sorted(runtime.ledger.failed_chunk_ids())
     return {
         "extraction_attempted_chunk_ids": sorted(attempted_ids),
         "raw_records": raw_record_dicts,

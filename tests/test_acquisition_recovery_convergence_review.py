@@ -87,7 +87,11 @@ def test_real_node_repetition_does_not_reopen_empty_repairs_or_duplicate_conflic
     assert not any(ctx.ledger.snapshot()["used"].values())
 
 
-def test_new_source_span_after_empty_repair_is_executable_again(tmp_path):
+@pytest.mark.parametrize('text,complete', [
+    ('During 2025, surveillance recorded 100 measles cases.', False),
+    ('During 2025, Canada reported 100 measles cases.', True),
+])
+def test_new_source_span_after_empty_repair_is_executable_again(tmp_path, text, complete):
     state=flow_state(); ctx=runtime(tmp_path)
     with ctx.activate():
         state=node_pass(state)
@@ -99,7 +103,6 @@ def test_new_source_span_after_empty_repair_is_executable_again(tmp_path):
         # An actual changed source body remains eligible even with the same
         # source/chunk IDs: hashes, bounds and original evidence changed.
         changed=deepcopy(state)
-        text="During 2025, Canada reported 100 measles cases."
         digest=sha256(text.encode()).hexdigest()
         changed["documents"][0].update(clean_text=text,content_hash=digest,text_hash=digest)
         changed["evidence_chunks"][0].update(text=text,document_hash=digest,char_end=len(text))
@@ -107,7 +110,15 @@ def test_new_source_span_after_empty_repair_is_executable_again(tmp_path):
         again=plan_recovery(assess_collection_gaps(changed),state=changed,budget=ctx.ledger)
     first_ids={action.action_id for action in repairs}
     changed_actions=[action for action in again.actions if action.kind=="repair_fields" and action.target_id=="record-0"]
-    assert changed_actions and all(action.action_id not in first_ids for action in changed_actions)
+    admitted = [row for row in changed['qualified_records'] if row['record_id'] == 'record-0']
+    if complete:
+        assert not changed_actions, 'Complete new evidence must not schedule a redundant repair.'
+        assert len(admitted) == 1 and admitted[0]['cases_unspecified'] == 100
+        assert all(field['document_hash'] == digest
+                   for field in admitted[0]['evidence_qualification']['field_evidence'])
+    else:
+        assert not admitted
+        assert changed_actions and all(action.action_id not in first_ids for action in changed_actions)
 
 
 def test_legacy_real_consistency_keeps_append_contract(monkeypatch):

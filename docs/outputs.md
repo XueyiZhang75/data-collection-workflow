@@ -52,6 +52,16 @@ An evidence qualification `status` of `qualified` means the record passed the wo
 
 Dates retain the available precision: a day may be `2025-01-31`, while a month-level value may remain `2025-01`. A task's requested start/end dates are search requirements, not evidence that an observation covers those dates. A completed-outbreak total also remains distinct from a calendar-year total. The report and `data/task_result.json` make these scope distinctions explicit.
 
+`country` can identify a province's parent country. For example, an Ontario count belongs in a Canada collection task while its statistical scope remains Ontario; it cannot supply Canada's national total. A combined confirmed-and-probable count retains that definition in `case_definition` and is not relabeled as confirmed cases alone.
+
+An observation crossing a task boundary can be retained with `task_temporal_relation: "overlaps_task_boundary"` in its qualification. Its original count and interval remain intact; the workflow does not split or prorate the count. A month-precision reporting date also does not establish coverage of every day in that month.
+
+A year label alone can locate a record within the task without proving a full-year total. Such records carry `temporal_extent: "year_label_only"`; they do not complete annual coverage or supply the full-year headline. Explicit annual reporting and supported statistical intervals retain their own meaning.
+
+If an unsupported optional descriptor can be set aside while all remaining facts independently pass checks, the workflow retains the original candidate and emits a rechecked record linked by `recovered_from_record_id`. Its `evidence_normalization_actions` preserve the original value, citation, and reason. This does not remove failures in counts, geographic scope, statistical meaning, required dates, or evidence integrity.
+
+Source-processing details distinguish recorded empty extraction results, failed attempts, skipped passages, pending work, and attempts whose outcomes were not recorded. An empty extraction result does not by itself mean retrieval or model execution failed.
+
 Missing numeric values are **`null` in JSON and blank cells in CSV**. They mean the value is unavailable, not zero. An absent JSON key means that field was not included in that record; an empty string can be retained source text. CSV cannot preserve all these distinctions, so use JSON when they matter. Boolean values appear as `true`/`false` in JSON and normally `True`/`False` in CSV. Empty arrays and objects are `[]` and `{}`. Read CSV as UTF-8; the report's `data/` CSV files include a UTF-8 byte-order mark for spreadsheet compatibility.
 
 Do not add cumulative snapshots from different dates together. Do not add a national total to its constituent regional totals or count duplicated reports as independent observations.
