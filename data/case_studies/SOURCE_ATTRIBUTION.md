@@ -6,10 +6,12 @@ Global.health: *Hondius hantavirus 2026 outbreak data*. The retained benchmark u
 
 https://github.com/kraemer-lab/Hondius_hantavirus_h2026/tree/16dd94e127223a3abc5295cf72c649c132b53509
 
-The benchmark case table is provided in records/hantavirus/benchmark_cases.csv. Original attribution, source links, README and licence text are retained. The upstream README states CC BY 4.0 for the data and explains third-party rights, while LICENSE.upstream contains CC0 1.0 text. Both statements are preserved without resolving them into a new licence or extending either to this entire package.
+The benchmark case table is provided in records/hantavirus/benchmark_cases.csv. Original attribution and source links are retained. The `benchmark_source_docs` folder preserves the original README and licence accompanying the Global.health dataset used as the external comparison benchmark in `records/hantavirus/benchmark_cases.csv`. Descriptions of the episource workflow in the original README refer to the Global.health project.
 
-- [Upstream README](records/hantavirus/upstream/README.md)
-- [Upstream licence file](records/hantavirus/upstream/LICENSE.upstream)
+The original README states CC BY 4.0 for the data and explains third-party rights, while LICENSE.upstream contains CC0 1.0 text. Both statements are preserved without resolving them into a new licence or extending either to this entire package.
+
+- [Original Global.health README](records/hantavirus/benchmark_source_docs/README.md)
+- [Original Global.health licence file](records/hantavirus/benchmark_source_docs/LICENSE.upstream)
 
 ## Hantavirus clinical reference values
 
