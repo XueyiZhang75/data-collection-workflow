@@ -6,7 +6,7 @@ Collect public-health information for a disease, location, and date range. The w
 
 The collection process is: **define the task → discover sources → retrieve documents → extract and check evidence → export data and reports**.
 
-This repository contains the application, configuration templates, documentation, optional interfaces, and software tests. Sessions, downloaded documents, logs, generated reports, and research results are created locally when you run it. They belong under `outputs/`, which Git ignores. Files in `tests/` are test code and fixed test inputs, not saved test-run reports or completed collection sessions.
+This repository contains the application, configuration templates, documentation, optional interfaces, software tests, and [source data for the three manuscript case studies](data/case_studies/README.md). The case-study data package includes observation records, source URLs, comparison datasets and clinical reference values. New collection sessions, downloaded documents, logs and generated reports are created locally when you run the workflow. They belong under `outputs/`, which Git ignores. Files in `tests/` are test code and fixed test inputs, not saved test-run reports or completed collection sessions.
 
 ## Source discovery in evidence mode
 

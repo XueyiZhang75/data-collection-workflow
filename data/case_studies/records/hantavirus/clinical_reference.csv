@@ -1,0 +1,118 @@
+case_label,field_name,reference_value,status,source_url,evidence_text
+Case 1,location,,not_publicly_available,,
+Case 1,age,,not_publicly_available,,
+Case 1,age_group,60-69,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 1 age group 60-69.
+Case 1,gender,male,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies the index case as an adult male.
+Case 1,nationality,Dutch,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 1 nationality Dutch.
+Case 1,onset_date,2026-04-03,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 1 symptom onset 3 April.
+Case 1,confirmation_date,,not_applicable,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 marks confirmation not applicable for Case 1.
+Case 1,outcome,deceased,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 1 deceased on 11 April.
+Case 1,case_status,probable,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 1 as probable.
+Case 2,location,,not_publicly_available,,
+Case 2,age,,not_publicly_available,,
+Case 2,age_group,60-69,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 2 age group 60-69.
+Case 2,gender,female,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 2 as female.
+Case 2,nationality,Dutch,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 2 nationality Dutch.
+Case 2,onset_date,2026-04-22,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 2 symptom onset 22 April.
+Case 2,confirmation_date,2026-05-04,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 2 confirmation 4 May.
+Case 2,outcome,deceased,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 2 deceased on 26 April.
+Case 2,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 2 as confirmed.
+Case 3,location,,not_publicly_available,,
+Case 3,age,,not_publicly_available,,
+Case 3,age_group,60-69,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 3 age group 60-69.
+Case 3,gender,male,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 3 as male.
+Case 3,nationality,British,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 3 nationality British.
+Case 3,onset_date,2026-04-21,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 3 symptom onset 21 April.
+Case 3,confirmation_date,2026-05-02,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 3 confirmation 2 May.
+Case 3,outcome,recovering,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 3 recovering.
+Case 3,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 3 as confirmed.
+Case 4,location,,not_publicly_available,,
+Case 4,age,,not_publicly_available,,
+Case 4,age_group,70-79,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 4 age group 70-79.
+Case 4,gender,female,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 4 as female.
+Case 4,nationality,German,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 4 nationality German.
+Case 4,onset_date,2026-04-23,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 4 symptom onset 23 April.
+Case 4,confirmation_date,2026-05-08,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 4 confirmation 8 May.
+Case 4,outcome,deceased,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 4 deceased on 2 May.
+Case 4,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 4 as confirmed.
+Case 5,location,,not_publicly_available,,
+Case 5,age,,not_publicly_available,,
+Case 5,age_group,40-49,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 5 age group 40-49.
+Case 5,gender,male,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 5 as male.
+Case 5,nationality,Dutch,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 5 nationality Dutch.
+Case 5,onset_date,2026-04-30,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 5 symptom onset 30 April.
+Case 5,confirmation_date,2026-05-07,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 5 confirmation 7 May.
+Case 5,outcome,recovered,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 5 recovered.
+Case 5,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 5 as confirmed.
+Case 6,location,,not_publicly_available,,
+Case 6,age,,not_publicly_available,,
+Case 6,age_group,50-59,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 6 age group 50-59.
+Case 6,gender,male,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 6 as male.
+Case 6,nationality,British,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 6 nationality British.
+Case 6,onset_date,2026-04-28,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 6 symptom onset 28 April.
+Case 6,confirmation_date,2026-05-07,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 6 confirmation 7 May.
+Case 6,outcome,recovered,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 6 recovered.
+Case 6,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 6 as confirmed.
+Case 7,location,,not_publicly_available,,
+Case 7,age,,not_publicly_available,,
+Case 7,age_group,60-69,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 7 age group 60-69.
+Case 7,gender,male,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 7 as male.
+Case 7,nationality,Swiss,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 7 nationality Swiss.
+Case 7,onset_date,2026-05-01,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 7 symptom onset 1 May.
+Case 7,confirmation_date,2026-05-05,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 7 confirmation 5 May.
+Case 7,outcome,recovered,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 7 recovered.
+Case 7,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 7 as confirmed.
+Case 8,location,,not_publicly_available,,
+Case 8,age,,not_publicly_available,,
+Case 8,age_group,60-69,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 8 age group 60-69.
+Case 8,gender,male,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 8 as male.
+Case 8,nationality,British,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 8 nationality British.
+Case 8,onset_date,2026-04-28,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 8 symptom onset 28 April.
+Case 8,confirmation_date,2026-06-09,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 8 confirmation 9 June.
+Case 8,outcome,recovered,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 8 recovered.
+Case 8,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 8 as confirmed.
+Case 9,location,,not_publicly_available,,
+Case 9,age,,not_publicly_available,,
+Case 9,age_group,70-79,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 9 age group 70-79.
+Case 9,gender,female,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 9 as female.
+Case 9,nationality,French,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 9 nationality French.
+Case 9,onset_date,2026-05-08,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 9 symptom onset 8 May.
+Case 9,confirmation_date,2026-05-11,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 9 confirmation 11 May.
+Case 9,outcome,ICU,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 9 in ICU.
+Case 9,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 9 as confirmed.
+Case 10,location,,not_publicly_available,,
+Case 10,age,,not_publicly_available,,
+Case 10,age_group,70-79,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 10 age group 70-79.
+Case 10,gender,female,confirmed,https://www.who.int/docs/default-source/coronaviruse/situation-reports/who-rapid-risk-assessment-hantavirus-outbreak-caused-by-andes-virus--global-v.2.pdf,The WHO case narrative identifies Case 10 as female.
+Case 10,nationality,Spanish,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 10 nationality Spanish.
+Case 10,onset_date,2026-05-11,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 10 symptom onset 11 May.
+Case 10,confirmation_date,2026-05-11,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 10 confirmation 11 May.
+Case 10,outcome,recovered,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 10 recovered.
+Case 10,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 10 as confirmed.
+Case 11,location,,not_publicly_available,,
+Case 11,age,,not_publicly_available,,
+Case 11,age_group,70-79,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 11 age group 70-79.
+Case 11,gender,,not_publicly_available,,
+Case 11,nationality,Canadian,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 11 nationality Canadian.
+Case 11,onset_date,2026-05-14,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 11 symptom onset 14 May.
+Case 11,confirmation_date,2026-05-16,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 11 confirmation 16 May.
+Case 11,outcome,recovered,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 11 recovered.
+Case 11,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 11 as confirmed.
+Case 12,location,,not_publicly_available,,
+Case 12,age,,not_publicly_available,,
+Case 12,age_group,40-49,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 12 age group 40-49.
+Case 12,gender,,not_publicly_available,,
+Case 12,nationality,Dutch,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 12 nationality Dutch.
+Case 12,onset_date,2026-05-27,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 12 symptom onset 27 May.
+Case 12,confirmation_date,2026-05-20,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 12 confirmation 20 May.
+Case 12,outcome,recovered,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 12 recovered.
+Case 12,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 12 as confirmed.
+Case 13,location,,not_publicly_available,,
+Case 13,age,,not_publicly_available,,
+Case 13,age_group,30-39,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 13 age group 30-39.
+Case 13,gender,,not_publicly_available,,
+Case 13,nationality,Spanish,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 13 nationality Spanish.
+Case 13,onset_date,2026-05-31,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 13 symptom onset 31 May.
+Case 13,confirmation_date,2026-05-25,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 13 confirmation 25 May.
+Case 13,outcome,recovered,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 reports Case 13 recovered.
+Case 13,case_status,confirmed,confirmed,https://pmc.ncbi.nlm.nih.gov/articles/PMC13291726/,Corrected Table 1 classifies Case 13 as confirmed.
